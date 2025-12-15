@@ -94,6 +94,9 @@ class FlashDoc {
   }
 
   setupContextMenus() {
+    console.log('🔧 Setting up context menus...');
+    console.log('📦 Current settings.categoryShortcuts:', this.settings.categoryShortcuts);
+
     // Remove existing menus
     chrome.contextMenus.removeAll(() => {
       if (chrome.runtime.lastError) {
@@ -101,6 +104,7 @@ class FlashDoc {
       }
 
       if (!this.settings.enableContextMenu) {
+        console.log('⏭️ Context menu disabled in settings');
         return;
       }
 
@@ -129,6 +133,7 @@ class FlashDoc {
 
       // Add category shortcuts (prefix combos) if any exist
       const shortcuts = this.settings.categoryShortcuts || [];
+      console.log('📋 Category shortcuts:', shortcuts);
       if (shortcuts.length > 0) {
         // Add separator
         chrome.contextMenus.create({
