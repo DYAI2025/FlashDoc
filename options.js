@@ -154,6 +154,7 @@ function readFormSettings(form) {
   settings.autoDetectType = form.autoDetectType.checked;
   settings.enableContextMenu = form.enableContextMenu.checked;
   settings.showFloatingButton = form.showFloatingButton.checked;
+  settings.showCornerBall = form.showCornerBall?.checked ?? DEFAULT_SETTINGS.showCornerBall;
   settings.buttonPosition = form.buttonPosition.value || DEFAULT_SETTINGS.buttonPosition;
   settings.autoHideButton = form.autoHideButton.checked;
   settings.selectionThreshold = Number(form.selectionThreshold.value || DEFAULT_SETTINGS.selectionThreshold);
@@ -183,6 +184,7 @@ function applySettings(settings) {
   form.autoDetectType.checked = merged.autoDetectType;
   form.enableContextMenu.checked = merged.enableContextMenu;
   form.showFloatingButton.checked = merged.showFloatingButton;
+  if (form.showCornerBall) form.showCornerBall.checked = merged.showCornerBall;
   form.buttonPosition.value = merged.buttonPosition;
   form.autoHideButton.checked = merged.autoHideButton;
   form.selectionThreshold.value = merged.selectionThreshold;
