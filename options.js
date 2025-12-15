@@ -498,7 +498,8 @@ async function addShortcut() {
   shortcuts.push(newShortcut);
   await chrome.storage.sync.set({ categoryShortcuts: shortcuts });
   renderShortcutList(shortcuts);
-  notifyContentScripts(); // Notify all tabs to update their menus
+  await refreshBackgroundSettings(); // Update context menu
+  notifyContentScripts(); // Notify all tabs to update their floating buttons
   showStatusMessage('Shortcut added.', 'success');
 }
 
@@ -534,7 +535,8 @@ async function updateShortcut(shortcutId, newName, newFormat) {
     shortcut.format = newFormat;
     await chrome.storage.sync.set({ categoryShortcuts: shortcuts });
     renderShortcutList(shortcuts);
-    notifyContentScripts(); // Notify all tabs to update their menus
+    await refreshBackgroundSettings(); // Update context menu
+    notifyContentScripts(); // Notify all tabs to update their floating buttons
     showStatusMessage('Shortcut updated.', 'success');
   }
 }
@@ -544,7 +546,8 @@ async function deleteShortcut(shortcutId) {
   const shortcuts = (settings.categoryShortcuts || []).filter(s => s.id !== shortcutId);
   await chrome.storage.sync.set({ categoryShortcuts: shortcuts });
   renderShortcutList(shortcuts);
-  notifyContentScripts(); // Notify all tabs to update their menus
+  await refreshBackgroundSettings(); // Update context menu
+  notifyContentScripts(); // Notify all tabs to update their floating buttons
   showStatusMessage('Shortcut deleted.', 'success');
 }
 

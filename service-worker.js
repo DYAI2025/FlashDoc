@@ -117,7 +117,7 @@ class FlashDoc {
         contexts: ['selection']
       });
 
-      // Child menus
+      // Child menus - Standard formats
       menuItems.forEach(type => {
         chrome.contextMenus.create({
           id: `flashdoc-${type.id}`,
@@ -126,6 +126,35 @@ class FlashDoc {
           contexts: ['selection']
         });
       });
+
+      // Add category shortcuts (prefix combos) if any exist
+      const shortcuts = this.settings.categoryShortcuts || [];
+      if (shortcuts.length > 0) {
+        // Add separator
+        chrome.contextMenus.create({
+          id: 'flashdoc-separator',
+          parentId: 'flashdoc-parent',
+          type: 'separator',
+          contexts: ['selection']
+        });
+
+        // Add each shortcut
+        const formatEmojis = {
+          txt: '📄', md: '📝', docx: '📜', pdf: '📕', json: '🧩',
+          js: '🟡', ts: '🔵', py: '🐍', html: '🌐', css: '🎨',
+          yaml: '🧾', sql: '📑', sh: '⚙️'
+        };
+
+        shortcuts.forEach(shortcut => {
+          const emoji = formatEmojis[shortcut.format] || '📄';
+          chrome.contextMenus.create({
+            id: `flashdoc-shortcut-${shortcut.id}`,
+            parentId: 'flashdoc-parent',
+            title: `${emoji} ${shortcut.name}_save.${shortcut.format}`,
+            contexts: ['selection']
+          });
+        });
+      }
     });
 
     if (!this.contextMenuListenerRegistered) {
@@ -196,8 +225,24 @@ class FlashDoc {
   onContextMenuClicked(info, tab) {
     if (!info.menuItemId || !info.menuItemId.startsWith('flashdoc-')) return;
 
-    const type = info.menuItemId.replace('flashdoc-', '');
-    this.handleSave(info.selectionText, type, tab).catch((error) => {
+    const menuId = info.menuItemId.replace('flashdoc-', '');
+
+    // Check if it's a shortcut (prefix combo)
+    if (menuId.startsWith('shortcut-')) {
+      const shortcutId = menuId.replace('shortcut-', '');
+      const shortcuts = this.settings.categoryShortcuts || [];
+      const shortcut = shortcuts.find(s => s.id === shortcutId);
+
+      if (shortcut) {
+        this.handleSave(info.selectionText, shortcut.format, tab, { prefix: shortcut.name }).catch((error) => {
+          console.error('Shortcut save failed:', error);
+        });
+      }
+      return;
+    }
+
+    // Standard format save
+    this.handleSave(info.selectionText, menuId, tab).catch((error) => {
       console.error('Context menu save failed:', error);
     });
   }
