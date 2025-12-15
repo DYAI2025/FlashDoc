@@ -402,121 +402,161 @@ body {
   line-height: 1.5;
 }
 
-/* Category Shortcuts Styles */
-.shortcut-header {
+/* Prefix Shortcuts Styles */
+.shortcut-add-form {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  gap: 10px;
   margin-bottom: 16px;
+  flex-wrap: wrap;
 }
 
-.shortcut-count {
+.shortcut-add-form input[type="text"] {
+  flex: 1;
+  min-width: 150px;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.35);
+  color: var(--text);
   font-size: 14px;
-  color: var(--muted);
-  font-weight: 500;
+  transition: all 0.2s ease;
 }
 
-.shortcut-count.at-limit {
-  color: var(--danger);
+@media (prefers-color-scheme: light) {
+  .shortcut-add-form input[type="text"] {
+    background: rgba(248, 250, 252, 0.9);
+  }
+}
+
+.shortcut-add-form input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
+}
+
+.shortcut-add-form input:disabled,
+.shortcut-add-form select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.shortcut-add-form select {
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.35);
+  color: var(--text);
+  font-size: 14px;
+  min-width: 90px;
+  cursor: pointer;
+}
+
+@media (prefers-color-scheme: light) {
+  .shortcut-add-form select {
+    background: rgba(248, 250, 252, 0.9);
+  }
+}
+
+.shortcut-add-form select:focus {
+  outline: none;
+  border-color: var(--accent);
 }
 
 .btn.small {
-  padding: 8px 14px;
+  padding: 10px 16px;
   font-size: 13px;
-  border-radius: 8px;
+  border-radius: 10px;
+  white-space: nowrap;
 }
 
 .shortcut-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
+  min-height: 60px;
 }
 
 .shortcut-list .empty-state {
   text-align: center;
-  padding: 24px;
+  padding: 20px;
   color: var(--muted);
 }
 
 .shortcut-list .empty-icon {
-  font-size: 32px;
+  font-size: 28px;
   display: block;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
+  opacity: 0.6;
+}
+
+.shortcut-list .empty-state p {
+  margin: 0;
+  font-size: 13px;
 }
 
 .shortcut-item {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   padding: 12px 14px;
-  background: rgba(148, 163, 184, 0.08);
+  background: rgba(56, 189, 248, 0.08);
   border-radius: 10px;
-  border: 1px solid var(--border);
+  border: 1px solid rgba(56, 189, 248, 0.2);
   transition: all 0.2s ease;
-  flex-wrap: wrap;
 }
 
 .shortcut-item:hover {
   border-color: rgba(56, 189, 248, 0.4);
-  background: rgba(56, 189, 248, 0.05);
+  background: rgba(56, 189, 248, 0.12);
+  transform: translateX(2px);
 }
 
-.shortcut-preview {
-  width: 100%;
-  font-size: 13px;
+.shortcut-emoji {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.shortcut-label {
+  flex: 1;
+  font-size: 14px;
   font-weight: 600;
-  color: var(--accent);
-  margin-bottom: 4px;
+  color: var(--text);
   font-family: monospace;
 }
 
-.shortcut-name {
-  flex: 1;
-  min-width: 100px;
-  padding: 8px 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--card);
-  color: var(--text);
-  font-size: 14px;
-}
-
-.shortcut-name:focus {
-  outline: none;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
-}
-
-.shortcut-format {
-  padding: 8px 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--card);
-  color: var(--text);
-  font-size: 14px;
-  min-width: 100px;
-}
-
-.shortcut-format:focus {
-  outline: none;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
-}
-
 .shortcut-delete {
-  width: 36px;
-  height: 36px;
+  width: 28px;
+  height: 28px;
   border: none;
-  background: rgba(239, 68, 68, 0.1);
-  border-radius: 8px;
+  background: rgba(239, 68, 68, 0.15);
+  border-radius: 6px;
   cursor: pointer;
-  font-size: 16px;
+  font-size: 14px;
+  color: var(--danger);
   transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .shortcut-delete:hover {
-  background: rgba(239, 68, 68, 0.2);
-  transform: scale(1.05);
+  background: rgba(239, 68, 68, 0.3);
+  transform: scale(1.1);
+}
+
+.shortcut-footer {
+  margin-top: 12px;
+  text-align: right;
+}
+
+.shortcut-count {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.shortcut-count.at-limit {
+  color: var(--danger);
+  font-weight: 600;
 }
 
 @media (max-width: 720px) {

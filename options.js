@@ -19,22 +19,6 @@ const CONTEXT_MENU_OPTIONS = [
   { id: 'saveas', label: 'Save As…', description: 'Pick folder & filename each time', emoji: '📁' }
 ];
 
-// Available formats for shortcuts
-const SHORTCUT_FORMATS = [
-  { id: 'txt', label: '.txt', emoji: '📄' },
-  { id: 'md', label: '.md', emoji: '📝' },
-  { id: 'docx', label: '.docx', emoji: '📜' },
-  { id: 'pdf', label: '.pdf', emoji: '📕' },
-  { id: 'json', label: '.json', emoji: '🧩' },
-  { id: 'js', label: '.js', emoji: '🟡' },
-  { id: 'ts', label: '.ts', emoji: '🔵' },
-  { id: 'py', label: '.py', emoji: '🐍' },
-  { id: 'html', label: '.html', emoji: '🌐' },
-  { id: 'css', label: '.css', emoji: '🎨' },
-  { id: 'yaml', label: '.yaml', emoji: '🧾' },
-  { id: 'sql', label: '.sql', emoji: '📑' },
-  { id: 'sh', label: '.sh', emoji: '⚙️' }
-];
 
 const DEFAULT_SETTINGS = {
   folderPath: 'FlashDocs/',
@@ -401,7 +385,8 @@ function getSelectedContextMenuFormats(form) {
     .map(input => input.value);
 }
 
-// Category Shortcuts Management Functions
+// Prefix Shortcuts Management Functions
+
 function renderShortcutList(shortcuts = []) {
   const container = document.getElementById('shortcut-list');
   if (!container) return;
@@ -412,45 +397,30 @@ function renderShortcutList(shortcuts = []) {
     container.innerHTML = `
       <div class="empty-state">
         <span class="empty-icon">⚡</span>
-        <p>No shortcuts defined yet</p>
+        <p>Noch keine Shortcuts erstellt</p>
       </div>
     `;
+    updateShortcutCount(0);
     return;
   }
+
+  const formatEmojis = {
+    txt: '📄', md: '📝', docx: '📜', pdf: '📕', json: '🧩',
+    js: '🟡', ts: '🔵', py: '🐍', html: '🌐', css: '🎨',
+    yaml: '🧾', sql: '📑', sh: '⚙️'
+  };
 
   shortcuts.forEach((shortcut) => {
     const item = document.createElement('div');
     item.className = 'shortcut-item';
-    item.dataset.id = shortcut.id;
-
-    // Build format options
-    const formatOptions = SHORTCUT_FORMATS.map(f =>
-      `<option value="${f.id}" ${shortcut.format === f.id ? 'selected' : ''}>${f.emoji} ${f.label}</option>`
-    ).join('');
-
-    const displayName = `${shortcut.name}_save${SHORTCUT_FORMATS.find(f => f.id === shortcut.format)?.label || '.txt'}`;
+    const emoji = formatEmojis[shortcut.format] || '📄';
 
     item.innerHTML = `
-      <div class="shortcut-preview">${displayName}</div>
-      <input type="text" class="shortcut-name" value="${escapeHtml(shortcut.name)}"
-             maxlength="15" placeholder="Category name">
-      <select class="shortcut-format">${formatOptions}</select>
-      <button type="button" class="shortcut-delete" title="Delete shortcut">🗑️</button>
+      <span class="shortcut-emoji">${emoji}</span>
+      <span class="shortcut-label">${shortcut.name}_save.${shortcut.format}</span>
+      <button type="button" class="shortcut-delete" title="Löschen">✕</button>
     `;
 
-    // Handle name change
-    const nameInput = item.querySelector('.shortcut-name');
-    nameInput.addEventListener('change', () => {
-      updateShortcut(shortcut.id, nameInput.value, item.querySelector('.shortcut-format').value);
-    });
-
-    // Handle format change
-    const formatSelect = item.querySelector('.shortcut-format');
-    formatSelect.addEventListener('change', () => {
-      updateShortcut(shortcut.id, nameInput.value, formatSelect.value);
-    });
-
-    // Handle delete
     item.querySelector('.shortcut-delete').addEventListener('click', () => {
       deleteShortcut(shortcut.id);
     });
@@ -461,84 +431,71 @@ function renderShortcutList(shortcuts = []) {
   updateShortcutCount(shortcuts.length);
 }
 
-function escapeHtml(text) {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
-}
-
 function updateShortcutCount(count) {
   const countEl = document.getElementById('shortcut-count');
   if (countEl) {
-    countEl.textContent = `${count}/${MAX_SHORTCUTS}`;
+    countEl.textContent = `${count}/${MAX_SHORTCUTS} Shortcuts`;
     countEl.classList.toggle('at-limit', count >= MAX_SHORTCUTS);
   }
 
   const addBtn = document.getElementById('add-shortcut');
-  if (addBtn) {
-    addBtn.disabled = count >= MAX_SHORTCUTS;
-  }
+  const nameInput = document.getElementById('new-shortcut-name');
+  const formatSelect = document.getElementById('new-shortcut-format');
+
+  if (addBtn) addBtn.disabled = count >= MAX_SHORTCUTS;
+  if (nameInput) nameInput.disabled = count >= MAX_SHORTCUTS;
+  if (formatSelect) formatSelect.disabled = count >= MAX_SHORTCUTS;
 }
 
 async function addShortcut() {
+  const nameInput = document.getElementById('new-shortcut-name');
+  const formatSelect = document.getElementById('new-shortcut-format');
+
+  if (!nameInput || !formatSelect) return;
+
+  const name = nameInput.value.trim().replace(/[^a-zA-Z0-9_-]/g, '');
+  const format = formatSelect.value;
+
+  if (!name) {
+    showStatusMessage('Bitte einen Prefix-Namen eingeben.', 'error');
+    nameInput.focus();
+    return;
+  }
+
   const settings = await chrome.storage.sync.get(['categoryShortcuts']);
   const shortcuts = settings.categoryShortcuts || [];
 
   if (shortcuts.length >= MAX_SHORTCUTS) {
-    showStatusMessage(`Maximum ${MAX_SHORTCUTS} shortcuts allowed.`, 'error');
+    showStatusMessage(`Maximum ${MAX_SHORTCUTS} Shortcuts erlaubt.`, 'error');
+    return;
+  }
+
+  // Check for duplicates
+  const isDuplicate = shortcuts.some(s =>
+    s.name.toLowerCase() === name.toLowerCase() && s.format === format
+  );
+
+  if (isDuplicate) {
+    showStatusMessage('Dieser Shortcut existiert bereits.', 'error');
     return;
   }
 
   const newShortcut = {
     id: `shortcut_${Date.now()}`,
-    name: `Category${shortcuts.length + 1}`,
-    format: 'md' // Default format
+    name: name,
+    format: format
   };
 
   shortcuts.push(newShortcut);
   await chrome.storage.sync.set({ categoryShortcuts: shortcuts });
+
+  // Clear input field
+  nameInput.value = '';
+
   renderShortcutList(shortcuts);
-  await refreshBackgroundSettings(); // Update context menu
-  notifyContentScripts(); // Notify all tabs to update their floating buttons
-  showStatusMessage('Shortcut added.', 'success');
-}
-
-async function updateShortcut(shortcutId, newName, newFormat) {
-  const trimmedName = newName.trim().replace(/[^a-zA-Z0-9_-]/g, ''); // Sanitize for filename
-
-  if (!trimmedName) {
-    showStatusMessage('Category name cannot be empty.', 'error');
-    const settings = await chrome.storage.sync.get(['categoryShortcuts']);
-    renderShortcutList(settings.categoryShortcuts || []);
-    return;
-  }
-
-  const settings = await chrome.storage.sync.get(['categoryShortcuts']);
-  const shortcuts = settings.categoryShortcuts || [];
-
-  // Check for duplicates (same name + format combo)
-  const isDuplicate = shortcuts.some(s =>
-    s.id !== shortcutId &&
-    s.name.toLowerCase() === trimmedName.toLowerCase() &&
-    s.format === newFormat
-  );
-
-  if (isDuplicate) {
-    showStatusMessage('This shortcut already exists.', 'error');
-    renderShortcutList(shortcuts);
-    return;
-  }
-
-  const shortcut = shortcuts.find(s => s.id === shortcutId);
-  if (shortcut) {
-    shortcut.name = trimmedName;
-    shortcut.format = newFormat;
-    await chrome.storage.sync.set({ categoryShortcuts: shortcuts });
-    renderShortcutList(shortcuts);
-    await refreshBackgroundSettings(); // Update context menu
-    notifyContentScripts(); // Notify all tabs to update their floating buttons
-    showStatusMessage('Shortcut updated.', 'success');
-  }
+  await refreshBackgroundSettings();
+  notifyContentScripts();
+  showStatusMessage(`✓ "${name}_save.${format}" hinzugefügt`, 'success');
 }
 
 async function deleteShortcut(shortcutId) {
@@ -546,15 +503,27 @@ async function deleteShortcut(shortcutId) {
   const shortcuts = (settings.categoryShortcuts || []).filter(s => s.id !== shortcutId);
   await chrome.storage.sync.set({ categoryShortcuts: shortcuts });
   renderShortcutList(shortcuts);
-  await refreshBackgroundSettings(); // Update context menu
-  notifyContentScripts(); // Notify all tabs to update their floating buttons
-  showStatusMessage('Shortcut deleted.', 'success');
+  await refreshBackgroundSettings();
+  notifyContentScripts();
+  showStatusMessage('Shortcut gelöscht.', 'success');
 }
 
 function setupShortcutUI() {
   const addBtn = document.getElementById('add-shortcut');
+  const nameInput = document.getElementById('new-shortcut-name');
+
   if (addBtn) {
     addBtn.addEventListener('click', addShortcut);
+  }
+
+  // Allow Enter key to add shortcut
+  if (nameInput) {
+    nameInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        addShortcut();
+      }
+    });
   }
 }
 

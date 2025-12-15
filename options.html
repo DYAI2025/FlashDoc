@@ -116,17 +116,31 @@
 
       <!-- Category Shortcuts Section -->
       <section class="options-card">
-        <h2>Category Shortcuts</h2>
-        <p class="help">Create quick-save combos: Category + Format. Example: "Design" + ".md" = "Design_save.md" in your menu.</p>
-        <div class="shortcut-header">
-          <span class="shortcut-count" id="shortcut-count">0/5</span>
-          <button type="button" class="btn secondary small" id="add-shortcut">+ Add Shortcut</button>
+        <h2>Prefix Shortcuts</h2>
+        <p class="help">Erstelle Schnellspeicher-Kombinationen. Beispiel: "Design" + ".md" = speichert als "Design_save.md"</p>
+
+        <!-- Add new shortcut form -->
+        <div class="shortcut-add-form">
+          <input type="text" id="new-shortcut-name" placeholder="Prefix eingeben (z.B. Design)" maxlength="20">
+          <select id="new-shortcut-format">
+            <option value="md">.md</option>
+            <option value="txt">.txt</option>
+            <option value="docx">.docx</option>
+            <option value="pdf">.pdf</option>
+            <option value="json">.json</option>
+            <option value="js">.js</option>
+            <option value="py">.py</option>
+            <option value="html">.html</option>
+            <option value="css">.css</option>
+            <option value="yaml">.yaml</option>
+          </select>
+          <button type="button" class="btn primary small" id="add-shortcut">Hinzufügen</button>
         </div>
-        <div class="shortcut-list" id="shortcut-list">
-          <div class="empty-state">
-            <span class="empty-icon">⚡</span>
-            <p>No shortcuts defined yet</p>
-          </div>
+
+        <!-- Existing shortcuts list -->
+        <div class="shortcut-list" id="shortcut-list"></div>
+        <div class="shortcut-footer">
+          <span class="shortcut-count" id="shortcut-count">0/5 Shortcuts</span>
         </div>
       </section>
 
