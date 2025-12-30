@@ -323,7 +323,7 @@ class FlashDoc {
       }
       filepath += filename;
 
-      const { blob, mimeType } = this.createBlob(content, targetType);
+      const { blob, mimeType } = await this.createBlob(content, targetType);
       const { url, revoke } = await this.prepareDownloadUrl(blob, mimeType);
 
       const downloadId = await chrome.downloads.download({
@@ -423,14 +423,15 @@ class FlashDoc {
     return `${baseName}.${fileExtension}`;
   }
 
-  createBlob(content, extension) {
+  async createBlob(content, extension) {
     if (extension === 'pdf') {
       const pdfBlob = this.createPdfBlob(content);
       return { blob: pdfBlob, mimeType: 'application/pdf' };
     }
 
     if (extension === 'docx') {
-      const docxBlob = this.createDocxBlob(content);
+      // Note: createDocxBlob is now async, caller must await
+      const docxBlob = await this.createDocxBlob(content);
       return { blob: docxBlob, mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' };
     }
 
@@ -611,158 +612,53 @@ class FlashDoc {
     return doc.output('blob');
   }
 
-  createDocxBlob(content) {
-    // DOCX is a ZIP archive containing XML files
-    // This creates a minimal valid DOCX document
+  async createDocxBlob(content) {
+    // Use docx library for reliable DOCX generation
+    const { Document, Paragraph, TextRun, Packer } = docx;
 
-    const escapeXml = (text) => text
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&apos;');
+    // Normalize line endings
+    const normalizedContent = content.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
 
-    // Convert content to paragraphs
-    const paragraphs = content
-      .replace(/\r\n/g, '\n')
-      .split('\n')
-      .map(line => `<w:p><w:r><w:t>${escapeXml(line) || ' '}</w:t></w:r></w:p>`)
-      .join('');
+    // Split into paragraphs (each line becomes a paragraph)
+    const lines = normalizedContent.split('\n');
 
-    // XML files that make up a DOCX
-    const files = {
-      '[Content_Types].xml': `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
-  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
-  <Default Extension="xml" ContentType="application/xml"/>
-  <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
-</Types>`,
-
-      '_rels/.rels': `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
-</Relationships>`,
-
-      'word/_rels/document.xml.rels': `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-</Relationships>`,
-
-      'word/document.xml': `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
-  <w:body>
-    ${paragraphs}
-    <w:sectPr>
-      <w:pgSz w:w="12240" w:h="15840"/>
-      <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440"/>
-    </w:sectPr>
-  </w:body>
-</w:document>`
-    };
-
-    // Build ZIP archive (STORE method - no compression)
-    const encoder = new TextEncoder();
-    const chunks = [];
-    const centralDirectory = [];
-    let offset = 0;
-
-    const crc32 = (data) => {
-      let crc = 0xFFFFFFFF;
-      const table = [];
-      for (let i = 0; i < 256; i++) {
-        let c = i;
-        for (let j = 0; j < 8; j++) {
-          c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+    const paragraphs = lines.map(line =>
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: line || ' ', // Empty lines get a space to preserve spacing
+            font: 'Calibri',
+            size: 22 // 11pt (size is in half-points)
+          })
+        ],
+        spacing: {
+          after: 120 // 6pt spacing after each paragraph
         }
-        table[i] = c;
-      }
-      for (let i = 0; i < data.length; i++) {
-        crc = table[(crc ^ data[i]) & 0xFF] ^ (crc >>> 8);
-      }
-      return (crc ^ 0xFFFFFFFF) >>> 0;
-    };
+      })
+    );
 
-    const writeUint16 = (value) => new Uint8Array([value & 0xFF, (value >> 8) & 0xFF]);
-    const writeUint32 = (value) => new Uint8Array([value & 0xFF, (value >> 8) & 0xFF, (value >> 16) & 0xFF, (value >> 24) & 0xFF]);
+    const doc = new Document({
+      sections: [{
+        properties: {
+          page: {
+            size: {
+              width: 12240, // 8.5 inches in twentieths of a point
+              height: 15840 // 11 inches
+            },
+            margin: {
+              top: 1440, // 1 inch
+              right: 1440,
+              bottom: 1440,
+              left: 1440
+            }
+          }
+        },
+        children: paragraphs
+      }]
+    });
 
-    for (const [filename, content] of Object.entries(files)) {
-      const filenameBytes = encoder.encode(filename);
-      const contentBytes = encoder.encode(content);
-      const crc = crc32(contentBytes);
-
-      // Local file header
-      const localHeader = new Uint8Array([
-        0x50, 0x4B, 0x03, 0x04, // Signature
-        0x0A, 0x00,             // Version needed (1.0)
-        0x00, 0x00,             // General purpose flags
-        0x00, 0x00,             // Compression method (STORE)
-        0x00, 0x00,             // Last mod time
-        0x00, 0x00,             // Last mod date
-        ...writeUint32(crc),
-        ...writeUint32(contentBytes.length),  // Compressed size
-        ...writeUint32(contentBytes.length),  // Uncompressed size
-        ...writeUint16(filenameBytes.length),
-        0x00, 0x00              // Extra field length
-      ]);
-
-      chunks.push(localHeader);
-      chunks.push(filenameBytes);
-      chunks.push(contentBytes);
-
-      // Store info for central directory
-      centralDirectory.push({
-        filename: filenameBytes,
-        crc,
-        size: contentBytes.length,
-        offset
-      });
-
-      offset += localHeader.length + filenameBytes.length + contentBytes.length;
-    }
-
-    // Central directory
-    const centralStart = offset;
-    for (const entry of centralDirectory) {
-      const centralHeader = new Uint8Array([
-        0x50, 0x4B, 0x01, 0x02, // Signature
-        0x14, 0x00,             // Version made by
-        0x0A, 0x00,             // Version needed
-        0x00, 0x00,             // Flags
-        0x00, 0x00,             // Compression
-        0x00, 0x00,             // Mod time
-        0x00, 0x00,             // Mod date
-        ...writeUint32(entry.crc),
-        ...writeUint32(entry.size),
-        ...writeUint32(entry.size),
-        ...writeUint16(entry.filename.length),
-        0x00, 0x00,             // Extra field length
-        0x00, 0x00,             // Comment length
-        0x00, 0x00,             // Disk number
-        0x00, 0x00,             // Internal attributes
-        0x00, 0x00, 0x00, 0x00, // External attributes
-        ...writeUint32(entry.offset)
-      ]);
-
-      chunks.push(centralHeader);
-      chunks.push(entry.filename);
-      offset += centralHeader.length + entry.filename.length;
-    }
-
-    // End of central directory
-    const centralSize = offset - centralStart;
-    const endRecord = new Uint8Array([
-      0x50, 0x4B, 0x05, 0x06, // Signature
-      0x00, 0x00,             // Disk number
-      0x00, 0x00,             // Central directory disk
-      ...writeUint16(centralDirectory.length),
-      ...writeUint16(centralDirectory.length),
-      ...writeUint32(centralSize),
-      ...writeUint32(centralStart),
-      0x00, 0x00              // Comment length
-    ]);
-
-    chunks.push(endRecord);
-
-    return new Blob(chunks, { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+    // Generate blob
+    return await Packer.toBlob(doc);
   }
 
   detectContentType(content) {
