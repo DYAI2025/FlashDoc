@@ -23,6 +23,18 @@
             </div>
         </header>
 
+        <!-- Privacy Mode Activation Banner -->
+        <section class="privacy-banner hidden" id="privacy-banner">
+            <div class="privacy-banner-content">
+                <span class="privacy-icon">🔒</span>
+                <div class="privacy-text">
+                    <strong>Privacy Mode Active</strong>
+                    <span>Click to activate FlashDoc on this page</span>
+                </div>
+            </div>
+            <button class="activate-btn" id="activate-btn">Activate</button>
+        </section>
+
         <!-- Live Stats Dashboard -->
         <section class="stats-dashboard">
             <div class="stat-card primary">
@@ -95,15 +107,20 @@
             </div>
         </section>
 
-        <!-- Recent Files -->
+        <!-- Recent Files / Last Action -->
         <section class="recent-files">
-            <h2 class="section-title">Recent Files</h2>
+            <h2 class="section-title">Last Action</h2>
             <div class="recent-list" id="recent-list">
                 <div class="empty-state">
                     <span class="empty-icon">📂</span>
                     <p>No recent files yet</p>
                 </div>
             </div>
+            <!-- Repeat Last Action Button -->
+            <button class="repeat-action-btn hidden" id="repeat-action-btn">
+                <span class="repeat-icon">🔄</span>
+                <span class="repeat-text">Repeat: Save as <span id="repeat-type">.txt</span></span>
+            </button>
         </section>
 
         <!-- Keyboard Shortcuts -->

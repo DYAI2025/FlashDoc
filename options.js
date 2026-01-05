@@ -40,7 +40,9 @@ const DEFAULT_SETTINGS = {
   showFormatRecommendations: true,
   contextMenuFormats: CONTEXT_MENU_OPTIONS.map(option => option.id),
   // Category Shortcuts: prefix + format combo
-  categoryShortcuts: [] // Array of {id, name, format} objects, max 5
+  categoryShortcuts: [], // Array of {id, name, format} objects, max 5
+  // Privacy Mode: On-demand injection
+  privacyMode: false
 };
 
 const MAX_SHORTCUTS = 5;
@@ -55,6 +57,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // Category Shortcuts management
   setupShortcutUI();
   loadShortcuts();
+  // Live filename preview
+  setupFilenamePreview();
 });
 
 function renderVersion() {
@@ -148,6 +152,7 @@ async function readFormSettings(form) {
   settings.trackFormatUsage = form.trackFormatUsage?.checked ?? DEFAULT_SETTINGS.trackFormatUsage;
   settings.trackDetectionAccuracy = form.trackDetectionAccuracy?.checked ?? DEFAULT_SETTINGS.trackDetectionAccuracy;
   settings.showFormatRecommendations = form.showFormatRecommendations?.checked ?? DEFAULT_SETTINGS.showFormatRecommendations;
+  settings.privacyMode = form.privacyMode?.checked ?? DEFAULT_SETTINGS.privacyMode;
   const selectedFormats = getSelectedContextMenuFormats(form);
   settings.contextMenuFormats = selectedFormats.length ? selectedFormats : DEFAULT_SETTINGS.contextMenuFormats;
 
@@ -178,7 +183,9 @@ function applySettings(settings) {
   if (form.trackFormatUsage) form.trackFormatUsage.checked = merged.trackFormatUsage;
   if (form.trackDetectionAccuracy) form.trackDetectionAccuracy.checked = merged.trackDetectionAccuracy;
   if (form.showFormatRecommendations) form.showFormatRecommendations.checked = merged.showFormatRecommendations;
+  if (form.privacyMode) form.privacyMode.checked = merged.privacyMode;
   setContextMenuFormatSelections(merged.contextMenuFormats);
+  updatePrivacyStatus(merged.privacyMode);
 
   const customPatternRow = document.getElementById('custom-pattern-row');
   if (customPatternRow) {
@@ -532,6 +539,125 @@ function setupShortcutUI() {
 async function loadShortcuts() {
   const settings = await chrome.storage.sync.get(['categoryShortcuts']);
   renderShortcutList(settings.categoryShortcuts || []);
+}
+
+// Privacy Mode Status Display
+
+function updatePrivacyStatus(enabled) {
+  const statusEl = document.getElementById('privacy-status');
+  if (!statusEl) return;
+
+  if (enabled) {
+    statusEl.innerHTML = `
+      <div class="privacy-badge enabled">
+        <span class="badge-icon">🔒</span>
+        <span class="badge-text">Privacy Mode Active</span>
+      </div>
+      <p class="privacy-note">Content scripts will not run automatically. Use the extension popup or keyboard shortcuts to activate FlashDoc on individual pages.</p>
+    `;
+  } else {
+    statusEl.innerHTML = `
+      <div class="privacy-badge disabled">
+        <span class="badge-icon">🌐</span>
+        <span class="badge-text">Standard Mode</span>
+      </div>
+      <p class="privacy-note">FlashDoc is active on all pages for instant text selection.</p>
+    `;
+  }
+}
+
+// Live Filename Preview Functions
+
+function setupFilenamePreview() {
+  const inputs = ['folderPath', 'namingPattern', 'customPattern', 'organizeByType'];
+
+  inputs.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener('input', updateFilenamePreview);
+      el.addEventListener('change', updateFilenamePreview);
+    }
+  });
+
+  // Initial preview
+  updateFilenamePreview();
+}
+
+function updateFilenamePreview() {
+  const previewContainer = document.getElementById('filename-preview');
+  const folderEl = document.getElementById('preview-folder');
+  const filenameEl = document.getElementById('preview-filename');
+  const extEl = document.getElementById('preview-ext');
+
+  if (!previewContainer || !folderEl || !filenameEl || !extEl) return;
+
+  // Get current values
+  const folderPath = (document.getElementById('folderPath')?.value || 'FlashDocs/').trim();
+  const pattern = document.getElementById('namingPattern')?.value || 'timestamp';
+  const customPattern = document.getElementById('customPattern')?.value || 'file_{date}';
+  const organizeByType = document.getElementById('organizeByType')?.checked || false;
+
+  // Generate preview components
+  const now = new Date();
+  const date = now.toISOString().slice(0, 10); // YYYY-MM-DD
+  const time = now.toTimeString().slice(0, 5).replace(':', ''); // HHMM
+  const exampleType = 'md'; // Example format
+
+  // Build folder path
+  let folder = normalizeFolderPath(folderPath);
+  if (organizeByType) {
+    folder += exampleType + '/';
+  }
+
+  // Build filename based on pattern
+  let filename;
+  switch (pattern) {
+    case 'timestamp':
+      filename = `flashdoc_${date}_${time}`;
+      break;
+    case 'firstline':
+      filename = 'first_line_of_selection';
+      break;
+    case 'custom':
+      filename = (customPattern || 'file_{date}')
+        .replace(/{date}/g, date)
+        .replace(/{time}/g, time)
+        .replace(/{type}/g, exampleType);
+      // Sanitize filename
+      filename = filename.replace(/[<>:"/\\|?*]/g, '_');
+      break;
+    default:
+      filename = `flashdoc_${date}_${time}`;
+  }
+
+  // Update display
+  folderEl.textContent = folder;
+  filenameEl.textContent = filename;
+  extEl.textContent = '.' + exampleType;
+
+  // Animate update
+  previewContainer.classList.add('updating');
+  setTimeout(() => previewContainer.classList.remove('updating'), 300);
+}
+
+function normalizeFolderPath(path) {
+  if (!path) return '';
+
+  // Trim whitespace
+  let normalized = path.trim();
+
+  // Remove leading slashes (relative to Downloads)
+  normalized = normalized.replace(/^\/+/, '');
+
+  // Remove directory traversal attempts
+  normalized = normalized.replace(/\.\.\//g, '');
+
+  // Ensure trailing slash
+  if (normalized && !normalized.endsWith('/')) {
+    normalized += '/';
+  }
+
+  return normalized;
 }
 
 // Notify all content scripts to update their floating button with new shortcuts

@@ -682,7 +682,9 @@ class FlashDoc {
       todayFiles: 0,
       todaysDate: '',
       lastFile: '',
-      lastTimestamp: null
+      lastTimestamp: null,
+      // Dev-Auftrag 4: Extended last action info
+      lastAction: null  // { type, contentPreview, prefix }
     };
     this.contextMenuListenerRegistered = false;
     this.onContextMenuClicked = this.onContextMenuClicked.bind(this);
@@ -725,7 +727,9 @@ class FlashDoc {
       showFormatRecommendations: true,
       contextMenuFormats: DEFAULT_CONTEXT_MENU_FORMATS,
       // Category Shortcuts: prefix + format combo
-      categoryShortcuts: [] // Array of {id, name, format} objects, max 5
+      categoryShortcuts: [], // Array of {id, name, format} objects, max 5
+      // Privacy Mode: on-demand injection only
+      privacyMode: false
     };
 
     const stored = await chrome.storage.sync.get(null);
@@ -836,6 +840,43 @@ class FlashDoc {
     });
   }
 
+  // Update content script registration based on privacy mode
+  async updateContentScriptRegistration() {
+    try {
+      // First, unregister any existing dynamic registration
+      try {
+        await chrome.scripting.unregisterContentScripts({ ids: ['flashdoc-content'] });
+      } catch (e) {
+        // Ignore if not registered
+      }
+
+      // If privacy mode is disabled, register content scripts dynamically
+      // Note: manifest.json still has declarative registration, but we can control behavior
+      if (!this.settings.privacyMode) {
+        console.log('🔓 Privacy mode OFF - content scripts active on all pages');
+      } else {
+        console.log('🔒 Privacy mode ON - on-demand injection only');
+      }
+    } catch (error) {
+      console.error('Content script registration update failed:', error);
+    }
+  }
+
+  // Manually inject content scripts into a specific tab
+  async injectContentScript(tabId) {
+    try {
+      await chrome.scripting.executeScript({
+        target: { tabId: tabId, allFrames: true },
+        files: ['detection-utils.js', 'content.js']
+      });
+      console.log(`✅ Content scripts injected into tab ${tabId}`);
+      return { success: true };
+    } catch (error) {
+      console.error(`❌ Injection failed for tab ${tabId}:`, error);
+      return { success: false, error: error.message };
+    }
+  }
+
   setupMessageListeners() {
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       if (message.action === 'saveContent') {
@@ -868,6 +909,7 @@ class FlashDoc {
         this.loadSettings()
           .then(() => {
             this.setupContextMenus();
+            this.updateContentScriptRegistration();
             sendResponse({ success: true });
           })
           .catch((error) => {
@@ -875,6 +917,23 @@ class FlashDoc {
             const messageText = error instanceof Error ? error.message : String(error);
             sendResponse({ success: false, error: messageText });
           });
+        return true;
+      } else if (message.action === 'activateTab') {
+        // Manual activation for privacy mode
+        const tabId = message.tabId;
+        if (!tabId) {
+          sendResponse({ success: false, error: 'No tab ID provided' });
+          return true;
+        }
+        this.injectContentScript(tabId)
+          .then((result) => sendResponse(result))
+          .catch((error) => {
+            const messageText = error instanceof Error ? error.message : String(error);
+            sendResponse({ success: false, error: messageText });
+          });
+        return true;
+      } else if (message.action === 'getPrivacyMode') {
+        sendResponse({ privacyMode: this.settings.privacyMode });
         return true;
       }
       return true;
@@ -1041,6 +1100,12 @@ class FlashDoc {
       this.stats.todayFiles++;
       this.stats.lastFile = filename;
       this.stats.lastTimestamp = now.getTime();
+      // Dev-Auftrag 4: Store extended action info for repeat functionality
+      this.stats.lastAction = {
+        type: targetType,
+        contentPreview: content.substring(0, 100).replace(/\n/g, ' ').trim(),
+        prefix: options.prefix || null
+      };
       await this.saveStats();
 
       // Track format usage if enabled

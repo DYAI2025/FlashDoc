@@ -345,6 +345,11 @@ class FlashDocContent {
     if (!this.settings.enableContextMenu) return;
 
     const detectedType = this.detectContentType(text);
+    this.currentDetectedType = detectedType; // Store for override
+    this.currentOverrideType = null; // Reset override
+
+    // Quick format options for dropdown
+    const quickFormats = ['txt', 'md', 'json', 'js', 'ts', 'py', 'html', 'css', 'yaml', 'sql', 'sh', 'xml'];
 
     const button = document.createElement('div');
     button.className = 'flashdoc-contextual';
@@ -352,7 +357,18 @@ class FlashDocContent {
       <div class="flashdoc-ctx-main">
         <span class="flashdoc-ctx-icon">⚡</span>
         <span class="flashdoc-ctx-text">Save</span>
-        <span class="flashdoc-ctx-type">${detectedType.toUpperCase()}</span>
+        <div class="flashdoc-ctx-type-selector">
+          <span class="flashdoc-ctx-type" data-detected="${detectedType}">${detectedType.toUpperCase()}</span>
+          <span class="flashdoc-ctx-dropdown">▼</span>
+          <div class="flashdoc-ctx-type-menu">
+            ${quickFormats.map(f => `
+              <button class="flashdoc-type-option ${f === detectedType ? 'detected' : ''}" data-override="${f}">
+                <span class="type-label">${f.toUpperCase()}</span>
+                ${f === detectedType ? '<span class="type-badge">AUTO</span>' : ''}
+              </button>
+            `).join('')}
+          </div>
+        </div>
       </div>
       <div class="flashdoc-ctx-options">
         <button data-format="txt" title="Text">📄</button>
@@ -391,12 +407,46 @@ class FlashDocContent {
     button.style.top = `${posY}px`;
     
     // Event handlers
-    button.querySelector('.flashdoc-ctx-main').addEventListener('click', (e) => {
+    const mainBtn = button.querySelector('.flashdoc-ctx-main');
+    const typeSelector = button.querySelector('.flashdoc-ctx-type-selector');
+    const typeMenu = button.querySelector('.flashdoc-ctx-type-menu');
+    const typeDisplay = button.querySelector('.flashdoc-ctx-type');
+
+    // Click on main button (not type selector) → save with current type
+    mainBtn.addEventListener('click', (e) => {
+      // Don't trigger save if clicking the type selector
+      if (e.target.closest('.flashdoc-ctx-type-selector')) return;
       e.stopPropagation();
-      this.quickSave();
+      this.quickSaveWithType(this.currentOverrideType || this.currentDetectedType);
       this.hideContextualButton();
     });
-    
+
+    // Toggle type dropdown on type selector click
+    typeSelector.addEventListener('click', (e) => {
+      e.stopPropagation();
+      typeMenu.classList.toggle('show');
+    });
+
+    // Handle type override selection
+    button.querySelectorAll('.flashdoc-type-option').forEach(opt => {
+      opt.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const newType = opt.dataset.override;
+        this.currentOverrideType = newType;
+
+        // Update display
+        typeDisplay.textContent = newType.toUpperCase();
+        typeDisplay.classList.add('overridden');
+
+        // Update selection state
+        button.querySelectorAll('.flashdoc-type-option').forEach(o => o.classList.remove('selected'));
+        opt.classList.add('selected');
+
+        // Hide menu
+        typeMenu.classList.remove('show');
+      });
+    });
+
     button.querySelectorAll('.flashdoc-ctx-options button').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -404,7 +454,14 @@ class FlashDocContent {
         this.hideContextualButton();
       });
     });
-    
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', this._closeTypeMenuHandler = (e) => {
+      if (!e.target.closest('.flashdoc-ctx-type-selector')) {
+        typeMenu.classList.remove('show');
+      }
+    }, { once: true });
+
     document.body.appendChild(button);
     
     // Auto-hide after 5 seconds
@@ -703,13 +760,45 @@ class FlashDocContent {
       this.showToast('⚠️ No text selected', 'warning');
       return;
     }
-    
+
     try {
       const response = await this.safeSendMessage({
         action: 'saveContent',
         content: this.selectedText,
         html: this.selectedHtml, // Include HTML for formatting
         type: 'auto'
+      });
+
+      if (response && response.success) {
+        this.showToast(`✅ Saved: ${this.selectedText.substring(0, 30)}...`, 'success');
+        this.updateButtonStats();
+        this.addSaveAnimation();
+        this.selectedText = '';
+        this.updateFloatingButton(false);
+      } else {
+        this.showToast('❌ Save failed', 'error');
+      }
+    } catch (error) {
+      console.error('Save error:', error);
+      const ignorable = this.isIgnorableRuntimeError(error);
+      const message = ignorable ? '⚠️ Extension unavailable' : '❌ Save failed';
+      this.showToast(message, ignorable ? 'warning' : 'error');
+    }
+  }
+
+  // Save with specific type (for type override feature)
+  async quickSaveWithType(type) {
+    if (!this.selectedText) {
+      this.showToast('⚠️ No text selected', 'warning');
+      return;
+    }
+
+    try {
+      const response = await this.safeSendMessage({
+        action: 'saveContent',
+        content: this.selectedText,
+        html: this.selectedHtml,
+        type: type || 'auto'
       });
 
       if (response && response.success) {
@@ -985,6 +1074,110 @@ class FlashDocContent {
         font-size: 10px;
         font-weight: bold;
         letter-spacing: 0.5px;
+        transition: all 0.2s;
+      }
+
+      .flashdoc-ctx-type.overridden {
+        background: rgba(240, 147, 251, 0.4);
+        box-shadow: 0 0 0 2px rgba(240, 147, 251, 0.3);
+      }
+
+      /* Type Selector Dropdown */
+      .flashdoc-ctx-type-selector {
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        cursor: pointer;
+        padding: 2px 4px;
+        border-radius: 12px;
+        transition: background 0.2s;
+      }
+
+      .flashdoc-ctx-type-selector:hover {
+        background: rgba(255, 255, 255, 0.15);
+      }
+
+      .flashdoc-ctx-dropdown {
+        font-size: 8px;
+        opacity: 0.7;
+        transition: transform 0.2s;
+      }
+
+      .flashdoc-ctx-type-menu.show + .flashdoc-ctx-dropdown,
+      .flashdoc-ctx-type-selector:has(.flashdoc-ctx-type-menu.show) .flashdoc-ctx-dropdown {
+        transform: rotate(180deg);
+      }
+
+      .flashdoc-ctx-type-menu {
+        position: absolute;
+        top: calc(100% + 8px);
+        left: 50%;
+        transform: translateX(-50%) scale(0.9);
+        display: none;
+        flex-direction: column;
+        gap: 2px;
+        padding: 8px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        z-index: 1000;
+        min-width: 120px;
+        opacity: 0;
+        transition: all 0.2s ease-out;
+      }
+
+      .flashdoc-ctx-type-menu.show {
+        display: flex;
+        opacity: 1;
+        transform: translateX(-50%) scale(1);
+      }
+
+      .flashdoc-type-option {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 6px 10px;
+        border: none;
+        background: transparent;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 11px;
+        font-weight: 600;
+        color: #333;
+        transition: all 0.15s;
+      }
+
+      .flashdoc-type-option:hover {
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.15), rgba(118, 75, 162, 0.15));
+      }
+
+      .flashdoc-type-option.detected {
+        background: rgba(102, 126, 234, 0.1);
+      }
+
+      .flashdoc-type-option.selected {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+      }
+
+      .type-label {
+        font-family: 'SF Mono', Monaco, 'Consolas', monospace;
+      }
+
+      .type-badge {
+        font-size: 8px;
+        padding: 2px 5px;
+        background: rgba(102, 126, 234, 0.2);
+        border-radius: 4px;
+        color: #667eea;
+        font-weight: 700;
+      }
+
+      .flashdoc-type-option.selected .type-badge {
+        background: rgba(255, 255, 255, 0.25);
+        color: white;
       }
       
       .flashdoc-ctx-options {

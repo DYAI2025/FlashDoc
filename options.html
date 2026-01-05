@@ -40,6 +40,18 @@
           <input id="customPattern" name="customPattern" type="text" placeholder="file_{date}_{type}">
           <p class="help">Available tokens: <code>{date}</code>, <code>{time}</code>, <code>{type}</code></p>
         </div>
+
+        <!-- Live Filename Preview -->
+        <div class="field" id="filename-preview-row">
+          <label>Live Preview</label>
+          <div class="filename-preview" id="filename-preview">
+            <span class="preview-folder" id="preview-folder">FlashDocs/</span>
+            <span class="preview-filename" id="preview-filename">flashdoc_2026-01-05_1423</span>
+            <span class="preview-ext" id="preview-ext">.md</span>
+          </div>
+          <p class="help">This is how your next file will be named (format depends on content type)</p>
+        </div>
+
         <div class="toggle">
           <label for="organizeByType">Organize by format</label>
           <label class="switch">
@@ -72,6 +84,19 @@
             <span class="range-value"><span id="selectionThresholdValue">0</span> characters</span>
           </div>
         </div>
+      </section>
+
+      <section class="options-card">
+        <h2>Privacy</h2>
+        <div class="toggle">
+          <label for="privacyMode">Privacy mode (on-demand injection)</label>
+          <label class="switch">
+            <input id="privacyMode" name="privacyMode" type="checkbox">
+            <span class="slider"></span>
+          </label>
+        </div>
+        <p class="help privacy-help">When enabled, FlashDoc only activates when you click the extension icon or use a keyboard shortcut. No scripts run on pages until you explicitly activate them.</p>
+        <div class="privacy-status" id="privacy-status"></div>
       </section>
 
       <section class="options-card">

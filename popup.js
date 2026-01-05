@@ -48,6 +48,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const openFolderBtn = document.getElementById('open-folder');
   const settingsBtn = document.getElementById('settings');
   const helpBtn = document.getElementById('help');
+  const privacyBanner = document.getElementById('privacy-banner');
+  const activateBtn = document.getElementById('activate-btn');
+  const repeatActionBtn = document.getElementById('repeat-action-btn');
+  const repeatTypeEl = document.getElementById('repeat-type');
+
+  // Store last action for repeat functionality
+  let lastActionData = null;
 
   const setStatus = (message, intent = 'ok') => {
     const palette = STATUS_STYLES[intent] || STATUS_STYLES.info;
@@ -76,6 +83,13 @@ document.addEventListener('DOMContentLoaded', () => {
     return `${days} day${days === 1 ? '' : 's'} ago`;
   };
 
+  const FORMAT_ICONS = {
+    txt: '📄', md: '📝', docx: '📜', pdf: '📕', json: '🧩',
+    js: '🟡', ts: '🔵', py: '🐍', html: '🌐', css: '🎨',
+    yaml: '🧾', csv: '📊', sql: '🗄️', sh: '⚙️', xml: '📰',
+    label: '🏷️', auto: '🎯'
+  };
+
   const renderStats = (stats) => {
     const safeStats = stats || {};
     totalEl.textContent = safeStats.totalFiles ?? 0;
@@ -84,13 +98,40 @@ document.addEventListener('DOMContentLoaded', () => {
 
     recentList.innerHTML = '';
     if (safeStats.lastFile) {
+      const lastAction = safeStats.lastAction || {};
+      const typeIcon = FORMAT_ICONS[lastAction.type] || '📄';
+      const typeLabel = lastAction.type ? `.${lastAction.type}` : '';
+      const preview = lastAction.contentPreview
+        ? escapeHtml(lastAction.contentPreview.substring(0, 50)) + (lastAction.contentPreview.length > 50 ? '...' : '')
+        : '';
+
       const item = document.createElement('div');
-      item.className = 'recent-item';
+      item.className = 'recent-item clickable';
       item.innerHTML = `
-        <div class="recent-item-name">${escapeHtml(safeStats.lastFile)}</div>
-        <div class="recent-item-time">Saved ${formatRelativeTime(safeStats.lastTimestamp)}</div>
+        <div class="recent-item-icon">${typeIcon}</div>
+        <div class="recent-item-content">
+          <div class="recent-item-name">${escapeHtml(safeStats.lastFile)}</div>
+          ${preview ? `<div class="recent-item-preview">${preview}</div>` : ''}
+          <div class="recent-item-time">Saved ${formatRelativeTime(safeStats.lastTimestamp)}</div>
+        </div>
+        <div class="recent-item-badge">${typeLabel}</div>
       `;
+
+      // Click to show action menu or trigger repeat
+      item.addEventListener('click', () => {
+        if (lastActionData) {
+          handleRepeatAction();
+        }
+      });
+
       recentList.appendChild(item);
+
+      // Store and show repeat button
+      if (lastAction.type) {
+        lastActionData = lastAction;
+        repeatTypeEl.textContent = `.${lastAction.type}`;
+        repeatActionBtn.classList.remove('hidden');
+      }
     } else {
       recentList.innerHTML = `
         <div class="empty-state">
@@ -98,6 +139,8 @@ document.addEventListener('DOMContentLoaded', () => {
           <p>No recent files yet</p>
         </div>
       `;
+      repeatActionBtn.classList.add('hidden');
+      lastActionData = null;
     }
   };
 
@@ -309,5 +352,124 @@ document.addEventListener('DOMContentLoaded', () => {
     chrome.tabs.create({ url: helpUrl });
   });
 
+  // Check privacy mode and show activation banner if needed
+  const checkPrivacyMode = async () => {
+    try {
+      const response = await sendMessageWithTimeout({ action: 'getPrivacyMode' }, 1000);
+      if (response && response.privacyMode) {
+        privacyBanner.classList.remove('hidden');
+      } else {
+        privacyBanner.classList.add('hidden');
+      }
+    } catch (error) {
+      // Fallback: check storage directly
+      try {
+        const result = await chrome.storage.sync.get('privacyMode');
+        if (result && result.privacyMode) {
+          privacyBanner.classList.remove('hidden');
+        }
+      } catch (e) {
+        console.warn('Privacy mode check failed:', e);
+      }
+    }
+  };
+
+  // Handle activation button click
+  const handleActivate = async () => {
+    setStatus('Activating...', 'info');
+    activateBtn.disabled = true;
+    activateBtn.textContent = '...';
+
+    try {
+      const tab = await queryActiveTab();
+      if (!tab || !tab.id) {
+        setStatus('No active tab', 'error');
+        activateBtn.disabled = false;
+        activateBtn.textContent = 'Activate';
+        return;
+      }
+
+      const response = await sendMessageWithTimeout({
+        action: 'activateTab',
+        tabId: tab.id
+      }, 3000);
+
+      if (response && response.success) {
+        setStatus('FlashDoc activated!', 'ok');
+        activateBtn.textContent = '✓ Active';
+        activateBtn.classList.add('activated');
+        // Hide banner after short delay
+        setTimeout(() => {
+          privacyBanner.classList.add('activated');
+        }, 1500);
+      } else {
+        setStatus(response?.error || 'Activation failed', 'error');
+        activateBtn.disabled = false;
+        activateBtn.textContent = 'Retry';
+      }
+    } catch (error) {
+      console.error('Activation error:', error);
+      setStatus('Activation failed', 'error');
+      activateBtn.disabled = false;
+      activateBtn.textContent = 'Retry';
+    }
+  };
+
+  activateBtn.addEventListener('click', handleActivate);
+
+  // Handle repeat last action
+  const handleRepeatAction = async () => {
+    if (!lastActionData || !lastActionData.type) {
+      setStatus('No action to repeat', 'warn');
+      return;
+    }
+
+    setStatus(`Repeating ${lastActionData.type.toUpperCase()}...`, 'info');
+    repeatActionBtn.classList.add('loading');
+
+    try {
+      const tab = await queryActiveTab();
+      if (!tab || !tab.id) {
+        setStatus('No active tab', 'error');
+        repeatActionBtn.classList.remove('loading');
+        return;
+      }
+
+      const selection = await getSelectionText(tab.id);
+      const text = selection.text.trim();
+
+      if (!text) {
+        setStatus('Select text first', 'warn');
+        repeatActionBtn.classList.remove('loading');
+        return;
+      }
+
+      // Send save request with the last used type
+      const response = await sendSaveRequest(text, lastActionData.type);
+
+      if (response.success) {
+        await loadStats(true);
+        setStatus(`Saved as ${lastActionData.type.toUpperCase()}`, 'ok');
+
+        // Visual feedback
+        repeatActionBtn.classList.add('success');
+        setTimeout(() => {
+          repeatActionBtn.classList.remove('success');
+        }, 1500);
+      } else {
+        setStatus(response.error || 'Save failed', 'error');
+      }
+    } catch (error) {
+      console.error('Repeat action error:', error);
+      setStatus('Repeat failed', 'error');
+    } finally {
+      repeatActionBtn.classList.remove('loading');
+    }
+  };
+
+  repeatActionBtn.addEventListener('click', handleRepeatAction);
+
+  // Initialize
+  checkPrivacyMode();
   loadStats();
 });
