@@ -1,10 +1,25 @@
-# FlashDoc Chrome Extension v3.0
+# FlashDoc Chrome Extension v3.1
 
 FlashDoc turns any selected text into instantly downloadable files. Context menus, keyboard shortcuts, and a floating action button let you save snippets without leaving the page.
 
+## What's New in v3.1
+
+Version 3.1 focuses on customization. You now control exactly which buttons appear when you select text.
+
+### Customizable Quick-Save Buttons
+The five buttons that pop up near your selection are now fully configurable. Each slot can be a format (like PDF or Markdown), one of your saved shortcuts, or disabled entirely. Set them up once in the options page—they update everywhere instantly.
+
+### Slot Presets
+Save different button layouts for different workflows. A preset for writing might show Markdown and DOCX, while a coding preset shows JS, Python, and JSON. Switch between up to five presets without reconfiguring anything.
+
+### More Shortcuts
+The prefix shortcut limit increased from 5 to 10. Create more category-based save actions like "Meeting Notes + .md" or "Code Review + .txt" for one-click organized saving.
+
+---
+
 ## What's New in v3.0
 
-This release brings four user-requested improvements that make saving faster and more flexible:
+These features shipped in the previous release:
 
 ### Format Override Before Saving
 The floating save button now shows a dropdown where you can change the detected format before downloading. If FlashDoc guesses Markdown but you need a PDF, just pick the right format from the menu. No more saving first and converting later.
@@ -54,22 +69,29 @@ Run the detection sanity check:
 node scripts/detection-check.js
 ```
 
-Run the v3.0 feature tests:
+Run the v3.0/v3.1 feature tests:
 ```bash
-node scripts/v3-features-test.js
+node scripts/v3-features-test.cjs
 ```
 
 Both scripts exit with code 0 on success, making them suitable for CI pipelines.
 
 ## Repository Layout
-- `content.js` – UI injected into pages (selection capture, floating UI, format override)
+- `content.js` – UI injected into pages (selection capture, configurable slots, format override)
 - `service-worker.js` – Background logic for saving files, privacy mode, and stats
 - `options.html/js/css` – Settings page with live preview and privacy toggle
 - `popup.html/js/css` – Browser action popup with repeat functionality
 - `detection-utils.js` – Shared format detection engine
-- `scripts/` – Test scripts for detection and v3.0 features
+- `scripts/` – Test scripts for detection and feature verification
 
 ## Changelog
+
+### v3.1
+- Configurable contextual chip slots (5 buttons, each customizable)
+- Slot presets for switching between different button layouts
+- Increased prefix shortcuts from 5 to 10
+- Live slot updates—changes in settings apply immediately
+- Fallback handling for deleted shortcuts in slot configurations
 
 ### v3.0
 - Added format override dropdown in the floating save UI

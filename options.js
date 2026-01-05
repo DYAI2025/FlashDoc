@@ -40,12 +40,88 @@ const DEFAULT_SETTINGS = {
   showFormatRecommendations: true,
   contextMenuFormats: CONTEXT_MENU_OPTIONS.map(option => option.id),
   // Category Shortcuts: prefix + format combo
-  categoryShortcuts: [], // Array of {id, name, format} objects, max 5
+  categoryShortcuts: [], // Array of {id, name, format} objects, max 10
   // Privacy Mode: On-demand injection
-  privacyMode: false
+  privacyMode: false,
+  // v3.1: Configurable contextual chip slots
+  floatingButtonSlots: DEFAULT_SLOTS,
+  floatingButtonPresets: [],
+  activeFloatingButtonPresetId: null
 };
 
-const MAX_SHORTCUTS = 5;
+const MAX_SHORTCUTS = 10;
+const MAX_SLOTS = 5;
+const MAX_PRESETS = 5;
+
+// Valid formats for slot configuration
+const VALID_FORMATS = ['txt', 'md', 'docx', 'pdf', 'json', 'js', 'ts', 'py', 'html', 'css', 'yaml', 'sql', 'sh', 'xml', 'csv', 'saveas'];
+
+// Default slot configuration (matches current hardcoded buttons)
+const DEFAULT_SLOTS = [
+  { type: 'format', format: 'txt' },
+  { type: 'format', format: 'md' },
+  { type: 'format', format: 'docx' },
+  { type: 'format', format: 'pdf' },
+  { type: 'format', format: 'saveas' }
+];
+
+// Normalize a single slot with fallback handling
+function normalizeSlot(slot, shortcuts = []) {
+  if (!slot || typeof slot !== 'object') {
+    return { type: 'disabled', _warning: 'invalid_slot' };
+  }
+
+  if (slot.type === 'format') {
+    if (VALID_FORMATS.includes(slot.format)) {
+      return { type: 'format', format: slot.format };
+    }
+    return { type: 'disabled', _warning: 'invalid_format' };
+  }
+
+  if (slot.type === 'shortcut') {
+    const exists = shortcuts.some(s => s.id === slot.shortcutId);
+    if (exists) {
+      return { type: 'shortcut', shortcutId: slot.shortcutId };
+    }
+    return { type: 'disabled', _warning: 'shortcut_deleted' };
+  }
+
+  if (slot.type === 'disabled') {
+    return { type: 'disabled' };
+  }
+
+  return { type: 'disabled', _warning: 'unknown_type' };
+}
+
+// Normalize all slots with fallback to defaults
+function normalizeSlots(slots, shortcuts = []) {
+  if (!Array.isArray(slots) || slots.length !== MAX_SLOTS) {
+    return DEFAULT_SLOTS.map(s => normalizeSlot(s, shortcuts));
+  }
+  return slots.map(slot => normalizeSlot(slot, shortcuts));
+}
+
+// Normalize preset with validation
+function normalizePreset(preset, shortcuts = []) {
+  if (!preset || typeof preset !== 'object' || !preset.id || !preset.name) {
+    return null;
+  }
+  return {
+    id: preset.id,
+    name: String(preset.name).substring(0, 30),
+    slots: normalizeSlots(preset.slots, shortcuts),
+    createdAt: preset.createdAt || Date.now()
+  };
+}
+
+// Normalize all presets
+function normalizePresets(presets, shortcuts = []) {
+  if (!Array.isArray(presets)) return [];
+  return presets
+    .map(p => normalizePreset(p, shortcuts))
+    .filter(p => p !== null)
+    .slice(0, MAX_PRESETS);
+}
 
 const manifest = chrome.runtime.getManifest();
 
@@ -59,6 +135,9 @@ document.addEventListener('DOMContentLoaded', () => {
   loadShortcuts();
   // Live filename preview
   setupFilenamePreview();
+  // v3.1: Contextual chip slots and presets
+  setupSlotConfiguration();
+  setupPresetManagement();
 });
 
 function renderVersion() {
@@ -443,7 +522,7 @@ function renderShortcutList(shortcuts = []) {
 function updateShortcutCount(count) {
   const countEl = document.getElementById('shortcut-count');
   if (countEl) {
-    countEl.textContent = `${count}/${MAX_SHORTCUTS} Shortcuts`;
+    countEl.textContent = `${count}/10 Shortcuts`;
     countEl.classList.toggle('at-limit', count >= MAX_SHORTCUTS);
   }
 
@@ -658,6 +737,304 @@ function normalizeFolderPath(path) {
   }
 
   return normalized;
+}
+
+// ============================================
+// v3.1: Contextual Chip Slot Configuration
+// ============================================
+
+const FORMAT_LABELS = {
+  txt: '📄 Text', md: '📝 Markdown', docx: '📜 Word', pdf: '📕 PDF',
+  json: '🧩 JSON', js: '🟡 JavaScript', ts: '🔵 TypeScript', py: '🐍 Python',
+  html: '🌐 HTML', css: '🎨 CSS', yaml: '🧾 YAML', sql: '📑 SQL',
+  sh: '⚙️ Shell', xml: '📰 XML', csv: '📊 CSV', saveas: '📁 Save As'
+};
+
+function setupSlotConfiguration() {
+  const container = document.getElementById('slots-config');
+  if (!container) return;
+
+  // Initial render
+  renderSlotDropdowns();
+
+  // Listen for shortcut changes to update options
+  chrome.storage.onChanged.addListener((changes) => {
+    if (changes.categoryShortcuts || changes.floatingButtonSlots) {
+      renderSlotDropdowns();
+    }
+  });
+}
+
+async function renderSlotDropdowns() {
+  const container = document.getElementById('slots-config');
+  if (!container) return;
+
+  const stored = await chrome.storage.sync.get(['floatingButtonSlots', 'categoryShortcuts']);
+  const shortcuts = stored.categoryShortcuts || [];
+  const slots = normalizeSlots(stored.floatingButtonSlots, shortcuts);
+
+  container.innerHTML = '';
+
+  for (let i = 0; i < MAX_SLOTS; i++) {
+    const slot = slots[i];
+    const slotEl = document.createElement('div');
+    slotEl.className = 'slot-config-item';
+
+    const label = document.createElement('label');
+    label.textContent = `Slot ${i + 1}`;
+    label.htmlFor = `slot-${i}`;
+
+    const select = document.createElement('select');
+    select.id = `slot-${i}`;
+    select.name = `slot-${i}`;
+    select.className = 'slot-select';
+
+    // Build options: Disabled, Formats, Shortcuts
+    let optionsHtml = '<option value="disabled">⬜ Disabled</option>';
+    optionsHtml += '<optgroup label="Formats">';
+    for (const fmt of VALID_FORMATS) {
+      const selected = slot.type === 'format' && slot.format === fmt ? 'selected' : '';
+      optionsHtml += `<option value="format:${fmt}" ${selected}>${FORMAT_LABELS[fmt] || fmt.toUpperCase()}</option>`;
+    }
+    optionsHtml += '</optgroup>';
+
+    if (shortcuts.length > 0) {
+      optionsHtml += '<optgroup label="Shortcuts">';
+      for (const s of shortcuts) {
+        const selected = slot.type === 'shortcut' && slot.shortcutId === s.id ? 'selected' : '';
+        const emoji = FORMAT_LABELS[s.format]?.split(' ')[0] || '📄';
+        optionsHtml += `<option value="shortcut:${s.id}" ${selected}>${emoji} ${s.name}</option>`;
+      }
+      optionsHtml += '</optgroup>';
+    }
+
+    // Handle disabled with warning
+    if (slot.type === 'disabled') {
+      select.value = 'disabled';
+    }
+
+    select.innerHTML = optionsHtml;
+
+    // Restore selection
+    if (slot.type === 'format') {
+      select.value = `format:${slot.format}`;
+    } else if (slot.type === 'shortcut') {
+      select.value = `shortcut:${slot.shortcutId}`;
+    } else {
+      select.value = 'disabled';
+    }
+
+    // Add warning indicator for invalid slots
+    if (slot._warning) {
+      select.classList.add('slot-warning');
+      select.title = `Warning: ${slot._warning}`;
+    }
+
+    select.addEventListener('change', () => saveSlotConfiguration());
+
+    slotEl.appendChild(label);
+    slotEl.appendChild(select);
+    container.appendChild(slotEl);
+  }
+}
+
+async function saveSlotConfiguration() {
+  const slots = [];
+  const stored = await chrome.storage.sync.get(['categoryShortcuts']);
+  const shortcuts = stored.categoryShortcuts || [];
+
+  for (let i = 0; i < MAX_SLOTS; i++) {
+    const select = document.getElementById(`slot-${i}`);
+    if (!select) continue;
+
+    const value = select.value;
+    if (value === 'disabled') {
+      slots.push({ type: 'disabled' });
+    } else if (value.startsWith('format:')) {
+      slots.push({ type: 'format', format: value.replace('format:', '') });
+    } else if (value.startsWith('shortcut:')) {
+      slots.push({ type: 'shortcut', shortcutId: value.replace('shortcut:', '') });
+    } else {
+      slots.push({ type: 'disabled' });
+    }
+  }
+
+  const normalizedSlots = normalizeSlots(slots, shortcuts);
+  await chrome.storage.sync.set({ floatingButtonSlots: normalizedSlots });
+  await refreshBackgroundSettings();
+  notifyContentScripts();
+  showStatusMessage('Slot configuration saved.', 'success');
+}
+
+// ============================================
+// v3.1: Preset Management
+// ============================================
+
+function setupPresetManagement() {
+  const selector = document.getElementById('preset-selector');
+  const saveBtn = document.getElementById('preset-save');
+  const deleteBtn = document.getElementById('preset-delete');
+  const newBtn = document.getElementById('preset-new');
+
+  if (selector) {
+    selector.addEventListener('change', loadPreset);
+    renderPresetSelector();
+  }
+
+  if (saveBtn) {
+    saveBtn.addEventListener('click', saveCurrentPreset);
+  }
+
+  if (deleteBtn) {
+    deleteBtn.addEventListener('click', deleteCurrentPreset);
+  }
+
+  if (newBtn) {
+    newBtn.addEventListener('click', createNewPreset);
+  }
+}
+
+async function renderPresetSelector() {
+  const selector = document.getElementById('preset-selector');
+  const countEl = document.getElementById('preset-count');
+  if (!selector) return;
+
+  const stored = await chrome.storage.sync.get(['floatingButtonPresets', 'activeFloatingButtonPresetId', 'categoryShortcuts']);
+  const shortcuts = stored.categoryShortcuts || [];
+  const presets = normalizePresets(stored.floatingButtonPresets, shortcuts);
+  const activeId = stored.activeFloatingButtonPresetId;
+
+  selector.innerHTML = '<option value="">— No Preset —</option>';
+
+  presets.forEach(preset => {
+    const option = document.createElement('option');
+    option.value = preset.id;
+    option.textContent = preset.name;
+    if (preset.id === activeId) option.selected = true;
+    selector.appendChild(option);
+  });
+
+  if (countEl) {
+    countEl.textContent = `${presets.length}/${MAX_PRESETS} Presets`;
+    countEl.classList.toggle('at-limit', presets.length >= MAX_PRESETS);
+  }
+
+  // Disable new button if at limit
+  const newBtn = document.getElementById('preset-new');
+  if (newBtn) {
+    newBtn.disabled = presets.length >= MAX_PRESETS;
+  }
+}
+
+async function loadPreset() {
+  const selector = document.getElementById('preset-selector');
+  if (!selector) return;
+
+  const presetId = selector.value;
+  if (!presetId) {
+    await chrome.storage.sync.set({ activeFloatingButtonPresetId: null });
+    return;
+  }
+
+  const stored = await chrome.storage.sync.get(['floatingButtonPresets', 'categoryShortcuts']);
+  const shortcuts = stored.categoryShortcuts || [];
+  const presets = normalizePresets(stored.floatingButtonPresets, shortcuts);
+  const preset = presets.find(p => p.id === presetId);
+
+  if (preset) {
+    await chrome.storage.sync.set({
+      floatingButtonSlots: preset.slots,
+      activeFloatingButtonPresetId: presetId
+    });
+    renderSlotDropdowns();
+    await refreshBackgroundSettings();
+    notifyContentScripts();
+    showStatusMessage(`Preset "${preset.name}" loaded.`, 'success');
+  }
+}
+
+async function saveCurrentPreset() {
+  const selector = document.getElementById('preset-selector');
+  if (!selector || !selector.value) {
+    showStatusMessage('Select a preset to save, or create a new one.', 'error');
+    return;
+  }
+
+  const presetId = selector.value;
+  const stored = await chrome.storage.sync.get(['floatingButtonPresets', 'floatingButtonSlots', 'categoryShortcuts']);
+  const shortcuts = stored.categoryShortcuts || [];
+  const presets = normalizePresets(stored.floatingButtonPresets, shortcuts);
+  const currentSlots = normalizeSlots(stored.floatingButtonSlots, shortcuts);
+
+  const presetIndex = presets.findIndex(p => p.id === presetId);
+  if (presetIndex === -1) {
+    showStatusMessage('Preset not found.', 'error');
+    return;
+  }
+
+  presets[presetIndex].slots = currentSlots;
+  await chrome.storage.sync.set({ floatingButtonPresets: presets });
+  showStatusMessage(`Preset "${presets[presetIndex].name}" saved.`, 'success');
+}
+
+async function deleteCurrentPreset() {
+  const selector = document.getElementById('preset-selector');
+  if (!selector || !selector.value) {
+    showStatusMessage('Select a preset to delete.', 'error');
+    return;
+  }
+
+  const presetId = selector.value;
+  const stored = await chrome.storage.sync.get(['floatingButtonPresets', 'activeFloatingButtonPresetId', 'categoryShortcuts']);
+  const shortcuts = stored.categoryShortcuts || [];
+  let presets = normalizePresets(stored.floatingButtonPresets, shortcuts);
+
+  const preset = presets.find(p => p.id === presetId);
+  if (!preset) return;
+
+  presets = presets.filter(p => p.id !== presetId);
+
+  const updates = { floatingButtonPresets: presets };
+  if (stored.activeFloatingButtonPresetId === presetId) {
+    updates.activeFloatingButtonPresetId = null;
+  }
+
+  await chrome.storage.sync.set(updates);
+  renderPresetSelector();
+  showStatusMessage(`Preset "${preset.name}" deleted.`, 'success');
+}
+
+async function createNewPreset() {
+  const stored = await chrome.storage.sync.get(['floatingButtonPresets', 'floatingButtonSlots', 'categoryShortcuts']);
+  const shortcuts = stored.categoryShortcuts || [];
+  const presets = normalizePresets(stored.floatingButtonPresets, shortcuts);
+
+  if (presets.length >= MAX_PRESETS) {
+    showStatusMessage(`Maximum ${MAX_PRESETS} presets allowed.`, 'error');
+    return;
+  }
+
+  const name = prompt('Enter preset name:', `Preset ${presets.length + 1}`);
+  if (!name || !name.trim()) return;
+
+  const currentSlots = normalizeSlots(stored.floatingButtonSlots, shortcuts);
+
+  const newPreset = {
+    id: `preset_${Date.now()}`,
+    name: name.trim().substring(0, 30),
+    slots: currentSlots,
+    createdAt: Date.now()
+  };
+
+  presets.push(newPreset);
+
+  await chrome.storage.sync.set({
+    floatingButtonPresets: presets,
+    activeFloatingButtonPresetId: newPreset.id
+  });
+
+  renderPresetSelector();
+  showStatusMessage(`Preset "${newPreset.name}" created.`, 'success');
 }
 
 // Notify all content scripts to update their floating button with new shortcuts

@@ -1,13 +1,18 @@
 #!/usr/bin/env node
 /**
- * FlashDoc v3.0 Feature Tests
- * Run with: node scripts/v3-features-test.js
+ * FlashDoc v3.0/v3.1 Feature Tests
+ * Run with: node scripts/v3-features-test.cjs
  *
  * Tests the new features introduced in v3.0:
  * - Type Preview & Override (Dev-Auftrag 1)
  * - Filename Live Preview (Dev-Auftrag 2)
  * - Privacy Mode (Dev-Auftrag 3)
  * - Repeat Last Action (Dev-Auftrag 4)
+ *
+ * And v3.1 features:
+ * - Configurable Contextual Chip Slots (5 slots)
+ * - Slot Preset Management (up to 5 presets)
+ * - Increased MAX_SHORTCUTS (10)
  */
 
 const fs = require('fs');
@@ -35,7 +40,7 @@ function readFile(filename) {
   return fs.readFileSync(filepath, 'utf-8');
 }
 
-console.log('\n\x1b[1m=== FlashDoc v3.0 Feature Tests ===\x1b[0m\n');
+console.log('\n\x1b[1m=== FlashDoc v3.0/v3.1 Feature Tests ===\x1b[0m\n');
 
 // ============================================
 // Test 1: Type Preview & Override (content.js)
@@ -240,6 +245,142 @@ try {
 
 } catch (e) {
   console.log(`  ${FAIL} Could not parse manifest.json: ${e.message}`);
+  failed++;
+}
+
+// ============================================
+// Test 6: v3.1 - Configurable Chip Slots
+// ============================================
+console.log('\n\x1b[1m[6] v3.1: Configurable Chip Slots\x1b[0m');
+try {
+  const contentJs = readFile('content.js');
+  const optionsJs = readFile('options.js');
+  const optionsHtml = readFile('options.html');
+
+  // Constants
+  test('MAX_SLOTS constant defined',
+    optionsJs.includes('const MAX_SLOTS = 5'));
+
+  test('VALID_FORMATS array defined',
+    optionsJs.includes('const VALID_FORMATS = ['));
+
+  test('DEFAULT_SLOTS configuration defined',
+    optionsJs.includes('const DEFAULT_SLOTS = ['));
+
+  // Normalization functions
+  test('normalizeSlot function exists',
+    optionsJs.includes('function normalizeSlot(slot'));
+
+  test('normalizeSlots function exists',
+    optionsJs.includes('function normalizeSlots(slots'));
+
+  // UI Elements
+  test('Slot config container in HTML',
+    optionsHtml.includes('id="slots-config"'));
+
+  test('Contextual Chip Slots section in HTML',
+    optionsHtml.includes('Contextual Chip Slots'));
+
+  // Content.js slot rendering
+  test('FORMAT_ICONS mapping in content.js',
+    contentJs.includes('FORMAT_ICONS = {'));
+
+  test('FORMAT_LABELS mapping in content.js',
+    contentJs.includes('FORMAT_LABELS = {'));
+
+  test('renderSlotButtons method exists',
+    contentJs.includes('renderSlotButtons()'));
+
+  test('floatingButtonSlots in content settings',
+    contentJs.includes('floatingButtonSlots'));
+
+  test('slot-disabled CSS class defined',
+    contentJs.includes('.slot-disabled'));
+
+  test('storage.onChanged listener for live updates',
+    contentJs.includes('chrome.storage.onChanged.addListener'));
+
+} catch (e) {
+  console.log(`  ${FAIL} Could not read files: ${e.message}`);
+  failed++;
+}
+
+// ============================================
+// Test 7: v3.1 - Preset Management
+// ============================================
+console.log('\n\x1b[1m[7] v3.1: Preset Management\x1b[0m');
+try {
+  const optionsJs = readFile('options.js');
+  const optionsHtml = readFile('options.html');
+  const optionsCss = readFile('options.css');
+
+  // Constants
+  test('MAX_PRESETS constant defined',
+    optionsJs.includes('const MAX_PRESETS = 5'));
+
+  // Normalization functions
+  test('normalizePreset function exists',
+    optionsJs.includes('function normalizePreset(preset'));
+
+  test('normalizePresets function exists',
+    optionsJs.includes('function normalizePresets(presets'));
+
+  // UI Elements
+  test('Preset selector in HTML',
+    optionsHtml.includes('id="preset-selector"'));
+
+  test('Preset save button in HTML',
+    optionsHtml.includes('id="preset-save"'));
+
+  test('Preset delete button in HTML',
+    optionsHtml.includes('id="preset-delete"'));
+
+  test('Preset new button in HTML',
+    optionsHtml.includes('id="preset-new"'));
+
+  test('Preset count display in HTML',
+    optionsHtml.includes('id="preset-count"'));
+
+  // CSS Styles
+  test('Preset section styles exist',
+    optionsCss.includes('.preset-section'));
+
+  test('Preset toolbar styles exist',
+    optionsCss.includes('.preset-toolbar'));
+
+} catch (e) {
+  console.log(`  ${FAIL} Could not read files: ${e.message}`);
+  failed++;
+}
+
+// ============================================
+// Test 8: v3.1 - Increased MAX_SHORTCUTS
+// ============================================
+console.log('\n\x1b[1m[8] v3.1: Increased MAX_SHORTCUTS\x1b[0m');
+try {
+  const optionsJs = readFile('options.js');
+  const optionsHtml = readFile('options.html');
+  const serviceWorker = readFile('service-worker.js');
+
+  // MAX_SHORTCUTS = 10
+  test('MAX_SHORTCUTS is 10 in options.js',
+    optionsJs.includes('const MAX_SHORTCUTS = 10'));
+
+  test('Shortcut count shows /10 in HTML',
+    optionsHtml.includes('0/10 Shortcuts'));
+
+  // Service worker defaults
+  test('floatingButtonSlots in service worker defaults',
+    serviceWorker.includes('floatingButtonSlots:'));
+
+  test('floatingButtonPresets in service worker defaults',
+    serviceWorker.includes('floatingButtonPresets:'));
+
+  test('activeFloatingButtonPresetId in service worker defaults',
+    serviceWorker.includes('activeFloatingButtonPresetId:'));
+
+} catch (e) {
+  console.log(`  ${FAIL} Could not read files: ${e.message}`);
   failed++;
 }
 

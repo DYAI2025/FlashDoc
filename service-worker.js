@@ -727,9 +727,19 @@ class FlashDoc {
       showFormatRecommendations: true,
       contextMenuFormats: DEFAULT_CONTEXT_MENU_FORMATS,
       // Category Shortcuts: prefix + format combo
-      categoryShortcuts: [], // Array of {id, name, format} objects, max 5
+      categoryShortcuts: [], // Array of {id, name, format} objects, max 10
       // Privacy Mode: on-demand injection only
-      privacyMode: false
+      privacyMode: false,
+      // v3.1: Configurable contextual chip slots
+      floatingButtonSlots: [
+        { type: 'format', format: 'txt' },
+        { type: 'format', format: 'md' },
+        { type: 'format', format: 'docx' },
+        { type: 'format', format: 'pdf' },
+        { type: 'format', format: 'saveas' }
+      ],
+      floatingButtonPresets: [],
+      activeFloatingButtonPresetId: null
     };
 
     const stored = await chrome.storage.sync.get(null);

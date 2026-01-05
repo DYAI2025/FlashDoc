@@ -15,7 +15,26 @@ class FlashDocContent {
       selectionThreshold: 10,
       enableContextMenu: true,
       enableSmartDetection: true,
-      categoryShortcuts: [] // Category shortcuts: {id, name, format}
+      categoryShortcuts: [], // Category shortcuts: {id, name, format}
+      // v3.1: Configurable contextual chip slots
+      floatingButtonSlots: [
+        { type: 'format', format: 'txt' },
+        { type: 'format', format: 'md' },
+        { type: 'format', format: 'docx' },
+        { type: 'format', format: 'pdf' },
+        { type: 'format', format: 'saveas' }
+      ]
+    };
+    // v3.1: Format icons and labels for dynamic slots
+    this.FORMAT_ICONS = {
+      txt: '📄', md: '📝', docx: '📜', pdf: '📕', json: '🧩',
+      js: '🟡', ts: '🔵', py: '🐍', html: '🌐', css: '🎨',
+      yaml: '🧾', sql: '📑', sh: '⚙️', xml: '📰', csv: '📊', saveas: '📁'
+    };
+    this.FORMAT_LABELS = {
+      txt: 'Text', md: 'Markdown', docx: 'Word', pdf: 'PDF', json: 'JSON',
+      js: 'JavaScript', ts: 'TypeScript', py: 'Python', html: 'HTML', css: 'CSS',
+      yaml: 'YAML', sql: 'SQL', sh: 'Shell', xml: 'XML', csv: 'CSV', saveas: 'Save As'
     };
     this.stats = { totalSaves: 0 };
     this.runtimeUnavailable = false;
@@ -371,11 +390,7 @@ class FlashDocContent {
         </div>
       </div>
       <div class="flashdoc-ctx-options">
-        <button data-format="txt" title="Text">📄</button>
-        <button data-format="md" title="Markdown">📝</button>
-        <button data-format="docx" title="Word">📜</button>
-        <button data-format="pdf" title="PDF">📕</button>
-        <button data-format="saveas" title="Save As">📁</button>
+        ${this.renderSlotButtons()}
       </div>
     `;
 
@@ -447,10 +462,20 @@ class FlashDocContent {
       });
     });
 
+    // v3.1: Handle slot button clicks (format or shortcut)
     button.querySelectorAll('.flashdoc-ctx-options button').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        this.saveWithFormat(btn.dataset.format);
+        if (btn.disabled) return;
+
+        // Check if it's a shortcut slot
+        if (btn.dataset.shortcut) {
+          const shortcutName = btn.dataset.shortcutName;
+          const shortcutFormat = btn.dataset.shortcutFormat;
+          this.saveWithShortcut(shortcutName, shortcutFormat);
+        } else if (btn.dataset.format) {
+          this.saveWithFormat(btn.dataset.format);
+        }
         this.hideContextualButton();
       });
     });
@@ -476,6 +501,33 @@ class FlashDocContent {
       el.style.animation = 'flashdoc-fade-out 0.2s ease-out';
       setTimeout(() => el.remove(), 200);
     });
+  }
+
+  // v3.1: Render dynamic slot buttons for contextual chip
+  renderSlotButtons() {
+    const slots = this.settings.floatingButtonSlots || [];
+    const shortcuts = this.settings.categoryShortcuts || [];
+
+    return slots.map((slot, index) => {
+      if (slot.type === 'format') {
+        const icon = this.FORMAT_ICONS[slot.format] || '📄';
+        const label = this.FORMAT_LABELS[slot.format] || slot.format.toUpperCase();
+        return `<button data-format="${slot.format}" data-slot-index="${index}" title="${label}">${icon}</button>`;
+      }
+
+      if (slot.type === 'shortcut') {
+        const shortcut = shortcuts.find(s => s.id === slot.shortcutId);
+        if (shortcut) {
+          const icon = this.FORMAT_ICONS[shortcut.format] || '📄';
+          return `<button data-shortcut="${shortcut.id}" data-shortcut-name="${shortcut.name}" data-shortcut-format="${shortcut.format}" data-slot-index="${index}" title="${shortcut.name}">${icon}</button>`;
+        }
+        // Shortcut deleted - show disabled
+        return `<button disabled data-slot-index="${index}" title="Not configured" class="slot-disabled">⬜</button>`;
+      }
+
+      // Disabled slot
+      return `<button disabled data-slot-index="${index}" title="Not configured" class="slot-disabled">⬜</button>`;
+    }).join('');
   }
 
   // Build HTML for category shortcuts
@@ -973,7 +1025,7 @@ class FlashDocContent {
         sendResponse({ text: window.getSelection().toString() });
       } else if (request.action === 'updateSettings') {
         this.loadSettings().then(() => {
-          // Rebuild floating button to include new shortcuts
+          // Rebuild floating button to include new shortcuts and slot config
           this.rebuildFloatingButton();
           // Update corner ball
           if (this.settings.showCornerBall && !this.cornerBall) {
@@ -985,6 +1037,35 @@ class FlashDocContent {
         });
       }
       return true;
+    });
+
+    // v3.1: Listen for storage changes to update slots in real-time
+    chrome.storage.onChanged.addListener((changes) => {
+      if (changes.floatingButtonSlots || changes.categoryShortcuts) {
+        this.loadSettings().then(() => {
+          // If contextual button is visible, update its slots
+          const existing = document.querySelector('.flashdoc-contextual');
+          if (existing) {
+            const optionsContainer = existing.querySelector('.flashdoc-ctx-options');
+            if (optionsContainer) {
+              optionsContainer.innerHTML = this.renderSlotButtons();
+              // Re-attach click handlers
+              optionsContainer.querySelectorAll('button').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                  e.stopPropagation();
+                  if (btn.disabled) return;
+                  if (btn.dataset.shortcut) {
+                    this.saveWithShortcut(btn.dataset.shortcutName, btn.dataset.shortcutFormat);
+                  } else if (btn.dataset.format) {
+                    this.saveWithFormat(btn.dataset.format);
+                  }
+                  this.hideContextualButton();
+                });
+              });
+            }
+          }
+        });
+      }
     });
   }
 
@@ -1202,6 +1283,17 @@ class FlashDocContent {
       .flashdoc-ctx-options button:hover {
         transform: scale(1.15);
         box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      }
+
+      .flashdoc-ctx-options button.slot-disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+        background: rgba(148, 163, 184, 0.3);
+      }
+
+      .flashdoc-ctx-options button.slot-disabled:hover {
+        transform: none;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
       }
       
       /* Floating Button */

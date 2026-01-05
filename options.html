@@ -139,6 +139,31 @@
         <div class="format-grid" id="context-menu-formats"></div>
       </section>
 
+      <!-- v3.1: Contextual Chip Slots Section -->
+      <section class="options-card">
+        <h2>Contextual Chip Slots</h2>
+        <p class="help">Configure the 5 action buttons that appear when you select text. Each slot can be a format or a shortcut.</p>
+
+        <!-- Slot Configuration Dropdowns -->
+        <div class="slots-config" id="slots-config">
+          <!-- Dynamically populated by options.js -->
+        </div>
+
+        <!-- Preset Management -->
+        <div class="preset-section">
+          <h3>Slot Presets</h3>
+          <div class="preset-toolbar">
+            <select id="preset-selector" class="preset-select">
+              <option value="">— No Preset —</option>
+            </select>
+            <button type="button" class="btn secondary small" id="preset-save" title="Save current slots to selected preset">Save</button>
+            <button type="button" class="btn secondary small" id="preset-delete" title="Delete selected preset">Delete</button>
+            <button type="button" class="btn primary small" id="preset-new" title="Create new preset from current slots">New</button>
+          </div>
+          <span class="preset-count" id="preset-count">0/5 Presets</span>
+        </div>
+      </section>
+
       <!-- Category Shortcuts Section -->
       <section class="options-card">
         <h2>Prefix Shortcuts</h2>
@@ -165,7 +190,7 @@
         <!-- Existing shortcuts list -->
         <div class="shortcut-list" id="shortcut-list"></div>
         <div class="shortcut-footer">
-          <span class="shortcut-count" id="shortcut-count">0/5 Shortcuts</span>
+          <span class="shortcut-count" id="shortcut-count">0/10 Shortcuts</span>
         </div>
       </section>
 
