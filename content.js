@@ -245,11 +245,11 @@ class FlashDocContent {
     // Mouse up for immediate feedback
     document.addEventListener('mouseup', (e) => {
       // Skip if clicking on our UI elements
-      if (e.target.closest('.flashdoc-floating') || 
+      if (e.target.closest('.flashdoc-floating') ||
           e.target.closest('.flashdoc-contextual')) {
         return;
       }
-      
+
       setTimeout(() => {
         const selection = window.getSelection();
         const text = selection.toString().trim();
@@ -257,7 +257,8 @@ class FlashDocContent {
         if (text.length > this.settings.selectionThreshold) {
           this.selectedText = text;
           this.selectedHtml = this.captureSelectionHtml(selection);
-          this.showContextualButton(e.pageX, e.pageY, text);
+          // Use clientX/clientY for fixed positioning (viewport coordinates)
+          this.showContextualButton(e.clientX, e.clientY, text);
         }
       }, 10);
     });
@@ -272,7 +273,8 @@ class FlashDocContent {
           this.selectedText = text;
           this.selectedHtml = this.captureSelectionHtml(selection);
           const touch = e.changedTouches[0];
-          this.showContextualButton(touch.pageX, touch.pageY, text);
+          // Use clientX/clientY for fixed positioning (viewport coordinates)
+          this.showContextualButton(touch.clientX, touch.clientY, text);
         }
       }, 100);
     });
@@ -394,30 +396,65 @@ class FlashDocContent {
       </div>
     `;
 
-    // Smart positioning with 40px offset (F1: repositioned further right-up)
+    // Smart positioning: ~1.5cm (57px) from cursor, always in viewport
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
-    const buttonWidth = 140;
-    const buttonHeight = 40;
-    const offsetX = 40; // F1: New offset - further right
-    const offsetY = 40; // F1: New offset - further up
+    const buttonWidth = 180; // Approximate width including slots
+    const buttonHeight = 80; // Approximate height with options row
+    const cursorOffset = 57; // ~1.5cm at 96dpi
+    const padding = 12; // Minimum distance from viewport edges
 
-    let posX = x + offsetX;
-    let posY = y - buttonHeight - offsetY;
+    // Calculate initial position (prefer bottom-right of cursor)
+    let posX = x + cursorOffset;
+    let posY = y + cursorOffset;
 
-    // Viewport clamping with flip logic
-    if (posX + buttonWidth > viewportWidth - 10) {
-      // Flip to left side of cursor
-      posX = Math.max(10, x - buttonWidth - 10);
+    // Check if button would go outside right edge → flip to left
+    if (posX + buttonWidth > viewportWidth - padding) {
+      posX = x - buttonWidth - cursorOffset;
     }
-    if (posY < 10) {
-      // Flip to below cursor
-      posY = y + 20;
+
+    // Check if button would go outside bottom edge → flip to top
+    if (posY + buttonHeight > viewportHeight - padding) {
+      posY = y - buttonHeight - cursorOffset;
     }
-    // Final clamp to viewport
-    posX = Math.max(10, Math.min(posX, viewportWidth - buttonWidth - 10));
-    posY = Math.max(10, Math.min(posY, viewportHeight - buttonHeight - 10));
-    
+
+    // Final clamp to ensure button stays fully visible
+    posX = Math.max(padding, Math.min(posX, viewportWidth - buttonWidth - padding));
+    posY = Math.max(padding, Math.min(posY, viewportHeight - buttonHeight - padding));
+
+    // Collision detection: avoid covering interactive elements
+    const targetRect = { left: posX, top: posY, right: posX + buttonWidth, bottom: posY + buttonHeight };
+    const interactiveElements = document.querySelectorAll('button, a, input, select, textarea, [role="button"], [onclick]');
+
+    for (const el of interactiveElements) {
+      // Skip our own elements
+      if (el.closest('.flashdoc-contextual') || el.closest('.flashdoc-floating')) continue;
+
+      const elRect = el.getBoundingClientRect();
+      // Check if there's overlap
+      if (!(targetRect.right < elRect.left || targetRect.left > elRect.right ||
+            targetRect.bottom < elRect.top || targetRect.top > elRect.bottom)) {
+        // Collision detected - try to move button
+        // Prefer moving down, then up, then right, then left
+        const moveOptions = [
+          { x: posX, y: elRect.bottom + 10 }, // Below element
+          { x: posX, y: elRect.top - buttonHeight - 10 }, // Above element
+          { x: elRect.right + 10, y: posY }, // Right of element
+          { x: elRect.left - buttonWidth - 10, y: posY } // Left of element
+        ];
+
+        for (const opt of moveOptions) {
+          if (opt.x >= padding && opt.x + buttonWidth <= viewportWidth - padding &&
+              opt.y >= padding && opt.y + buttonHeight <= viewportHeight - padding) {
+            posX = opt.x;
+            posY = opt.y;
+            break;
+          }
+        }
+        break; // Only handle first collision
+      }
+    }
+
     button.style.left = `${posX}px`;
     button.style.top = `${posY}px`;
     

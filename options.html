@@ -169,14 +169,27 @@
         <!-- Preset Management -->
         <div class="preset-section">
           <h3>Slot Presets</h3>
+          <p class="help preset-help">Speichere Slot-Konfigurationen als Presets und wechsle schnell zwischen ihnen.</p>
+
+          <!-- Active Preset Indicator -->
+          <div class="active-preset-indicator" id="active-preset-indicator">
+            <span class="indicator-label">Aktiv:</span>
+            <span class="indicator-name" id="active-preset-name">Keins</span>
+          </div>
+
           <div class="preset-toolbar">
             <select id="preset-selector" class="preset-select">
-              <option value="">— No Preset —</option>
+              <option value="">— Preset wählen —</option>
             </select>
-            <button type="button" class="btn secondary small" id="preset-save" title="Save current slots to selected preset">Save</button>
-            <button type="button" class="btn secondary small" id="preset-delete" title="Delete selected preset">Delete</button>
-            <button type="button" class="btn primary small" id="preset-new" title="Create new preset from current slots">New</button>
+            <button type="button" class="btn primary small" id="preset-apply" title="Ausgewähltes Preset aktivieren">Anwenden</button>
           </div>
+
+          <div class="preset-actions">
+            <button type="button" class="btn secondary small" id="preset-new" title="Neues Preset aus aktuellen Slots erstellen">+ Neu</button>
+            <button type="button" class="btn secondary small" id="preset-save" title="Aktuelle Slots im ausgewählten Preset speichern">Speichern</button>
+            <button type="button" class="btn danger small" id="preset-delete" title="Ausgewähltes Preset löschen">Löschen</button>
+          </div>
+
           <span class="preset-count" id="preset-count">0/5 Presets</span>
         </div>
       </section>

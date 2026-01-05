@@ -900,13 +900,19 @@ async function saveSlotConfiguration() {
 
 function setupPresetManagement() {
   const selector = document.getElementById('preset-selector');
+  const applyBtn = document.getElementById('preset-apply');
   const saveBtn = document.getElementById('preset-save');
   const deleteBtn = document.getElementById('preset-delete');
   const newBtn = document.getElementById('preset-new');
 
   if (selector) {
-    selector.addEventListener('change', loadPreset);
+    // Don't auto-apply on selection - wait for Apply button
+    selector.addEventListener('change', updatePresetButtonStates);
     renderPresetSelector();
+  }
+
+  if (applyBtn) {
+    applyBtn.addEventListener('click', applySelectedPreset);
   }
 
   if (saveBtn) {
@@ -920,11 +926,16 @@ function setupPresetManagement() {
   if (newBtn) {
     newBtn.addEventListener('click', createNewPreset);
   }
+
+  // Initial button state
+  updatePresetButtonStates();
 }
 
 async function renderPresetSelector() {
   const selector = document.getElementById('preset-selector');
   const countEl = document.getElementById('preset-count');
+  const activeNameEl = document.getElementById('active-preset-name');
+  const activeIndicator = document.getElementById('active-preset-indicator');
   if (!selector) return;
 
   const stored = await chrome.storage.sync.get(['floatingButtonPresets', 'activeFloatingButtonPresetId', 'categoryShortcuts']);
@@ -932,15 +943,29 @@ async function renderPresetSelector() {
   const presets = normalizePresets(stored.floatingButtonPresets, shortcuts);
   const activeId = stored.activeFloatingButtonPresetId;
 
-  selector.innerHTML = '<option value="">— No Preset —</option>';
+  selector.innerHTML = '<option value="">— Preset wählen —</option>';
 
+  let activePresetName = null;
   presets.forEach(preset => {
     const option = document.createElement('option');
     option.value = preset.id;
     option.textContent = preset.name;
-    if (preset.id === activeId) option.selected = true;
+    // Don't auto-select the active preset in dropdown
     selector.appendChild(option);
+
+    if (preset.id === activeId) {
+      activePresetName = preset.name;
+    }
   });
+
+  // Update active preset indicator
+  if (activeNameEl) {
+    activeNameEl.textContent = activePresetName || 'Keins';
+    activeNameEl.classList.toggle('has-active', !!activePresetName);
+  }
+  if (activeIndicator) {
+    activeIndicator.classList.toggle('active', !!activePresetName);
+  }
 
   if (countEl) {
     countEl.textContent = `${presets.length}/${MAX_PRESETS} Presets`;
@@ -952,117 +977,218 @@ async function renderPresetSelector() {
   if (newBtn) {
     newBtn.disabled = presets.length >= MAX_PRESETS;
   }
+
+  updatePresetButtonStates();
 }
 
-async function loadPreset() {
+function updatePresetButtonStates() {
   const selector = document.getElementById('preset-selector');
-  if (!selector) return;
+  const applyBtn = document.getElementById('preset-apply');
+  const saveBtn = document.getElementById('preset-save');
+  const deleteBtn = document.getElementById('preset-delete');
 
-  const presetId = selector.value;
-  if (!presetId) {
-    await chrome.storage.sync.set({ activeFloatingButtonPresetId: null });
+  const hasSelection = selector && selector.value;
+
+  if (applyBtn) applyBtn.disabled = !hasSelection;
+  if (saveBtn) saveBtn.disabled = !hasSelection;
+  if (deleteBtn) deleteBtn.disabled = !hasSelection;
+}
+
+async function applySelectedPreset() {
+  const selector = document.getElementById('preset-selector');
+  if (!selector || !selector.value) {
+    showStatusMessage('Bitte wähle zuerst ein Preset aus.', 'error');
     return;
   }
 
-  const stored = await chrome.storage.sync.get(['floatingButtonPresets', 'categoryShortcuts']);
-  const shortcuts = stored.categoryShortcuts || [];
-  const presets = normalizePresets(stored.floatingButtonPresets, shortcuts);
-  const preset = presets.find(p => p.id === presetId);
+  try {
+    const presetId = selector.value;
+    const stored = await chrome.storage.sync.get(['floatingButtonPresets', 'categoryShortcuts']);
+    const shortcuts = stored.categoryShortcuts || [];
+    const presets = stored.floatingButtonPresets || [];
 
-  if (preset) {
-    await chrome.storage.sync.set({
-      floatingButtonSlots: preset.slots,
-      activeFloatingButtonPresetId: presetId
-    });
-    renderSlotDropdowns();
-    await refreshBackgroundSettings();
-    notifyContentScripts();
-    showStatusMessage(`Preset "${preset.name}" loaded.`, 'success');
+    console.log('[FlashDoc] Applying preset:', presetId, 'Available:', presets.map(p => p.id));
+
+    // Find preset directly (without over-normalizing)
+    const preset = presets.find(p => p && p.id === presetId);
+
+    if (preset) {
+      // Normalize slots before applying
+      const normalizedSlots = normalizeSlots(preset.slots, shortcuts);
+
+      await chrome.storage.sync.set({
+        floatingButtonSlots: normalizedSlots,
+        activeFloatingButtonPresetId: presetId
+      });
+
+      await renderSlotDropdowns();
+      await renderPresetSelector();
+      await refreshBackgroundSettings();
+      notifyContentScripts();
+      showStatusMessage(`Preset "${preset.name}" aktiviert.`, 'success');
+
+      // Reset selector to show placeholder
+      selector.value = '';
+      updatePresetButtonStates();
+
+      console.log('[FlashDoc] Preset applied:', preset.name, 'Slots:', normalizedSlots);
+    } else {
+      console.error('[FlashDoc] Preset not found:', presetId, 'in', presets);
+      showStatusMessage('Preset nicht gefunden. Bitte Seite neu laden.', 'error');
+    }
+  } catch (error) {
+    console.error('[FlashDoc] Apply preset error:', error);
+    showStatusMessage('Fehler beim Anwenden des Presets.', 'error');
   }
+}
+
+async function deactivatePreset() {
+  await chrome.storage.sync.set({ activeFloatingButtonPresetId: null });
+  renderPresetSelector();
+  await refreshBackgroundSettings();
+  notifyContentScripts();
+  showStatusMessage('Preset deaktiviert.', 'success');
 }
 
 async function saveCurrentPreset() {
   const selector = document.getElementById('preset-selector');
   if (!selector || !selector.value) {
-    showStatusMessage('Select a preset to save, or create a new one.', 'error');
+    showStatusMessage('Wähle ein Preset zum Überschreiben oder erstelle ein neues.', 'error');
     return;
   }
 
-  const presetId = selector.value;
-  const stored = await chrome.storage.sync.get(['floatingButtonPresets', 'floatingButtonSlots', 'categoryShortcuts']);
-  const shortcuts = stored.categoryShortcuts || [];
-  const presets = normalizePresets(stored.floatingButtonPresets, shortcuts);
-  const currentSlots = normalizeSlots(stored.floatingButtonSlots, shortcuts);
+  try {
+    const presetId = selector.value;
+    const stored = await chrome.storage.sync.get(['floatingButtonPresets', 'floatingButtonSlots', 'categoryShortcuts']);
+    const shortcuts = stored.categoryShortcuts || [];
+    const presets = stored.floatingButtonPresets || [];
+    const currentSlots = normalizeSlots(stored.floatingButtonSlots, shortcuts);
 
-  const presetIndex = presets.findIndex(p => p.id === presetId);
-  if (presetIndex === -1) {
-    showStatusMessage('Preset not found.', 'error');
-    return;
+    console.log('[FlashDoc] Saving to preset:', presetId, 'Current slots:', currentSlots);
+
+    const presetIndex = presets.findIndex(p => p && p.id === presetId);
+    if (presetIndex === -1) {
+      console.error('[FlashDoc] Save preset not found:', presetId, 'in', presets);
+      showStatusMessage('Preset nicht gefunden. Bitte Seite neu laden.', 'error');
+      return;
+    }
+
+    // Confirm overwrite
+    const presetName = presets[presetIndex].name;
+    if (!confirm(`Aktuelle Slot-Konfiguration in "${presetName}" speichern?`)) {
+      return;
+    }
+
+    // Update preset in place
+    presets[presetIndex] = {
+      ...presets[presetIndex],
+      slots: currentSlots,
+      updatedAt: Date.now()
+    };
+
+    await chrome.storage.sync.set({ floatingButtonPresets: presets });
+    showStatusMessage(`Preset "${presetName}" gespeichert.`, 'success');
+
+    // Reset selector
+    selector.value = '';
+    updatePresetButtonStates();
+
+    console.log('[FlashDoc] Preset saved:', presetName);
+  } catch (error) {
+    console.error('[FlashDoc] Save preset error:', error);
+    showStatusMessage('Fehler beim Speichern des Presets.', 'error');
   }
-
-  presets[presetIndex].slots = currentSlots;
-  await chrome.storage.sync.set({ floatingButtonPresets: presets });
-  showStatusMessage(`Preset "${presets[presetIndex].name}" saved.`, 'success');
 }
 
 async function deleteCurrentPreset() {
   const selector = document.getElementById('preset-selector');
   if (!selector || !selector.value) {
-    showStatusMessage('Select a preset to delete.', 'error');
+    showStatusMessage('Wähle ein Preset zum Löschen.', 'error');
     return;
   }
 
-  const presetId = selector.value;
-  const stored = await chrome.storage.sync.get(['floatingButtonPresets', 'activeFloatingButtonPresetId', 'categoryShortcuts']);
-  const shortcuts = stored.categoryShortcuts || [];
-  let presets = normalizePresets(stored.floatingButtonPresets, shortcuts);
+  try {
+    const presetId = selector.value;
+    const stored = await chrome.storage.sync.get(['floatingButtonPresets', 'activeFloatingButtonPresetId']);
+    let presets = stored.floatingButtonPresets || [];
 
-  const preset = presets.find(p => p.id === presetId);
-  if (!preset) return;
+    const preset = presets.find(p => p && p.id === presetId);
+    if (!preset) {
+      showStatusMessage('Preset nicht gefunden.', 'error');
+      return;
+    }
 
-  presets = presets.filter(p => p.id !== presetId);
+    // Confirm deletion
+    if (!confirm(`Preset "${preset.name}" wirklich löschen?`)) {
+      return;
+    }
 
-  const updates = { floatingButtonPresets: presets };
-  if (stored.activeFloatingButtonPresetId === presetId) {
-    updates.activeFloatingButtonPresetId = null;
+    presets = presets.filter(p => p && p.id !== presetId);
+
+    const updates = { floatingButtonPresets: presets };
+    if (stored.activeFloatingButtonPresetId === presetId) {
+      updates.activeFloatingButtonPresetId = null;
+    }
+
+    await chrome.storage.sync.set(updates);
+    await renderPresetSelector();
+    showStatusMessage(`Preset "${preset.name}" gelöscht.`, 'success');
+
+    // Reset selector
+    selector.value = '';
+    updatePresetButtonStates();
+
+    console.log('[FlashDoc] Preset deleted:', preset.name);
+  } catch (error) {
+    console.error('[FlashDoc] Delete preset error:', error);
+    showStatusMessage('Fehler beim Löschen des Presets.', 'error');
   }
-
-  await chrome.storage.sync.set(updates);
-  renderPresetSelector();
-  showStatusMessage(`Preset "${preset.name}" deleted.`, 'success');
 }
 
 async function createNewPreset() {
-  const stored = await chrome.storage.sync.get(['floatingButtonPresets', 'floatingButtonSlots', 'categoryShortcuts']);
-  const shortcuts = stored.categoryShortcuts || [];
-  const presets = normalizePresets(stored.floatingButtonPresets, shortcuts);
+  try {
+    const stored = await chrome.storage.sync.get(['floatingButtonPresets', 'floatingButtonSlots', 'categoryShortcuts']);
+    const shortcuts = stored.categoryShortcuts || [];
+    const existingPresets = stored.floatingButtonPresets || [];
 
-  if (presets.length >= MAX_PRESETS) {
-    showStatusMessage(`Maximum ${MAX_PRESETS} presets allowed.`, 'error');
-    return;
+    // Don't normalize here - preserve raw data
+    if (existingPresets.length >= MAX_PRESETS) {
+      showStatusMessage(`Maximal ${MAX_PRESETS} Presets erlaubt.`, 'error');
+      return;
+    }
+
+    const name = prompt('Preset-Name eingeben:', `Preset ${existingPresets.length + 1}`);
+    if (!name || !name.trim()) return;
+
+    const currentSlots = normalizeSlots(stored.floatingButtonSlots, shortcuts);
+
+    const newPreset = {
+      id: `preset_${Date.now()}`,
+      name: name.trim().substring(0, 30),
+      slots: currentSlots,
+      createdAt: Date.now()
+    };
+
+    // Add to existing presets (don't normalize - preserve original data)
+    const updatedPresets = [...existingPresets, newPreset];
+
+    await chrome.storage.sync.set({
+      floatingButtonPresets: updatedPresets,
+      floatingButtonSlots: currentSlots, // Also set current slots
+      activeFloatingButtonPresetId: newPreset.id
+    });
+
+    await renderPresetSelector();
+    await renderSlotDropdowns();
+    await refreshBackgroundSettings();
+    notifyContentScripts();
+    showStatusMessage(`Preset "${newPreset.name}" erstellt und aktiviert.`, 'success');
+
+    console.log('[FlashDoc] Preset created:', newPreset.id, 'Total presets:', updatedPresets.length);
+  } catch (error) {
+    console.error('[FlashDoc] Create preset error:', error);
+    showStatusMessage('Fehler beim Erstellen des Presets.', 'error');
   }
-
-  const name = prompt('Enter preset name:', `Preset ${presets.length + 1}`);
-  if (!name || !name.trim()) return;
-
-  const currentSlots = normalizeSlots(stored.floatingButtonSlots, shortcuts);
-
-  const newPreset = {
-    id: `preset_${Date.now()}`,
-    name: name.trim().substring(0, 30),
-    slots: currentSlots,
-    createdAt: Date.now()
-  };
-
-  presets.push(newPreset);
-
-  await chrome.storage.sync.set({
-    floatingButtonPresets: presets,
-    activeFloatingButtonPresetId: newPreset.id
-  });
-
-  renderPresetSelector();
-  showStatusMessage(`Preset "${newPreset.name}" created.`, 'success');
 }
 
 // Notify all content scripts to update their floating button with new shortcuts

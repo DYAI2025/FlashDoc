@@ -852,9 +852,54 @@ body {
 }
 
 .preset-section h3 {
-  margin: 0 0 12px;
+  margin: 0 0 8px;
   font-size: 14px;
   color: var(--muted);
+}
+
+.preset-help {
+  margin-bottom: 12px;
+}
+
+/* Active Preset Indicator */
+.active-preset-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  background: rgba(15, 23, 42, 0.35);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.active-preset-indicator.active {
+  background: rgba(56, 189, 248, 0.15);
+  border-color: var(--accent);
+}
+
+.indicator-label {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.indicator-name {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.indicator-name.has-active {
+  color: var(--accent);
+}
+
+@media (prefers-color-scheme: light) {
+  .active-preset-indicator {
+    background: rgba(248, 250, 252, 0.9);
+  }
+  .active-preset-indicator.active {
+    background: rgba(56, 189, 248, 0.1);
+  }
 }
 
 .preset-toolbar {
@@ -862,6 +907,7 @@ body {
   gap: 8px;
   flex-wrap: wrap;
   align-items: center;
+  margin-bottom: 10px;
 }
 
 .preset-select {
@@ -886,9 +932,33 @@ body {
   border-color: var(--accent);
 }
 
+/* Preset Actions Row */
+.preset-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.btn.danger {
+  background: transparent;
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+.btn.danger:hover:not(:disabled) {
+  background: var(--danger);
+  color: white;
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .preset-count {
   display: block;
-  margin-top: 8px;
+  margin-top: 10px;
   font-size: 12px;
   color: var(--muted);
   text-align: right;
