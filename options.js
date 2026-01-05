@@ -19,6 +19,19 @@ const CONTEXT_MENU_OPTIONS = [
   { id: 'saveas', label: 'Save As…', description: 'Pick folder & filename each time', emoji: '📁' }
 ];
 
+// v3.1 Constants (must be defined before DEFAULT_SETTINGS)
+const MAX_SHORTCUTS = 10;
+const MAX_SLOTS = 5;
+const MAX_PRESETS = 5;
+const VALID_FORMATS = ['txt', 'md', 'docx', 'pdf', 'json', 'js', 'ts', 'py', 'html', 'css', 'yaml', 'sql', 'sh', 'xml', 'csv', 'saveas'];
+
+const DEFAULT_SLOTS = [
+  { type: 'format', format: 'txt' },
+  { type: 'format', format: 'md' },
+  { type: 'format', format: 'docx' },
+  { type: 'format', format: 'pdf' },
+  { type: 'format', format: 'saveas' }
+];
 
 const DEFAULT_SETTINGS = {
   folderPath: 'FlashDocs/',
@@ -48,22 +61,6 @@ const DEFAULT_SETTINGS = {
   floatingButtonPresets: [],
   activeFloatingButtonPresetId: null
 };
-
-const MAX_SHORTCUTS = 10;
-const MAX_SLOTS = 5;
-const MAX_PRESETS = 5;
-
-// Valid formats for slot configuration
-const VALID_FORMATS = ['txt', 'md', 'docx', 'pdf', 'json', 'js', 'ts', 'py', 'html', 'css', 'yaml', 'sql', 'sh', 'xml', 'csv', 'saveas'];
-
-// Default slot configuration (matches current hardcoded buttons)
-const DEFAULT_SLOTS = [
-  { type: 'format', format: 'txt' },
-  { type: 'format', format: 'md' },
-  { type: 'format', format: 'docx' },
-  { type: 'format', format: 'pdf' },
-  { type: 'format', format: 'saveas' }
-];
 
 // Normalize a single slot with fallback handling
 function normalizeSlot(slot, shortcuts = []) {
@@ -765,6 +762,12 @@ function setupSlotConfiguration() {
   });
 }
 
+const FORMAT_EMOJIS = {
+  txt: '📄', md: '📝', docx: '📜', pdf: '📕', json: '🧩',
+  js: '🟡', ts: '🔵', py: '🐍', html: '🌐', css: '🎨',
+  yaml: '🧾', sql: '📑', sh: '⚙️', xml: '📰', csv: '📊', saveas: '📁'
+};
+
 async function renderSlotDropdowns() {
   const container = document.getElementById('slots-config');
   if (!container) return;
@@ -780,37 +783,27 @@ async function renderSlotDropdowns() {
     const slotEl = document.createElement('div');
     slotEl.className = 'slot-config-item';
 
-    const label = document.createElement('label');
-    label.textContent = `Slot ${i + 1}`;
-    label.htmlFor = `slot-${i}`;
-
     const select = document.createElement('select');
     select.id = `slot-${i}`;
     select.name = `slot-${i}`;
-    select.className = 'slot-select';
+    select.className = 'slot-select-compact';
+    select.title = `Slot ${i + 1}`;
 
     // Build options: Disabled, Formats, Shortcuts
-    let optionsHtml = '<option value="disabled">⬜ Disabled</option>';
-    optionsHtml += '<optgroup label="Formats">';
+    let optionsHtml = '<option value="disabled">⬜</option>';
     for (const fmt of VALID_FORMATS) {
       const selected = slot.type === 'format' && slot.format === fmt ? 'selected' : '';
-      optionsHtml += `<option value="format:${fmt}" ${selected}>${FORMAT_LABELS[fmt] || fmt.toUpperCase()}</option>`;
+      optionsHtml += `<option value="format:${fmt}" ${selected}>${FORMAT_EMOJIS[fmt] || '📄'} .${fmt}</option>`;
     }
-    optionsHtml += '</optgroup>';
 
     if (shortcuts.length > 0) {
       optionsHtml += '<optgroup label="Shortcuts">';
       for (const s of shortcuts) {
         const selected = slot.type === 'shortcut' && slot.shortcutId === s.id ? 'selected' : '';
-        const emoji = FORMAT_LABELS[s.format]?.split(' ')[0] || '📄';
+        const emoji = FORMAT_EMOJIS[s.format] || '📄';
         optionsHtml += `<option value="shortcut:${s.id}" ${selected}>${emoji} ${s.name}</option>`;
       }
       optionsHtml += '</optgroup>';
-    }
-
-    // Handle disabled with warning
-    if (slot.type === 'disabled') {
-      select.value = 'disabled';
     }
 
     select.innerHTML = optionsHtml;
@@ -830,11 +823,46 @@ async function renderSlotDropdowns() {
       select.title = `Warning: ${slot._warning}`;
     }
 
-    select.addEventListener('change', () => saveSlotConfiguration());
+    select.addEventListener('change', () => {
+      saveSlotConfiguration();
+      updateSlotPreview();
+    });
 
-    slotEl.appendChild(label);
     slotEl.appendChild(select);
     container.appendChild(slotEl);
+  }
+
+  // Update the visual preview
+  updateSlotPreview();
+}
+
+function updateSlotPreview() {
+  const previewContainer = document.getElementById('preview-slot-buttons');
+  if (!previewContainer) return;
+
+  const previewSlots = previewContainer.querySelectorAll('.preview-slot');
+
+  for (let i = 0; i < MAX_SLOTS; i++) {
+    const select = document.getElementById(`slot-${i}`);
+    const previewSlot = previewSlots[i];
+
+    if (!select || !previewSlot) continue;
+
+    const value = select.value;
+    let emoji = '⬜';
+
+    if (value.startsWith('format:')) {
+      const fmt = value.replace('format:', '');
+      emoji = FORMAT_EMOJIS[fmt] || '📄';
+    } else if (value.startsWith('shortcut:')) {
+      // Find shortcut emoji
+      const option = select.querySelector(`option[value="${value}"]`);
+      if (option) {
+        emoji = option.textContent.split(' ')[0];
+      }
+    }
+
+    previewSlot.textContent = emoji;
   }
 }
 

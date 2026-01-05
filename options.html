@@ -142,11 +142,28 @@
       <!-- v3.1: Contextual Chip Slots Section -->
       <section class="options-card">
         <h2>Contextual Chip Slots</h2>
-        <p class="help">Configure the 5 action buttons that appear when you select text. Each slot can be a format or a shortcut.</p>
+        <p class="help">Configure the 5 action buttons that appear when you select text.</p>
 
-        <!-- Slot Configuration Dropdowns -->
-        <div class="slots-config" id="slots-config">
-          <!-- Dynamically populated by options.js -->
+        <!-- Visual Preview of Floating Button -->
+        <div class="slot-preview-container">
+          <div class="slot-preview-chip">
+            <div class="preview-save-bar">
+              <span class="preview-logo">⚡</span>
+              <span class="preview-save-text">Save</span>
+              <span class="preview-type-badge">TXT <span class="preview-dropdown-arrow">▼</span></span>
+            </div>
+            <div class="preview-slot-buttons" id="preview-slot-buttons">
+              <div class="preview-slot" data-slot="0">📄</div>
+              <div class="preview-slot" data-slot="1">📝</div>
+              <div class="preview-slot" data-slot="2">📜</div>
+              <div class="preview-slot" data-slot="3">📕</div>
+              <div class="preview-slot" data-slot="4">📁</div>
+            </div>
+          </div>
+          <!-- Slot Dropdowns directly below each button -->
+          <div class="slot-dropdowns-row" id="slots-config">
+            <!-- Dynamically populated by options.js -->
+          </div>
         </div>
 
         <!-- Preset Management -->
