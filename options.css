@@ -337,6 +337,19 @@ body {
   color: var(--danger);
 }
 
+/* Per-section save buttons */
+.section-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 12px;
+  margin-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.section-actions .btn {
+  min-width: 100px;
+}
+
 .hidden {
   display: none;
 }

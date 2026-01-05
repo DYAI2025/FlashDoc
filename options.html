@@ -59,6 +59,9 @@
             <span class="slider"></span>
           </label>
         </div>
+        <div class="section-actions">
+          <button type="button" class="btn primary small" data-save-section="storage">Anwenden</button>
+        </div>
       </section>
 
       <section class="options-card">
@@ -84,6 +87,9 @@
             <span class="range-value"><span id="selectionThresholdValue">0</span> characters</span>
           </div>
         </div>
+        <div class="section-actions">
+          <button type="button" class="btn primary small" data-save-section="capture">Anwenden</button>
+        </div>
       </section>
 
       <section class="options-card">
@@ -97,6 +103,9 @@
         </div>
         <p class="help privacy-help">When enabled, FlashDoc only activates when you click the extension icon or use a keyboard shortcut. No scripts run on pages until you explicitly activate them.</p>
         <div class="privacy-status" id="privacy-status"></div>
+        <div class="section-actions">
+          <button type="button" class="btn primary small" data-save-section="privacy">Anwenden</button>
+        </div>
       </section>
 
       <section class="options-card">
@@ -131,12 +140,18 @@
             <span class="slider"></span>
           </label>
         </div>
+        <div class="section-actions">
+          <button type="button" class="btn primary small" data-save-section="interface">Anwenden</button>
+        </div>
       </section>
 
       <section class="options-card">
         <h2>Context menu formats</h2>
         <p class="help">Choose which formats appear when you right-click selected text.</p>
         <div class="format-grid" id="context-menu-formats"></div>
+        <div class="section-actions">
+          <button type="button" class="btn primary small" data-save-section="contextmenu">Anwenden</button>
+        </div>
       </section>
 
       <!-- v3.1: Contextual Chip Slots Section -->
@@ -235,6 +250,9 @@
             <span class="slider"></span>
           </label>
         </div>
+        <div class="section-actions">
+          <button type="button" class="btn primary small" data-save-section="cornerball">Anwenden</button>
+        </div>
       </section>
 
       <section class="options-card">
@@ -252,6 +270,9 @@
             <input id="playSound" name="playSound" type="checkbox">
             <span class="slider"></span>
           </label>
+        </div>
+        <div class="section-actions">
+          <button type="button" class="btn primary small" data-save-section="feedback">Anwenden</button>
         </div>
       </section>
 
@@ -294,13 +315,15 @@
             </div>
           </div>
         </div>
+        <div class="section-actions">
+          <button type="button" class="btn primary small" data-save-section="tracking">Anwenden</button>
+        </div>
       </section>
 
       <section class="options-actions">
         <div class="status" id="status-message" role="status" aria-live="polite"></div>
         <div class="buttons">
-          <button type="button" class="btn secondary" id="reset-defaults">Reset defaults</button>
-          <button type="submit" class="btn primary">Save changes</button>
+          <button type="button" class="btn secondary" id="reset-defaults">Alles zurücksetzen</button>
         </div>
       </section>
     </form>

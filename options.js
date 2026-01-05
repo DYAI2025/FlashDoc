@@ -179,18 +179,121 @@ function setupForm() {
   }
 
   if (resetButton) {
-    resetButton.addEventListener('click', () => {
-      applySettings(DEFAULT_SETTINGS);
-      saveSettings(DEFAULT_SETTINGS, { showStatus: true });
+    resetButton.addEventListener('click', async () => {
+      if (confirm('Alle Einstellungen auf Standard zurücksetzen?')) {
+        await chrome.storage.sync.clear();
+        await chrome.storage.sync.set(DEFAULT_SETTINGS);
+        applySettings(DEFAULT_SETTINGS);
+        renderSlotDropdowns();
+        renderPresetSelector();
+        loadShortcuts();
+        await refreshBackgroundSettings();
+        showStatusMessage('Alle Einstellungen zurückgesetzt.', 'success');
+      }
     });
   }
 
+  // Per-section save buttons
+  setupSectionSaveButtons();
+
+  // Prevent form submission (no global save anymore)
   if (form) {
-    form.addEventListener('submit', async (event) => {
+    form.addEventListener('submit', (event) => {
       event.preventDefault();
-      const settings = await readFormSettings(form);
-      saveSettings(settings, { showStatus: true });
     });
+  }
+}
+
+// Per-section save handlers
+function setupSectionSaveButtons() {
+  document.querySelectorAll('[data-save-section]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const section = btn.dataset.saveSection;
+      await saveSectionSettings(section);
+    });
+  });
+}
+
+async function saveSectionSettings(section) {
+  const form = document.getElementById('options-form');
+  if (!form) return;
+
+  let updates = {};
+
+  switch (section) {
+    case 'storage':
+      updates = {
+        folderPath: (form.folderPath.value || DEFAULT_SETTINGS.folderPath).trim() || DEFAULT_SETTINGS.folderPath,
+        namingPattern: form.namingPattern.value || DEFAULT_SETTINGS.namingPattern,
+        customPattern: (form.customPattern.value || DEFAULT_SETTINGS.customPattern).trim() || DEFAULT_SETTINGS.customPattern,
+        organizeByType: form.organizeByType.checked
+      };
+      break;
+
+    case 'capture':
+      updates = {
+        autoDetectType: form.autoDetectType.checked,
+        enableSmartDetection: form.enableSmartDetection.checked,
+        selectionThreshold: Number(form.selectionThreshold.value || DEFAULT_SETTINGS.selectionThreshold)
+      };
+      break;
+
+    case 'privacy':
+      updates = {
+        privacyMode: form.privacyMode?.checked ?? DEFAULT_SETTINGS.privacyMode
+      };
+      updatePrivacyStatus(updates.privacyMode);
+      break;
+
+    case 'interface':
+      updates = {
+        showFloatingButton: form.showFloatingButton.checked,
+        buttonPosition: form.buttonPosition.value || DEFAULT_SETTINGS.buttonPosition,
+        autoHideButton: form.autoHideButton.checked,
+        enableContextMenu: form.enableContextMenu.checked
+      };
+      break;
+
+    case 'contextmenu':
+      const selectedFormats = getSelectedContextMenuFormats(form);
+      updates = {
+        contextMenuFormats: selectedFormats.length ? selectedFormats : DEFAULT_SETTINGS.contextMenuFormats
+      };
+      break;
+
+    case 'cornerball':
+      updates = {
+        showCornerBall: form.showCornerBall?.checked ?? DEFAULT_SETTINGS.showCornerBall
+      };
+      break;
+
+    case 'feedback':
+      updates = {
+        showNotifications: form.showNotifications.checked,
+        playSound: form.playSound.checked
+      };
+      break;
+
+    case 'tracking':
+      updates = {
+        trackFormatUsage: form.trackFormatUsage?.checked ?? DEFAULT_SETTINGS.trackFormatUsage,
+        trackDetectionAccuracy: form.trackDetectionAccuracy?.checked ?? DEFAULT_SETTINGS.trackDetectionAccuracy,
+        showFormatRecommendations: form.showFormatRecommendations?.checked ?? DEFAULT_SETTINGS.showFormatRecommendations
+      };
+      break;
+
+    default:
+      return;
+  }
+
+  try {
+    await chrome.storage.sync.set(updates);
+    await refreshBackgroundSettings();
+    notifyContentScripts();
+    showStatusMessage('Gespeichert ✓', 'success');
+  } catch (error) {
+    console.error('Failed to save section:', section, error);
+    showStatusMessage('Speichern fehlgeschlagen.', 'error');
   }
 }
 
