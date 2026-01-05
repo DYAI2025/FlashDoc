@@ -1146,11 +1146,11 @@ class FlashDocContent {
       
       /* Highlight */
       .flashdoc-highlight {
-        background: linear-gradient(135deg, 
-          rgba(102, 126, 234, 0.1), 
-          rgba(118, 75, 162, 0.1));
-        border: 2px solid rgba(102, 126, 234, 0.3);
-        border-radius: 4px;
+        background: linear-gradient(135deg,
+          rgba(30, 92, 74, 0.1),
+          rgba(42, 122, 98, 0.1));
+        border: 2px solid rgba(30, 92, 74, 0.3);
+        border-radius: 8px;
         animation: flashdoc-pulse 2s ease-in-out infinite;
       }
       
@@ -1166,19 +1166,19 @@ class FlashDocContent {
         display: flex;
         align-items: center;
         gap: 8px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #1E5C4A 0%, #2A7A62 100%);
         color: white;
         padding: 8px 16px;
         border-radius: 20px;
         cursor: pointer;
-        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        box-shadow: 0 4px 12px rgba(30, 92, 74, 0.4);
         transition: all 0.2s;
         font-size: 14px;
       }
-      
+
       .flashdoc-ctx-main:hover {
         transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        box-shadow: 0 6px 20px rgba(255, 215, 0, 0.4);
       }
       
       .flashdoc-ctx-icon {
@@ -1196,8 +1196,8 @@ class FlashDocContent {
       }
 
       .flashdoc-ctx-type.overridden {
-        background: rgba(240, 147, 251, 0.4);
-        box-shadow: 0 0 0 2px rgba(240, 147, 251, 0.3);
+        background: rgba(255, 215, 0, 0.4);
+        box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.3);
       }
 
       /* Type Selector Dropdown */
@@ -1268,15 +1268,15 @@ class FlashDocContent {
       }
 
       .flashdoc-type-option:hover {
-        background: linear-gradient(135deg, rgba(102, 126, 234, 0.15), rgba(118, 75, 162, 0.15));
+        background: linear-gradient(135deg, rgba(30, 92, 74, 0.15), rgba(42, 122, 98, 0.15));
       }
 
       .flashdoc-type-option.detected {
-        background: rgba(102, 126, 234, 0.1);
+        background: rgba(30, 92, 74, 0.1);
       }
 
       .flashdoc-type-option.selected {
-        background: linear-gradient(135deg, #667eea, #764ba2);
+        background: linear-gradient(135deg, #1E5C4A, #2A7A62);
         color: white;
       }
 
@@ -1287,9 +1287,9 @@ class FlashDocContent {
       .type-badge {
         font-size: 8px;
         padding: 2px 5px;
-        background: rgba(102, 126, 234, 0.2);
+        background: rgba(30, 92, 74, 0.2);
         border-radius: 4px;
-        color: #667eea;
+        color: #1E5C4A;
         font-weight: 700;
       }
 
@@ -1343,25 +1343,25 @@ class FlashDocContent {
       .flashdoc-fab-icon {
         width: 56px;
         height: 56px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #1E5C4A 0%, #2A7A62 100%);
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
         font-size: 24px;
         cursor: pointer;
-        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        box-shadow: 0 4px 12px rgba(30, 92, 74, 0.4);
         transition: all 0.3s;
         position: relative;
       }
-      
+
       .flashdoc-fab-icon:hover {
         transform: scale(1.1);
-        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        box-shadow: 0 6px 20px rgba(255, 215, 0, 0.5);
       }
-      
+
       .flashdoc-fab-icon.active {
-        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
         animation: flashdoc-pulse 2s infinite;
       }
       
@@ -1404,8 +1404,8 @@ class FlashDocContent {
       
       .flashdoc-fab-option:hover {
         transform: translateX(-4px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        box-shadow: 0 4px 12px rgba(30, 92, 74, 0.3);
+        background: linear-gradient(135deg, #1E5C4A 0%, #2A7A62 100%);
         color: white;
       }
       
@@ -1421,17 +1421,17 @@ class FlashDocContent {
 
       .flashdoc-fab-divider {
         height: 1px;
-        background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.3), transparent);
+        background: linear-gradient(90deg, transparent, rgba(30, 92, 74, 0.3), transparent);
         margin: 8px 0;
       }
 
       .flashdoc-shortcut {
-        background: linear-gradient(135deg, rgba(102, 126, 234, 0.15), rgba(118, 75, 162, 0.15));
-        border: 1px solid rgba(102, 126, 234, 0.3);
+        background: linear-gradient(135deg, rgba(30, 92, 74, 0.15), rgba(42, 122, 98, 0.15));
+        border: 1px solid rgba(30, 92, 74, 0.3);
       }
 
       .flashdoc-shortcut:hover {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #1E5C4A 0%, #2A7A62 100%);
         border-color: transparent;
       }
       
@@ -1439,15 +1439,15 @@ class FlashDocContent {
         position: absolute;
         top: -8px;
         right: -8px;
-        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-        color: white;
+        background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+        color: #0A1612;
         font-size: 11px;
         font-weight: bold;
         padding: 4px 8px;
         border-radius: 12px;
         min-width: 24px;
         text-align: center;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        box-shadow: 0 2px 6px rgba(255, 215, 0, 0.3);
       }
       
       /* Toast Notifications */
@@ -1508,19 +1508,19 @@ class FlashDocContent {
       .flashdoc-ball-icon {
         width: 48px;
         height: 48px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #1E5C4A 0%, #2A7A62 100%);
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
         font-size: 20px;
-        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        box-shadow: 0 4px 12px rgba(30, 92, 74, 0.4);
         transition: all 0.2s;
       }
 
       .flashdoc-corner-ball:hover .flashdoc-ball-icon {
         transform: scale(1.05);
-        box-shadow: 0 6px 16px rgba(102, 126, 234, 0.5);
+        box-shadow: 0 6px 16px rgba(255, 215, 0, 0.4);
       }
 
       .flashdoc-ball-pin {
@@ -1550,11 +1550,28 @@ class FlashDocContent {
       .flashdoc-corner-ball.pinned .flashdoc-ball-pin {
         opacity: 1;
         transform: scale(1);
-        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
       }
 
       .flashdoc-corner-ball.pinned .flashdoc-ball-icon {
-        box-shadow: 0 0 0 3px rgba(240, 147, 251, 0.4), 0 4px 12px rgba(102, 126, 234, 0.4);
+        box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.4), 0 4px 12px rgba(30, 92, 74, 0.4);
+      }
+
+      /* Accessibility: Reduced Motion */
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+        }
+        .flashdoc-highlight {
+          animation: none;
+        }
+        .flashdoc-fab-icon.active {
+          animation: none;
+        }
       }
     `;
 
