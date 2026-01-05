@@ -1,3 +1,16 @@
+
+
+
+
+# FlashDoc 2.3 - Release Notes
+
+## Neu
+
+### Bugfixes
+- fixed DOXC Formating. It now creates the copies formation to you flashdoc file
+- fixed pdf formating. It is not finished by now, but it work. Still not copies full formation to flash doc 
+
+
 # FlashDoc 2.2.0 - Release Notes
 
 ## Neu

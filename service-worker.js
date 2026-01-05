@@ -1,12 +1,656 @@
 // FlashDoc Service Worker
 // Core download and file management logic
 
+// Import libraries for PDF and DOCX generation
+importScripts('./lib/jspdf.umd.min.js');
+importScripts('./lib/docx.umd.min.js');
+
 // Shared detection helpers (also used in content script and tests)
 try {
   importScripts('detection-utils.js');
 } catch (error) {
   console.warn('Detection helpers unavailable in service worker:', error);
 }
+
+// ============================================================================
+// FORMATTING ENGINE v2 - Foundation Layer
+// Fixes: Bug #1 (Bold/Italic), #3 (Order), #5 (Entities), #6 (Nested Lists)
+// ============================================================================
+
+/**
+ * EntityDecoder - Decodes HTML entities to Unicode characters
+ * FIX for Bug #5: Vollständiger Entity-Decoder
+ * @example EntityDecoder.decode('&amp;&mdash;&#8364;') → '&—€'
+ */
+const EntityDecoder = (function() {
+  // Named entity map - using Unicode escape sequences to avoid parsing issues
+  const NAMED_ENTITIES = {
+    // Core entities (XML)
+    'amp': '&', 'lt': '<', 'gt': '>', 'quot': '"', 'apos': "'",
+    // Whitespace
+    'nbsp': '\u00A0', 'ensp': '\u2002', 'emsp': '\u2003', 'thinsp': '\u2009',
+    // Dashes and punctuation
+    'mdash': '\u2014', 'ndash': '\u2013', 'minus': '\u2212',
+    'hellip': '\u2026', 'bull': '\u2022', 'middot': '\u00B7',
+    'lsquo': '\u2018', 'rsquo': '\u2019', 'ldquo': '\u201C', 'rdquo': '\u201D',
+    'laquo': '\u00AB', 'raquo': '\u00BB', 'prime': '\u2032', 'Prime': '\u2033',
+    // Currency
+    'euro': '\u20AC', 'pound': '\u00A3', 'yen': '\u00A5', 'cent': '\u00A2', 'curren': '\u00A4',
+    // Legal/IP
+    'copy': '\u00A9', 'reg': '\u00AE', 'trade': '\u2122',
+    // Math symbols
+    'times': '\u00D7', 'divide': '\u00F7', 'plusmn': '\u00B1',
+    'frac12': '\u00BD', 'frac14': '\u00BC', 'frac34': '\u00BE',
+    'deg': '\u00B0', 'sup2': '\u00B2', 'sup3': '\u00B3',
+    // Arrows
+    'larr': '\u2190', 'rarr': '\u2192', 'uarr': '\u2191', 'darr': '\u2193',
+    // Greek letters (common)
+    'alpha': '\u03B1', 'beta': '\u03B2', 'gamma': '\u03B3', 'delta': '\u03B4',
+    'pi': '\u03C0', 'sigma': '\u03C3', 'omega': '\u03C9',
+    // Accented characters (common)
+    'agrave': '\u00E0', 'aacute': '\u00E1', 'acirc': '\u00E2', 'atilde': '\u00E3', 'auml': '\u00E4',
+    'egrave': '\u00E8', 'eacute': '\u00E9', 'ecirc': '\u00EA', 'euml': '\u00EB',
+    'igrave': '\u00EC', 'iacute': '\u00ED', 'icirc': '\u00EE', 'iuml': '\u00EF',
+    'ograve': '\u00F2', 'oacute': '\u00F3', 'ocirc': '\u00F4', 'otilde': '\u00F5', 'ouml': '\u00F6',
+    'ugrave': '\u00F9', 'uacute': '\u00FA', 'ucirc': '\u00FB', 'uuml': '\u00FC',
+    'Agrave': '\u00C0', 'Aacute': '\u00C1', 'Acirc': '\u00C2', 'Atilde': '\u00C3', 'Auml': '\u00C4',
+    'Egrave': '\u00C8', 'Eacute': '\u00C9', 'Ecirc': '\u00CA', 'Euml': '\u00CB',
+    'Igrave': '\u00CC', 'Iacute': '\u00CD', 'Icirc': '\u00CE', 'Iuml': '\u00CF',
+    'Ograve': '\u00D2', 'Oacute': '\u00D3', 'Ocirc': '\u00D4', 'Otilde': '\u00D5', 'Ouml': '\u00D6',
+    'Ugrave': '\u00D9', 'Uacute': '\u00DA', 'Ucirc': '\u00DB', 'Uuml': '\u00DC',
+    'ntilde': '\u00F1', 'Ntilde': '\u00D1', 'ccedil': '\u00E7', 'Ccedil': '\u00C7',
+    'szlig': '\u00DF'
+  };
+
+  /**
+   * Decode all HTML entities in a string
+   * @param {string} str - Input string with entities
+   * @returns {string} - Decoded string
+   */
+  function decode(str) {
+    if (!str || typeof str !== 'string') return str || '';
+    
+    return str
+      // Named entities: &name;
+      .replace(/&([a-zA-Z][a-zA-Z0-9]*);/g, (match, name) => {
+        return NAMED_ENTITIES[name] || match;
+      })
+      // Decimal numeric: &#1234;
+      .replace(/&#(\d+);/g, (match, code) => {
+        const num = parseInt(code, 10);
+        return num > 0 && num < 0x110000 ? String.fromCodePoint(num) : match;
+      })
+      // Hexadecimal numeric: &#x1A2B;
+      .replace(/&#[xX]([0-9a-fA-F]+);/g, (match, hex) => {
+        const num = parseInt(hex, 16);
+        return num > 0 && num < 0x110000 ? String.fromCodePoint(num) : match;
+      });
+  }
+
+  return { decode, NAMED_ENTITIES };
+})();
+
+/**
+ * HtmlTokenizer - Converts HTML string into ordered token stream
+ * FIX for Bug #3: Dokumentreihenfolge erhalten durch Single-Pass Tokenization
+ * @example HtmlTokenizer.tokenize('<p><strong>bold</strong></p>')
+ *          → [open:p, open:strong, text:"bold", close:strong, close:p]
+ */
+const HtmlTokenizer = (function() {
+  // Self-closing tags that don't require close token
+  const SELF_CLOSING = new Set(['br', 'hr', 'img', 'input', 'meta', 'link', 'area', 'base', 'col', 'embed', 'source', 'track', 'wbr']);
+
+  /**
+   * Parse attribute string into object
+   * @param {string} attrString - e.g. 'href="url" class="cls"'
+   * @returns {Object} - {href: 'url', class: 'cls'}
+   */
+  function parseAttributes(attrString) {
+    const attrs = {};
+    if (!attrString) return attrs;
+    
+    // Match: name="value" or name='value' or name=value
+    const attrPattern = /([a-zA-Z_:][-a-zA-Z0-9_:.]*)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g;
+    let match;
+    
+    while ((match = attrPattern.exec(attrString)) !== null) {
+      const name = match[1].toLowerCase();
+      const value = match[2] ?? match[3] ?? match[4] ?? '';
+      attrs[name] = EntityDecoder.decode(value);
+    }
+    
+    return attrs;
+  }
+
+  /**
+   * Tokenize HTML string into ordered array of tokens
+   * Preserves exact document order (critical for Bug #3 fix)
+   * @param {string} html - HTML string to tokenize
+   * @returns {Array<{type:string, tag?:string, content?:string, attrs?:Object}>}
+   */
+  function tokenize(html) {
+    if (!html || typeof html !== 'string') return [];
+    
+    const tokens = [];
+    // Pattern matches: <tag attrs>, </tag>, <tag/>, or <tag ... />
+    const tagPattern = /<(\/?)(\w+)([^>]*?)(\/?)>/g;
+    let lastIndex = 0;
+    let match;
+
+    while ((match = tagPattern.exec(html)) !== null) {
+      // 1. Capture text BEFORE this tag (preserves order)
+      if (match.index > lastIndex) {
+        const textContent = html.slice(lastIndex, match.index);
+        // Keep whitespace-only text if it contains actual content
+        if (textContent.length > 0 && (textContent.trim() || /[\u00A0]/.test(textContent))) {
+          tokens.push({
+            type: 'text',
+            content: EntityDecoder.decode(textContent)
+          });
+        }
+      }
+
+      const isClosing = match[1] === '/';
+      const tagName = match[2].toLowerCase();
+      const attrString = match[3].trim();
+      const isSelfClosingSlash = match[4] === '/';
+
+      if (isClosing) {
+        // Close tag: </tag>
+        tokens.push({ type: 'close', tag: tagName });
+      } else {
+        // Open tag: <tag attrs>
+        const token = {
+          type: 'open',
+          tag: tagName,
+          attrs: parseAttributes(attrString)
+        };
+        tokens.push(token);
+
+        // Self-closing: <br/> or <br /> or naturally self-closing tags
+        if (isSelfClosingSlash || SELF_CLOSING.has(tagName)) {
+          // Don't push close for self-closing, they're handled implicitly
+        }
+      }
+
+      lastIndex = match.index + match[0].length;
+    }
+
+    // 2. Capture remaining text after last tag
+    if (lastIndex < html.length) {
+      const remaining = html.slice(lastIndex);
+      if (remaining.length > 0 && (remaining.trim() || /[\u00A0]/.test(remaining))) {
+        tokens.push({
+          type: 'text',
+          content: EntityDecoder.decode(remaining)
+        });
+      }
+    }
+
+    return tokens;
+  }
+
+  return { tokenize, parseAttributes };
+})();
+
+/**
+ * BlockBuilder - Converts token stream into structured document blocks
+ * FIX for Bug #1: Bold/Italic via Format-Stack
+ * FIX for Bug #6: Nested Lists via Level-Tracking
+ * FIX for Bug #7: Context-basierte List-Counter
+ */
+const BlockBuilder = (function() {
+  // Block-level tags that create new blocks
+  const BLOCK_TAGS = new Set(['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'li', 'div', 'blockquote', 'pre', 'tr']);
+  
+  // Inline formatting tags → property name
+  const INLINE_FORMAT_MAP = {
+    'strong': 'bold', 'b': 'bold',
+    'em': 'italic', 'i': 'italic',
+    'u': 'underline',
+    's': 'strikethrough', 'strike': 'strikethrough', 'del': 'strikethrough',
+    'code': 'code', 'kbd': 'code', 'samp': 'code',
+    'sub': 'subscript', 'sup': 'superscript'
+  };
+
+  // List container tags
+  const LIST_CONTAINERS = new Set(['ul', 'ol']);
+
+  /**
+   * Parse CSS style attribute for formatting
+   * @param {string} styleAttr - e.g. "font-weight: bold; font-style: italic"
+   * @returns {Array<string>} - Array of format properties: ['bold', 'italic']
+   */
+  function parseStyleAttribute(styleAttr) {
+    const formats = [];
+    if (!styleAttr) return formats;
+    
+    const style = styleAttr.toLowerCase();
+    
+    // Bold detection: font-weight: bold/700/800/900
+    if (/font-weight\s*:\s*(bold|[7-9]00)/.test(style)) {
+      formats.push('bold');
+    }
+    
+    // Italic detection: font-style: italic/oblique
+    if (/font-style\s*:\s*(italic|oblique)/.test(style)) {
+      formats.push('italic');
+    }
+    
+    // Underline detection: text-decoration contains underline
+    if (/text-decoration[^:]*:\s*[^;]*underline/.test(style)) {
+      formats.push('underline');
+    }
+    
+    // Strikethrough detection: text-decoration contains line-through
+    if (/text-decoration[^:]*:\s*[^;]*line-through/.test(style)) {
+      formats.push('strikethrough');
+    }
+    
+    // Monospace/code detection: font-family contains mono/courier/consolas
+    if (/font-family\s*:\s*[^;]*(mono|courier|consolas|menlo)/i.test(style)) {
+      formats.push('code');
+    }
+    
+    return formats;
+  }
+
+  /**
+   * Build structured blocks from token stream
+   * @param {Array} tokens - From HtmlTokenizer.tokenize()
+   * @returns {Array<{type:string, runs:Array, level?:number, listType?:string, listLevel?:number, listIndex?:number}>}
+   */
+  function build(tokens) {
+    if (!tokens || !Array.isArray(tokens)) return [];
+
+    const blocks = [];
+    const formatStack = [];  // Active inline formats: [{tag:'strong', prop:'bold'}, ...]
+    const listStack = [];    // List nesting: [{type:'bullet'|'ordered', index:-1}, ...]
+    
+    let currentBlock = null;
+
+    /**
+     * Get current format state from stack
+     */
+    function getFormatState() {
+      const state = { bold: false, italic: false, underline: false, strikethrough: false, code: false };
+      for (const format of formatStack) {
+        if (format.prop) state[format.prop] = true;
+        // Handle CSS-derived formats (array of props)
+        if (format.cssFormats) {
+          for (const prop of format.cssFormats) {
+            state[prop] = true;
+          }
+        }
+      }
+      return state;
+    }
+
+    /**
+     * Ensure we have a current block to add runs to
+     */
+    function ensureBlock() {
+      if (!currentBlock) {
+        currentBlock = { type: 'paragraph', runs: [] };
+        blocks.push(currentBlock);
+      }
+      return currentBlock;
+    }
+
+    /**
+     * Finalize current block and start fresh
+     */
+    function finalizeBlock() {
+      if (currentBlock && currentBlock.runs.length > 0) {
+        // Trim leading/trailing empty runs
+        while (currentBlock.runs.length > 0 && !currentBlock.runs[0].text.trim()) {
+          currentBlock.runs.shift();
+        }
+        while (currentBlock.runs.length > 0 && !currentBlock.runs[currentBlock.runs.length - 1].text.trim()) {
+          currentBlock.runs.pop();
+        }
+      }
+      currentBlock = null;
+    }
+
+    // Process each token in order (preserving document order!)
+    for (const token of tokens) {
+      if (token.type === 'open') {
+        const tag = token.tag;
+        const attrs = token.attrs || {};
+
+        // Check for CSS style formatting on ANY tag
+        const cssFormats = parseStyleAttribute(attrs.style);
+
+        // List containers - push to stack
+        if (tag === 'ul') {
+          listStack.push({ type: 'bullet', index: -1 });
+        } else if (tag === 'ol') {
+          listStack.push({ type: 'ordered', index: -1 });
+        }
+        // List items - create new block
+        else if (tag === 'li') {
+          finalizeBlock();
+          const listCtx = listStack[listStack.length - 1] || { type: 'bullet', index: -1 };
+          listCtx.index++;
+          
+          currentBlock = {
+            type: 'list-item',
+            listType: listCtx.type,
+            listLevel: listStack.length - 1,
+            listIndex: listCtx.index,
+            runs: []
+          };
+          blocks.push(currentBlock);
+        }
+        // Headings
+        else if (/^h([1-6])$/.test(tag)) {
+          finalizeBlock();
+          const level = parseInt(tag.charAt(1), 10);
+          currentBlock = {
+            type: 'heading',
+            level: level,
+            runs: []
+          };
+          blocks.push(currentBlock);
+        }
+        // Paragraphs and other block elements
+        else if (BLOCK_TAGS.has(tag)) {
+          finalizeBlock();
+          currentBlock = { type: 'paragraph', runs: [] };
+          blocks.push(currentBlock);
+        }
+        
+        // Inline formatting - push to format stack (FIX for Bug #1!)
+        // Either from semantic tags OR CSS styles
+        if (INLINE_FORMAT_MAP[tag]) {
+          formatStack.push({ tag: tag, prop: INLINE_FORMAT_MAP[tag] });
+        } else if (cssFormats.length > 0) {
+          // CSS-based formatting (span, div with style)
+          formatStack.push({ tag: tag, cssFormats: cssFormats, isStyled: true });
+        }
+        
+        // Links - store href for potential use
+        if (tag === 'a') {
+          formatStack.push({ tag: 'a', href: attrs.href || '' });
+        }
+        // Line breaks
+        else if (tag === 'br') {
+          ensureBlock();
+          const state = getFormatState();
+          currentBlock.runs.push({ text: '\n', ...state });
+        }
+      }
+      else if (token.type === 'close') {
+        const tag = token.tag;
+
+        // List container closes
+        if (LIST_CONTAINERS.has(tag)) {
+          listStack.pop();
+          if (listStack.length === 0) {
+            finalizeBlock(); // Exit list context
+          }
+        }
+        // Block element closes
+        else if (tag === 'li' || /^h[1-6]$/.test(tag) || BLOCK_TAGS.has(tag)) {
+          finalizeBlock();
+        }
+        // Inline format closes - pop from stack (FIX for Bug #1!)
+        else if (INLINE_FORMAT_MAP[tag] || tag === 'a') {
+          // Find and remove matching open tag
+          for (let i = formatStack.length - 1; i >= 0; i--) {
+            if (formatStack[i].tag === tag) {
+              formatStack.splice(i, 1);
+              break;
+            }
+          }
+        }
+      }
+      else if (token.type === 'text') {
+        const text = token.content;
+        if (!text) continue;
+
+        ensureBlock();
+        const state = getFormatState();
+        
+        // Add text run with current format state
+        currentBlock.runs.push({
+          text: text,
+          bold: state.bold,
+          italic: state.italic,
+          underline: state.underline,
+          strikethrough: state.strikethrough,
+          code: state.code
+        });
+      }
+    }
+
+    // Finalize any remaining block
+    finalizeBlock();
+
+    // Clean up empty blocks
+    return blocks.filter(block => 
+      block.runs && block.runs.length > 0 && 
+      block.runs.some(run => run.text && run.text.trim())
+    );
+  }
+
+  return { build };
+})();
+
+console.log('⚡ FlashDoc Formatting Engine v2 loaded');
+
+// ============================================================================
+// BATCH 2: DOCX Renderer Layer
+// FIX for Bug #2: Echte DOCX Listen mit numbering config
+// ============================================================================
+
+/**
+ * DocxRenderer - Creates properly formatted DOCX elements
+ * Uses docx.js library with real Word formatting
+ */
+const DocxRenderer = (function() {
+  /**
+   * Create a TextRun with proper formatting from a run object
+   * @param {Object} run - {text, bold, italic, underline, strikethrough, code}
+   * @param {number} fontSize - Size in half-points (11pt = 22)
+   * @returns {Object} - docx.TextRun configuration
+   */
+  function createTextRun(run, fontSize = 22) {
+    const config = {
+      text: run.text || '',
+      font: run.code ? 'Courier New' : 'Calibri',
+      size: fontSize,
+      bold: Boolean(run.bold),
+      italics: Boolean(run.italic)
+    };
+    
+    if (run.underline) {
+      config.underline = { type: 'single' };
+    }
+    if (run.strikethrough) {
+      config.strike = true;
+    }
+    
+    return config;
+  }
+
+  /**
+   * Create numbering configuration for Word lists
+   * FIX for Bug #2: Real Word numbering instead of Unicode bullets
+   * @returns {Object} - Numbering configuration for docx.Document
+   */
+  function createNumberingConfig() {
+    return {
+      config: [
+        // Bullet list configuration (3 levels)
+        {
+          reference: 'bullet-list',
+          levels: [
+            { level: 0, format: 'bullet', text: '•', alignment: 'left', style: { paragraph: { indent: { left: 720, hanging: 360 } } } },
+            { level: 1, format: 'bullet', text: '○', alignment: 'left', style: { paragraph: { indent: { left: 1440, hanging: 360 } } } },
+            { level: 2, format: 'bullet', text: '▪', alignment: 'left', style: { paragraph: { indent: { left: 2160, hanging: 360 } } } }
+          ]
+        },
+        // Ordered list configuration (3 levels)
+        {
+          reference: 'ordered-list',
+          levels: [
+            { level: 0, format: 'decimal', text: '%1.', alignment: 'left', style: { paragraph: { indent: { left: 720, hanging: 360 } } } },
+            { level: 1, format: 'lowerLetter', text: '%2)', alignment: 'left', style: { paragraph: { indent: { left: 1440, hanging: 360 } } } },
+            { level: 2, format: 'lowerRoman', text: '%3.', alignment: 'left', style: { paragraph: { indent: { left: 2160, hanging: 360 } } } }
+          ]
+        }
+      ]
+    };
+  }
+
+  return { createTextRun, createNumberingConfig };
+})();
+
+// ============================================================================
+// BATCH 3: PDF Renderer Layer
+// FIX for Bug #4: Korrekte Ordered-List Nummerierung
+// FIX for Bug #7: Context-basierte Counter (separate per list)
+// ============================================================================
+
+/**
+ * PdfListContext - Manages list counters for PDF rendering
+ * FIX for Bug #4: PDF zeigt "1. 2. 3." statt "•."
+ * FIX for Bug #7: Zweite <ol> startet bei 1 (nicht fortlaufend)
+ */
+const PdfListContext = (function() {
+  let counters = {};      // Counter per level: {'ordered-0': 1, 'ordered-1': 1, ...}
+  let lastListType = null;
+  let lastListLevel = -1;
+  let inListContext = false;
+
+  /**
+   * Reset all counters (call at start of new document)
+   */
+  function reset() {
+    counters = {};
+    lastListType = null;
+    lastListLevel = -1;
+    inListContext = false;
+  }
+
+  /**
+   * Get prefix for a block (bullet or number)
+   * @param {Object} block - Block with type, listType, listLevel, listIndex
+   * @returns {string|null} - Prefix like "• " or "1. " or null for non-list
+   */
+  function getPrefix(block) {
+    // Non-list block exits list context
+    if (block.type !== 'list-item') {
+      if (inListContext) {
+        reset();
+      }
+      return null;
+    }
+
+    inListContext = true;
+    const level = block.listLevel || 0;
+    const type = block.listType || 'bullet';
+    const key = `${type}-${level}`;
+
+    // Detect NEW list (different type at same level, or first item at level 0)
+    const isNewList = 
+      (block.listIndex === 0 && level === 0) ||
+      (type !== lastListType && level === 0);
+
+    if (isNewList) {
+      // Reset counters for new list
+      counters = {};
+    }
+
+    // Ordered list: increment and return number
+    if (type === 'ordered') {
+      counters[key] = (counters[key] || 0) + 1;
+      lastListType = type;
+      lastListLevel = level;
+      return `${counters[key]}. `;
+    }
+
+    // Bullet list: return appropriate bullet for level
+    const bullets = ['•', '○', '▪'];
+    const bulletIndex = Math.min(level, bullets.length - 1);
+    lastListType = type;
+    lastListLevel = level;
+    return `${bullets[bulletIndex]} `;
+  }
+
+  return { getPrefix, reset };
+})();
+
+/**
+ * PdfRenderer - Renders formatted runs to jsPDF
+ * FIX for Bug #1: Bold/Italic korrekt in PDF
+ */
+const PdfRenderer = (function() {
+  /**
+   * Render a single text run with formatting
+   * @param {Object} doc - jsPDF instance
+   * @param {Object} run - {text, bold, italic, underline, code}
+   * @param {number} x - X position in mm
+   * @param {number} y - Y position in mm
+   * @param {number} fontSize - Font size in pt
+   * @returns {number} - New X position after text
+   */
+  function renderRun(doc, run, x, y, fontSize) {
+    if (!run.text) return x;
+
+    // Determine font style based on formatting
+    let fontStyle = 'normal';
+    if (run.bold && run.italic) {
+      fontStyle = 'bolditalic';
+    } else if (run.bold) {
+      fontStyle = 'bold';
+    } else if (run.italic) {
+      fontStyle = 'italic';
+    }
+
+    // Set font (use monospace for code)
+    const fontFamily = run.code ? 'courier' : 'helvetica';
+    doc.setFont(fontFamily, fontStyle);
+    doc.setFontSize(fontSize);
+    
+    // Render text
+    doc.text(run.text, x, y);
+    
+    // Return new X position
+    const textWidth = doc.getTextWidth(run.text);
+    return x + textWidth;
+  }
+
+  /**
+   * Render all runs in a block, handling word wrap
+   * @param {Object} doc - jsPDF instance
+   * @param {Array} runs - Array of run objects
+   * @param {number} startX - Starting X position
+   * @param {number} y - Y position
+   * @param {number} fontSize - Font size
+   * @param {number} maxWidth - Maximum width for wrapping
+   * @returns {number} - Final X position
+   */
+  function renderRuns(doc, runs, startX, y, fontSize, maxWidth) {
+    let x = startX;
+    
+    for (const run of runs) {
+      x = renderRun(doc, run, x, y, fontSize);
+    }
+    
+    return x;
+  }
+
+  return { renderRun, renderRuns };
+})();
+
+console.log('⚡ FlashDoc Renderer Layer loaded');
+
+// ============================================================================
+// END FORMATTING ENGINE v2
+// ============================================================================
 
 const CONTEXT_MENU_ITEMS = [
   { id: 'auto', title: '\u26A1 Auto-detect & Save' },
@@ -38,7 +682,9 @@ class FlashDoc {
       todayFiles: 0,
       todaysDate: '',
       lastFile: '',
-      lastTimestamp: null
+      lastTimestamp: null,
+      // Dev-Auftrag 4: Extended last action info
+      lastAction: null  // { type, contentPreview, prefix }
     };
     this.contextMenuListenerRegistered = false;
     this.onContextMenuClicked = this.onContextMenuClicked.bind(this);
@@ -81,7 +727,19 @@ class FlashDoc {
       showFormatRecommendations: true,
       contextMenuFormats: DEFAULT_CONTEXT_MENU_FORMATS,
       // Category Shortcuts: prefix + format combo
-      categoryShortcuts: [] // Array of {id, name, format} objects, max 5
+      categoryShortcuts: [], // Array of {id, name, format} objects, max 10
+      // Privacy Mode: on-demand injection only
+      privacyMode: false,
+      // v3.1: Configurable contextual chip slots
+      floatingButtonSlots: [
+        { type: 'format', format: 'txt' },
+        { type: 'format', format: 'md' },
+        { type: 'format', format: 'docx' },
+        { type: 'format', format: 'pdf' },
+        { type: 'format', format: 'saveas' }
+      ],
+      floatingButtonPresets: [],
+      activeFloatingButtonPresetId: null
     };
 
     const stored = await chrome.storage.sync.get(null);
@@ -101,8 +759,8 @@ class FlashDoc {
   }
 
   setupContextMenus() {
-    console.log('🔧 Setting up context menus...');
-    console.log('📦 Current settings.categoryShortcuts:', this.settings.categoryShortcuts);
+    console.log('ðŸ”§ Setting up context menus...');
+    console.log('ðŸ“¦ Current settings.categoryShortcuts:', this.settings.categoryShortcuts);
 
     // Remove existing menus
     chrome.contextMenus.removeAll(() => {
@@ -111,7 +769,7 @@ class FlashDoc {
       }
 
       if (!this.settings.enableContextMenu) {
-        console.log('⏭️ Context menu disabled in settings');
+        console.log('â­ï¸ Context menu disabled in settings');
         return;
       }
 
@@ -140,7 +798,7 @@ class FlashDoc {
 
       // Add category shortcuts (prefix combos) if any exist
       const shortcuts = this.settings.categoryShortcuts || [];
-      console.log('📋 Category shortcuts:', shortcuts);
+      console.log('ðŸ“‹ Category shortcuts:', shortcuts);
       if (shortcuts.length > 0) {
         // Add separator
         chrome.contextMenus.create({
@@ -152,13 +810,13 @@ class FlashDoc {
 
         // Add each shortcut
         const formatEmojis = {
-          txt: '📄', md: '📝', docx: '📜', pdf: '📕', json: '🧩',
-          js: '🟡', ts: '🔵', py: '🐍', html: '🌐', css: '🎨',
-          yaml: '🧾', sql: '📑', sh: '⚙️'
+          txt: 'ðŸ“„', md: 'ðŸ“', docx: 'ðŸ“œ', pdf: 'ðŸ“•', json: 'ðŸ§©',
+          js: 'ðŸŸ¡', ts: 'ðŸ”µ', py: 'ðŸ', html: 'ðŸŒ', css: 'ðŸŽ¨',
+          yaml: 'ðŸ§¾', sql: 'ðŸ“‘', sh: 'âš™ï¸'
         };
 
         shortcuts.forEach(shortcut => {
-          const emoji = formatEmojis[shortcut.format] || '📄';
+          const emoji = formatEmojis[shortcut.format] || 'ðŸ“„';
           chrome.contextMenus.create({
             id: `flashdoc-shortcut-${shortcut.id}`,
             parentId: 'flashdoc-parent',
@@ -192,10 +850,50 @@ class FlashDoc {
     });
   }
 
+  // Update content script registration based on privacy mode
+  async updateContentScriptRegistration() {
+    try {
+      // First, unregister any existing dynamic registration
+      try {
+        await chrome.scripting.unregisterContentScripts({ ids: ['flashdoc-content'] });
+      } catch (e) {
+        // Ignore if not registered
+      }
+
+      // If privacy mode is disabled, register content scripts dynamically
+      // Note: manifest.json still has declarative registration, but we can control behavior
+      if (!this.settings.privacyMode) {
+        console.log('🔓 Privacy mode OFF - content scripts active on all pages');
+      } else {
+        console.log('🔒 Privacy mode ON - on-demand injection only');
+      }
+    } catch (error) {
+      console.error('Content script registration update failed:', error);
+    }
+  }
+
+  // Manually inject content scripts into a specific tab
+  async injectContentScript(tabId) {
+    try {
+      await chrome.scripting.executeScript({
+        target: { tabId: tabId, allFrames: true },
+        files: ['detection-utils.js', 'content.js']
+      });
+      console.log(`✅ Content scripts injected into tab ${tabId}`);
+      return { success: true };
+    } catch (error) {
+      console.error(`❌ Injection failed for tab ${tabId}:`, error);
+      return { success: false, error: error.message };
+    }
+  }
+
   setupMessageListeners() {
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       if (message.action === 'saveContent') {
-        const options = message.prefix ? { prefix: message.prefix } : {};
+        const options = {
+          prefix: message.prefix || null,
+          html: message.html || '' // HTML content for formatting
+        };
         this.handleSave(message.content, message.type, sender.tab, options)
           .then((result) => sendResponse({ success: true, result }))
           .catch((error) => {
@@ -221,6 +919,7 @@ class FlashDoc {
         this.loadSettings()
           .then(() => {
             this.setupContextMenus();
+            this.updateContentScriptRegistration();
             sendResponse({ success: true });
           })
           .catch((error) => {
@@ -228,6 +927,23 @@ class FlashDoc {
             const messageText = error instanceof Error ? error.message : String(error);
             sendResponse({ success: false, error: messageText });
           });
+        return true;
+      } else if (message.action === 'activateTab') {
+        // Manual activation for privacy mode
+        const tabId = message.tabId;
+        if (!tabId) {
+          sendResponse({ success: false, error: 'No tab ID provided' });
+          return true;
+        }
+        this.injectContentScript(tabId)
+          .then((result) => sendResponse(result))
+          .catch((error) => {
+            const messageText = error instanceof Error ? error.message : String(error);
+            sendResponse({ success: false, error: messageText });
+          });
+        return true;
+      } else if (message.action === 'getPrivacyMode') {
+        sendResponse({ privacyMode: this.settings.privacyMode });
         return true;
       }
       return true;
@@ -253,10 +969,46 @@ class FlashDoc {
       return;
     }
 
-    // Standard format save
-    this.handleSave(info.selectionText, menuId, tab).catch((error) => {
+    // Standard format save - need to get HTML from tab
+    this.getHtmlSelectionAndSave(info.selectionText, menuId, tab).catch((error) => {
       console.error('Context menu save failed:', error);
     });
+  }
+
+  /**
+   * Get HTML selection from tab and save
+   */
+  async getHtmlSelectionAndSave(fallbackText, type, tab) {
+    let html = '';
+    let text = fallbackText;
+    
+    // Try to get HTML from the tab
+    if (tab && tab.id) {
+      try {
+        const [result] = await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          func: () => {
+            const sel = window.getSelection();
+            if (!sel || sel.rangeCount === 0) return { html: '' };
+            try {
+              const range = sel.getRangeAt(0);
+              const container = document.createElement('div');
+              container.appendChild(range.cloneContents());
+              return { html: container.innerHTML };
+            } catch (e) {
+              return { html: '' };
+            }
+          }
+        });
+        if (result && result.result && result.result.html) {
+          html = result.result.html;
+        }
+      } catch (e) {
+        console.log('[FlashDoc] Could not get HTML selection:', e);
+      }
+    }
+    
+    await this.handleSave(text, type, tab, { html });
   }
 
   async getSelectionAndSave(type) {
@@ -271,11 +1023,29 @@ class FlashDoc {
 
       const [selection] = await chrome.scripting.executeScript({
         target: { tabId: tab.id },
-        func: () => window.getSelection().toString()
+        func: () => {
+          const sel = window.getSelection();
+          if (!sel || sel.rangeCount === 0) return { text: '', html: '' };
+          
+          const text = sel.toString();
+          
+          // Extract HTML from selection
+          let html = '';
+          try {
+            const range = sel.getRangeAt(0);
+            const container = document.createElement('div');
+            container.appendChild(range.cloneContents());
+            html = container.innerHTML;
+          } catch (e) {
+            html = '';
+          }
+          
+          return { text, html };
+        }
       });
 
-      if (selection && selection.result && selection.result.trim()) {
-        await this.handleSave(selection.result, type, tab);
+      if (selection && selection.result && selection.result.text && selection.result.text.trim()) {
+        await this.handleSave(selection.result.text, type, tab, { html: selection.result.html });
       } else {
         const error = new Error('No text selected');
         error.handled = true;
@@ -319,7 +1089,7 @@ class FlashDoc {
       }
       filepath += filename;
 
-      const { blob, mimeType } = this.createBlob(content, targetType);
+      const { blob, mimeType } = await this.createBlob(content, targetType, options.html || '');
       const { url, revoke } = await this.prepareDownloadUrl(blob, mimeType);
 
       const downloadId = await chrome.downloads.download({
@@ -340,6 +1110,12 @@ class FlashDoc {
       this.stats.todayFiles++;
       this.stats.lastFile = filename;
       this.stats.lastTimestamp = now.getTime();
+      // Dev-Auftrag 4: Store extended action info for repeat functionality
+      this.stats.lastAction = {
+        type: targetType,
+        contentPreview: content.substring(0, 100).replace(/\n/g, ' ').trim(),
+        prefix: options.prefix || null
+      };
       await this.saveStats();
 
       // Track format usage if enabled
@@ -419,14 +1195,15 @@ class FlashDoc {
     return `${baseName}.${fileExtension}`;
   }
 
-  createBlob(content, extension) {
+  async createBlob(content, extension, html = '') {
     if (extension === 'pdf') {
-      const pdfBlob = this.createPdfBlob(content);
+      const pdfBlob = this.createPdfBlob(content, html);
       return { blob: pdfBlob, mimeType: 'application/pdf' };
     }
 
     if (extension === 'docx') {
-      const docxBlob = this.createDocxBlob(content);
+      // Note: createDocxBlob is now async, caller must await
+      const docxBlob = await this.createDocxBlob(content, html);
       return { blob: docxBlob, mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' };
     }
 
@@ -453,6 +1230,13 @@ class FlashDoc {
     if (extension === 'label') {
       const labelBlob = this.createLabelPdf(content);
       return { blob: labelBlob, mimeType: 'application/pdf' };
+    }
+
+    if (extension === 'md') {
+      // Normalize line endings to Unix-style for Markdown
+      const normalizedContent = content.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+      const blob = new Blob([normalizedContent], { type: 'text/markdown;charset=utf-8' });
+      return { blob, mimeType: 'text/markdown;charset=utf-8' };
     }
 
     const mimeType = mimeTypes[extension] || 'text/plain;charset=utf-8';
@@ -485,341 +1269,300 @@ class FlashDoc {
     };
   }
 
-  createPdfBlob(content) {
-    const encoder = new TextEncoder();
-    const sanitized = content
-      .replace(/\r\n/g, '\n')
-      .split('\n')
-      .slice(0, 120)
-      .map(line => line.substring(0, 120).replace(/[()\\]/g, '\\$&'));
+  // DEPRECATED: parseHtmlContent removed in v2
+  // Replaced by: HtmlTokenizer.tokenize() + BlockBuilder.build()
+  // See FORMATTING ENGINE v2 at top of file
 
-    let stream = 'BT\n/F1 12 Tf\n50 780 Td\n';
-    sanitized.forEach((line, index) => {
-      if (index > 0) {
-        stream += '0 -14 Td\n';
+  createPdfBlob(content, html = '') {
+    // NEW PIPELINE v2: Use Formatting Engine
+    const { jsPDF } = jspdf;
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 15;
+    const maxWidth = pageWidth - (margin * 2);
+
+    // DEBUG: Log input
+    console.log('[PDF] Input HTML length:', html?.length || 0);
+    console.log('[PDF] Input HTML preview:', html?.substring(0, 200));
+
+    // Parse HTML using new tokenizer → builder pipeline
+    let blocks;
+    if (html && html.trim()) {
+      const tokens = HtmlTokenizer.tokenize(html);
+      console.log('[PDF] Tokens:', tokens.length, tokens.slice(0, 5));
+      blocks = BlockBuilder.build(tokens);
+      console.log('[PDF] Blocks:', blocks.length);
+      // Log first block with runs for debugging
+      if (blocks[0]) {
+        console.log('[PDF] First block:', JSON.stringify(blocks[0], null, 2));
       }
-      stream += `(${line || ' '}) Tj\n`;
-    });
-    stream += 'ET';
+    } else {
+      console.log('[PDF] No HTML - using plain text fallback');
+      blocks = content.split(/\n\n+/).map(para => ({
+        type: 'paragraph',
+        runs: [{ text: para.trim(), bold: false, italic: false }]
+      })).filter(b => b.runs.length > 0 && b.runs[0].text.length > 0);
+    }
 
-    const chunks = [];
-    let offset = 0;
-    const offsets = [0];
-
-    const push = (text) => {
-      const bytes = encoder.encode(text);
-      chunks.push(bytes);
-      offset += bytes.length;
+    const fontSizes = {
+      h1: 18, h2: 16, h3: 14, h4: 12, h5: 11, h6: 10,
+      paragraph: 11, 'list-item': 11
     };
 
-    const pushObject = (id, body) => {
-      offsets.push(offset);
-      push(`${id} 0 obj\n${body}\nendobj\n`);
+    let y = margin + 5;
+    PdfListContext.reset(); // Reset list counters for new document
+
+    const checkPageBreak = (neededHeight) => {
+      if (y + neededHeight > pageHeight - margin) {
+        doc.addPage();
+        y = margin + 5;
+      }
     };
 
-    push('%PDF-1.4\n');
-    pushObject(1, '<< /Type /Catalog /Pages 2 0 R >>');
-    pushObject(2, '<< /Type /Pages /Kids [3 0 R] /Count 1 >>');
-    pushObject(3, '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>');
+    for (const block of blocks) {
+      let fontSize = fontSizes.paragraph;
+      let lineHeight = 5;
+      let x = margin;
 
-    const streamBytes = encoder.encode(stream);
-    pushObject(4, `<< /Length ${streamBytes.length} >>\nstream\n${stream}\nendstream`);
-    pushObject(5, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>');
+      // Heading formatting
+      if (block.type === 'heading') {
+        fontSize = fontSizes[`h${block.level}`] || 14;
+        lineHeight = fontSize * 0.45;
+      }
 
-    const xrefOffset = offset;
-    push('xref\n');
-    push(`0 ${offsets.length}\n`);
-    push('0000000000 65535 f \n');
-    offsets.slice(1).forEach((value) => {
-      push(`${value.toString().padStart(10, '0')} 00000 n \n`);
-    });
+      // Get list prefix (FIX Bug #4 and #7!)
+      const prefix = PdfListContext.getPrefix(block);
+      if (prefix) {
+        const indent = (block.listLevel || 0) * 5;
+        x = margin + indent;
+        checkPageBreak(lineHeight);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(fontSize);
+        doc.text(prefix, x, y);
+        x += doc.getTextWidth(prefix);
+      }
 
-    push('trailer\n');
-    push(`<< /Size ${offsets.length} /Root 1 0 R >>\n`);
-    push('startxref\n');
-    push(`${xrefOffset}\n`);
-    push('%%EOF\n');
+      // Render all runs with formatting (FIX Bug #1!)
+      for (const run of block.runs) {
+        if (!run.text || !run.text.trim()) continue;
+        
+        checkPageBreak(lineHeight);
+        
+        // Set font style based on formatting
+        let fontStyle = 'normal';
+        if (run.bold && run.italic) fontStyle = 'bolditalic';
+        else if (run.bold) fontStyle = 'bold';
+        else if (run.italic) fontStyle = 'italic';
+        
+        // Heading always bold
+        if (block.type === 'heading') fontStyle = run.italic ? 'bolditalic' : 'bold';
 
-    return new Blob(chunks, { type: 'application/pdf' });
+        // DEBUG: Log formatting being applied
+        if (run.bold || run.italic) {
+          console.log('[PDF] Applying format:', fontStyle, 'to:', run.text.substring(0, 30));
+        }
+
+        const fontFamily = run.code ? 'courier' : 'helvetica';
+        doc.setFont(fontFamily, fontStyle);
+        doc.setFontSize(fontSize);
+
+        // Word wrap for long text
+        const availableWidth = maxWidth - (x - margin);
+        const wrappedLines = doc.splitTextToSize(run.text, availableWidth);
+        
+        for (let i = 0; i < wrappedLines.length; i++) {
+          if (i > 0) {
+            y += lineHeight;
+            checkPageBreak(lineHeight);
+            x = margin + ((block.listLevel || 0) * 5);
+            if (prefix) x += doc.getTextWidth(prefix);
+          }
+          doc.text(wrappedLines[i], x, y);
+        }
+        
+        x += doc.getTextWidth(wrappedLines[wrappedLines.length - 1] || '');
+      }
+
+      y += lineHeight;
+
+      // Extra spacing after blocks
+      if (block.type === 'heading') y += 3;
+      else if (block.type === 'paragraph') y += 2;
+    }
+
+    return doc.output('blob');
   }
 
   createLabelPdf(content) {
-    const MM_TO_PT = 72 / 25.4;
-    const width = 89 * MM_TO_PT;
-    const height = 28 * MM_TO_PT;
-    const marginX = 12;
-    const marginY = 8;
+    // Label dimensions: 89mm x 28mm
+    const { jsPDF } = jspdf;
+    const doc = new jsPDF({
+      orientation: 'landscape',
+      unit: 'mm',
+      format: [89, 28]
+    });
+
+    const width = 89;
+    const height = 28;
+    const marginX = 4;
+    const marginY = 3;
     const maxLines = 4;
-    const lineHeightFactor = 1.25;
-    const widthFactor = 0.55;
 
-    const wrapLine = (text, limit) => {
-      const words = text.trim().split(/\s+/).filter(Boolean);
-      const wrapped = [];
-      let current = '';
-      words.forEach((word) => {
-        const candidate = current ? `${current} ${word}` : word;
-        if (candidate.length <= limit || current.length === 0) {
-          current = candidate;
-        } else {
-          wrapped.push(current);
-          current = word;
-        }
-      });
-      if (current) {
-        wrapped.push(current);
-      }
-      return wrapped;
-    };
+    // Normalize and clean content
+    const cleanContent = content
+      .replace(/\r\n/g, '\n')
+      .replace(/\r/g, '\n')
+      .trim();
 
-    const rawLines = content
-      .replace(/\r/g, '')
-      .split('\n')
-      .map(line => line.trim())
-      .filter(Boolean);
+    // Split into lines and flatten
+    const rawLines = cleanContent.split('\n').filter(line => line.trim());
 
-    const lines = rawLines.length ? rawLines.flatMap(line => wrapLine(line, 28)) : [''];
-
-    if (lines.length > maxLines) {
-      const head = lines.slice(0, maxLines - 1);
-      const tail = lines.slice(maxLines - 1).join(' ');
-      head.push(tail);
-      lines.length = 0;
-      lines.push(...head.slice(0, maxLines));
-    }
-
-    while (lines.length < 1) {
-      lines.push('');
-    }
-
+    // Calculate available space
     const availableWidth = width - (marginX * 2);
     const availableHeight = height - (marginY * 2);
 
-    const totalHeightFactor = 1 + ((lines.length - 1) * lineHeightFactor);
-    const maxFontFromHeight = Math.floor(availableHeight / totalHeightFactor);
-    let fontSize = Math.min(36, maxFontFromHeight || 14);
-    const minFont = 8;
+    // Start with max font size and reduce until text fits
+    let fontSize = 14;
+    const minFontSize = 6;
+    let lines = [];
+    let lineHeight = 0;
 
-    const fitsWidth = (size) => lines.every(line => line.length === 0 || (line.length * size * widthFactor) <= availableWidth);
+    while (fontSize >= minFontSize) {
+      doc.setFontSize(fontSize);
+      lineHeight = fontSize * 0.4; // Approximate line height in mm
 
-    while (fontSize > minFont && !fitsWidth(fontSize)) {
+      // Wrap all lines to fit width
+      lines = [];
+      for (const rawLine of rawLines) {
+        const wrapped = doc.splitTextToSize(rawLine, availableWidth);
+        lines.push(...wrapped);
+        if (lines.length > maxLines) break;
+      }
+
+      // Limit to max lines
+      if (lines.length > maxLines) {
+        lines = lines.slice(0, maxLines);
+      }
+
+      // Check if text fits in available height
+      const totalHeight = lines.length * lineHeight;
+      if (totalHeight <= availableHeight) {
+        break;
+      }
+
       fontSize -= 1;
     }
-    if (fontSize < minFont) {
-      fontSize = minFont;
+
+    // Center text vertically
+    const totalTextHeight = lines.length * lineHeight;
+    let y = marginY + (availableHeight - totalTextHeight) / 2 + lineHeight * 0.8;
+
+    // Set font for final render
+    doc.setFont('helvetica');
+    doc.setFontSize(fontSize);
+
+    // Draw each line centered horizontally
+    for (const line of lines) {
+      const textWidth = doc.getTextWidth(line);
+      const x = marginX + (availableWidth - textWidth) / 2;
+      doc.text(line, x, y);
+      y += lineHeight;
     }
 
-    const encoder = new TextEncoder();
-    const lineHeight = fontSize * lineHeightFactor;
-    const centerY = height / 2;
-    const baselineAdjust = fontSize * 0.3;
-
-    const escape = (text) => text.replace(/[()\\]/g, '\\$&');
-    const estimateWidth = (text) => text.length * fontSize * widthFactor;
-
-    let stream = `BT\n/F1 ${fontSize.toFixed(2)} Tf\n`;
-    lines.forEach((line, index) => {
-      const textWidth = estimateWidth(line);
-      const x = Math.max(marginX, (width - textWidth) / 2);
-      const offset = ((lines.length - 1) / 2 - index) * lineHeight;
-      const y = centerY + offset - baselineAdjust;
-      stream += `1 0 0 1 ${x.toFixed(2)} ${y.toFixed(2)} Tm\n(${escape(line) || ' '}) Tj\n`;
-    });
-    stream += 'ET';
-
-    const chunks = [];
-    let offset = 0;
-    const offsets = [0];
-
-    const push = (text) => {
-      const bytes = encoder.encode(text);
-      chunks.push(bytes);
-      offset += bytes.length;
-    };
-
-    const pushObject = (id, body) => {
-      offsets.push(offset);
-      push(`${id} 0 obj\n${body}\nendobj\n`);
-    };
-
-    push('%PDF-1.4\n');
-    pushObject(1, '<< /Type /Catalog /Pages 2 0 R >>');
-    pushObject(2, `<< /Type /Pages /Kids [3 0 R] /Count 1 >>`);
-    pushObject(3, `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${width.toFixed(2)} ${height.toFixed(2)}] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>`);
-
-    const streamBytes = encoder.encode(stream);
-    pushObject(4, `<< /Length ${streamBytes.length} >>\nstream\n${stream}\nendstream`);
-    pushObject(5, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>');
-
-    const xrefOffset = offset;
-    push('xref\n');
-    push(`0 ${offsets.length}\n`);
-    push('0000000000 65535 f \n');
-    offsets.slice(1).forEach((value) => {
-      push(`${value.toString().padStart(10, '0')} 00000 n \n`);
-    });
-
-    push('trailer\n');
-    push(`<< /Size ${offsets.length} /Root 1 0 R >>\n`);
-    push('startxref\n');
-    push(`${xrefOffset}\n`);
-    push('%%EOF\n');
-
-    return new Blob(chunks, { type: 'application/pdf' });
+    return doc.output('blob');
   }
 
-  createDocxBlob(content) {
-    // DOCX is a ZIP archive containing XML files
-    // This creates a minimal valid DOCX document
+  async createDocxBlob(content, html = '') {
+    // NEW PIPELINE v2: Use Formatting Engine
+    const { Document, Paragraph, TextRun, Packer, HeadingLevel } = docx;
 
-    const escapeXml = (text) => text
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&apos;');
+    // Parse HTML using new tokenizer → builder pipeline
+    let blocks;
+    if (html && html.trim()) {
+      const tokens = HtmlTokenizer.tokenize(html);
+      blocks = BlockBuilder.build(tokens);
+    } else {
+      // Fallback: plain text to paragraphs
+      blocks = content.split(/\n\n+/).map(para => ({
+        type: 'paragraph',
+        runs: [{ text: para.trim(), bold: false, italic: false }]
+      })).filter(b => b.runs.length > 0 && b.runs[0].text.length > 0);
+    }
 
-    // Convert content to paragraphs
-    const paragraphs = content
-      .replace(/\r\n/g, '\n')
-      .split('\n')
-      .map(line => `<w:p><w:r><w:t>${escapeXml(line) || ' '}</w:t></w:r></w:p>`)
-      .join('');
-
-    // XML files that make up a DOCX
-    const files = {
-      '[Content_Types].xml': `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
-  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
-  <Default Extension="xml" ContentType="application/xml"/>
-  <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
-</Types>`,
-
-      '_rels/.rels': `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
-</Relationships>`,
-
-      'word/_rels/document.xml.rels': `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-</Relationships>`,
-
-      'word/document.xml': `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
-  <w:body>
-    ${paragraphs}
-    <w:sectPr>
-      <w:pgSz w:w="12240" w:h="15840"/>
-      <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440"/>
-    </w:sectPr>
-  </w:body>
-</w:document>`
+    // Heading level mapping
+    const headingLevels = {
+      1: HeadingLevel.HEADING_1,
+      2: HeadingLevel.HEADING_2,
+      3: HeadingLevel.HEADING_3,
+      4: HeadingLevel.HEADING_4,
+      5: HeadingLevel.HEADING_5,
+      6: HeadingLevel.HEADING_6
     };
 
-    // Build ZIP archive (STORE method - no compression)
-    const encoder = new TextEncoder();
-    const chunks = [];
-    const centralDirectory = [];
-    let offset = 0;
-
-    const crc32 = (data) => {
-      let crc = 0xFFFFFFFF;
-      const table = [];
-      for (let i = 0; i < 256; i++) {
-        let c = i;
-        for (let j = 0; j < 8; j++) {
-          c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
-        }
-        table[i] = c;
-      }
-      for (let i = 0; i < data.length; i++) {
-        crc = table[(crc ^ data[i]) & 0xFF] ^ (crc >>> 8);
-      }
-      return (crc ^ 0xFFFFFFFF) >>> 0;
+    // Font sizes in half-points (11pt = 22)
+    const fontSizes = {
+      h1: 36, h2: 32, h3: 28, h4: 24, h5: 22, h6: 20,
+      paragraph: 22, 'list-item': 22, heading: 28
     };
 
-    const writeUint16 = (value) => new Uint8Array([value & 0xFF, (value >> 8) & 0xFF]);
-    const writeUint32 = (value) => new Uint8Array([value & 0xFF, (value >> 8) & 0xFF, (value >> 16) & 0xFF, (value >> 24) & 0xFF]);
+    // Build paragraphs with proper formatting
+    const paragraphs = blocks.map(block => {
+      const fontSize = block.type === 'heading' 
+        ? (fontSizes[`h${block.level}`] || 28)
+        : (fontSizes[block.type] || 22);
 
-    for (const [filename, content] of Object.entries(files)) {
-      const filenameBytes = encoder.encode(filename);
-      const contentBytes = encoder.encode(content);
-      const crc = crc32(contentBytes);
-
-      // Local file header
-      const localHeader = new Uint8Array([
-        0x50, 0x4B, 0x03, 0x04, // Signature
-        0x0A, 0x00,             // Version needed (1.0)
-        0x00, 0x00,             // General purpose flags
-        0x00, 0x00,             // Compression method (STORE)
-        0x00, 0x00,             // Last mod time
-        0x00, 0x00,             // Last mod date
-        ...writeUint32(crc),
-        ...writeUint32(contentBytes.length),  // Compressed size
-        ...writeUint32(contentBytes.length),  // Uncompressed size
-        ...writeUint16(filenameBytes.length),
-        0x00, 0x00              // Extra field length
-      ]);
-
-      chunks.push(localHeader);
-      chunks.push(filenameBytes);
-      chunks.push(contentBytes);
-
-      // Store info for central directory
-      centralDirectory.push({
-        filename: filenameBytes,
-        crc,
-        size: contentBytes.length,
-        offset
+      // Create text runs with formatting (FIX Bug #1!)
+      const textRuns = block.runs.map(run => {
+        const config = DocxRenderer.createTextRun(run, fontSize);
+        if (block.type === 'heading') config.bold = true;
+        return new TextRun(config);
       });
 
-      offset += localHeader.length + filenameBytes.length + contentBytes.length;
-    }
+      // List items with REAL Word numbering (FIX Bug #2!)
+      if (block.type === 'list-item') {
+        const level = Math.min(block.listLevel || 0, 2);
+        const reference = block.listType === 'ordered' ? 'ordered-list' : 'bullet-list';
+        
+        return new Paragraph({
+          children: textRuns,
+          numbering: { reference, level },
+          spacing: { after: 80 }
+        });
+      }
 
-    // Central directory
-    const centralStart = offset;
-    for (const entry of centralDirectory) {
-      const centralHeader = new Uint8Array([
-        0x50, 0x4B, 0x01, 0x02, // Signature
-        0x14, 0x00,             // Version made by
-        0x0A, 0x00,             // Version needed
-        0x00, 0x00,             // Flags
-        0x00, 0x00,             // Compression
-        0x00, 0x00,             // Mod time
-        0x00, 0x00,             // Mod date
-        ...writeUint32(entry.crc),
-        ...writeUint32(entry.size),
-        ...writeUint32(entry.size),
-        ...writeUint16(entry.filename.length),
-        0x00, 0x00,             // Extra field length
-        0x00, 0x00,             // Comment length
-        0x00, 0x00,             // Disk number
-        0x00, 0x00,             // Internal attributes
-        0x00, 0x00, 0x00, 0x00, // External attributes
-        ...writeUint32(entry.offset)
-      ]);
+      // Headings
+      if (block.type === 'heading') {
+        return new Paragraph({
+          children: textRuns,
+          heading: headingLevels[block.level] || HeadingLevel.HEADING_1,
+          spacing: { before: 240, after: 120 }
+        });
+      }
 
-      chunks.push(centralHeader);
-      chunks.push(entry.filename);
-      offset += centralHeader.length + entry.filename.length;
-    }
+      // Regular paragraph
+      return new Paragraph({
+        children: textRuns,
+        spacing: { after: 120 }
+      });
+    });
 
-    // End of central directory
-    const centralSize = offset - centralStart;
-    const endRecord = new Uint8Array([
-      0x50, 0x4B, 0x05, 0x06, // Signature
-      0x00, 0x00,             // Disk number
-      0x00, 0x00,             // Central directory disk
-      ...writeUint16(centralDirectory.length),
-      ...writeUint16(centralDirectory.length),
-      ...writeUint32(centralSize),
-      ...writeUint32(centralStart),
-      0x00, 0x00              // Comment length
-    ]);
+    // Create document with numbering configuration (FIX Bug #2!)
+    const doc = new Document({
+      numbering: DocxRenderer.createNumberingConfig(),
+      sections: [{
+        properties: {
+          page: {
+            size: { width: 12240, height: 15840 },
+            margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 }
+          }
+        },
+        children: paragraphs
+      }]
+    });
 
-    chunks.push(endRecord);
-
-    return new Blob(chunks, { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+    return await Packer.toBlob(doc);
   }
 
   detectContentType(content) {
@@ -873,7 +1616,7 @@ new FlashDoc();
 
 // Handle installation and extension reload
 chrome.runtime.onInstalled.addListener(async (details) => {
-  console.log(`⚡ FlashDoc ${details.reason}: re-injecting content scripts...`);
+  console.log(`âš¡ FlashDoc ${details.reason}: re-injecting content scripts...`);
 
   // Re-inject content scripts into all existing tabs to fix "Extension not available" error
   // This is necessary because old content scripts become orphaned after extension reload
@@ -890,10 +1633,10 @@ chrome.runtime.onInstalled.addListener(async (details) => {
             target: { tabId: tab.id, allFrames: true },
             files: ['content.js']
           });
-          console.log(`✅ Injected into tab ${tab.id}: ${tab.url.substring(0, 50)}...`);
+          console.log(`âœ… Injected into tab ${tab.id}: ${tab.url.substring(0, 50)}...`);
         } catch (e) {
           // Tab might not support scripting - this is normal
-          console.log(`⏭️ Skipped tab ${tab.id}: ${e.message}`);
+          console.log(`â­ï¸ Skipped tab ${tab.id}: ${e.message}`);
         }
       }
     }
@@ -902,7 +1645,7 @@ chrome.runtime.onInstalled.addListener(async (details) => {
   }
 
   if (details.reason === 'install') {
-    console.log('🎉 FlashDoc installed!');
+    console.log('ðŸŽ‰ FlashDoc installed!');
     chrome.tabs.create({ url: 'options.html' });
   }
 });

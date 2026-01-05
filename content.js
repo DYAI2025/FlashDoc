@@ -4,6 +4,7 @@
 class FlashDocContent {
   constructor() {
     this.selectedText = '';
+    this.selectedHtml = ''; // HTML content of selection for formatting
     this.floatingButton = null;
     this.cornerBall = null; // F3: Separate corner ball element
     this.settings = {
@@ -14,7 +15,26 @@ class FlashDocContent {
       selectionThreshold: 10,
       enableContextMenu: true,
       enableSmartDetection: true,
-      categoryShortcuts: [] // Category shortcuts: {id, name, format}
+      categoryShortcuts: [], // Category shortcuts: {id, name, format}
+      // v3.1: Configurable contextual chip slots
+      floatingButtonSlots: [
+        { type: 'format', format: 'txt' },
+        { type: 'format', format: 'md' },
+        { type: 'format', format: 'docx' },
+        { type: 'format', format: 'pdf' },
+        { type: 'format', format: 'saveas' }
+      ]
+    };
+    // v3.1: Format icons and labels for dynamic slots
+    this.FORMAT_ICONS = {
+      txt: '📄', md: '📝', docx: '📜', pdf: '📕', json: '🧩',
+      js: '🟡', ts: '🔵', py: '🐍', html: '🌐', css: '🎨',
+      yaml: '🧾', sql: '📑', sh: '⚙️', xml: '📰', csv: '📊', saveas: '📁'
+    };
+    this.FORMAT_LABELS = {
+      txt: 'Text', md: 'Markdown', docx: 'Word', pdf: 'PDF', json: 'JSON',
+      js: 'JavaScript', ts: 'TypeScript', py: 'Python', html: 'HTML', css: 'CSS',
+      yaml: 'YAML', sql: 'SQL', sh: 'Shell', xml: 'XML', csv: 'CSV', saveas: 'Save As'
     };
     this.stats = { totalSaves: 0 };
     this.runtimeUnavailable = false;
@@ -211,9 +231,10 @@ class FlashDocContent {
       selectionTimer = setTimeout(() => {
         const selection = window.getSelection();
         const text = selection.toString().trim();
-        
+
         if (text.length > this.settings.selectionThreshold) {
           this.selectedText = text;
+          this.selectedHtml = this.captureSelectionHtml(selection);
           this.onTextSelected(text, selection);
         } else {
           this.onSelectionCleared();
@@ -224,18 +245,20 @@ class FlashDocContent {
     // Mouse up for immediate feedback
     document.addEventListener('mouseup', (e) => {
       // Skip if clicking on our UI elements
-      if (e.target.closest('.flashdoc-floating') || 
+      if (e.target.closest('.flashdoc-floating') ||
           e.target.closest('.flashdoc-contextual')) {
         return;
       }
-      
+
       setTimeout(() => {
         const selection = window.getSelection();
         const text = selection.toString().trim();
-        
+
         if (text.length > this.settings.selectionThreshold) {
           this.selectedText = text;
-          this.showContextualButton(e.pageX, e.pageY, text);
+          this.selectedHtml = this.captureSelectionHtml(selection);
+          // Use clientX/clientY for fixed positioning (viewport coordinates)
+          this.showContextualButton(e.clientX, e.clientY, text);
         }
       }, 10);
     });
@@ -245,11 +268,13 @@ class FlashDocContent {
       setTimeout(() => {
         const selection = window.getSelection();
         const text = selection.toString().trim();
-        
+
         if (text.length > this.settings.selectionThreshold) {
           this.selectedText = text;
+          this.selectedHtml = this.captureSelectionHtml(selection);
           const touch = e.changedTouches[0];
-          this.showContextualButton(touch.pageX, touch.pageY, text);
+          // Use clientX/clientY for fixed positioning (viewport coordinates)
+          this.showContextualButton(touch.clientX, touch.clientY, text);
         }
       }, 100);
     });
@@ -271,8 +296,26 @@ class FlashDocContent {
     }
   }
 
+  // Capture HTML content from selection for formatting preservation
+  captureSelectionHtml(selection) {
+    try {
+      if (!selection || selection.rangeCount === 0) {
+        return '';
+      }
+      const range = selection.getRangeAt(0);
+      const fragment = range.cloneContents();
+      const div = document.createElement('div');
+      div.appendChild(fragment);
+      return div.innerHTML;
+    } catch (error) {
+      console.warn('Could not capture HTML selection:', error);
+      return '';
+    }
+  }
+
   onSelectionCleared() {
     this.selectedText = '';
+    this.selectedHtml = '';
     this.removeHighlight();
     this.hideContextualButton();
 
@@ -323,6 +366,11 @@ class FlashDocContent {
     if (!this.settings.enableContextMenu) return;
 
     const detectedType = this.detectContentType(text);
+    this.currentDetectedType = detectedType; // Store for override
+    this.currentOverrideType = null; // Reset override
+
+    // Quick format options for dropdown
+    const quickFormats = ['txt', 'md', 'json', 'js', 'ts', 'py', 'html', 'css', 'yaml', 'sql', 'sh', 'xml'];
 
     const button = document.createElement('div');
     button.className = 'flashdoc-contextual';
@@ -330,59 +378,152 @@ class FlashDocContent {
       <div class="flashdoc-ctx-main">
         <span class="flashdoc-ctx-icon">⚡</span>
         <span class="flashdoc-ctx-text">Save</span>
-        <span class="flashdoc-ctx-type">${detectedType.toUpperCase()}</span>
+        <div class="flashdoc-ctx-type-selector">
+          <span class="flashdoc-ctx-type" data-detected="${detectedType}">${detectedType.toUpperCase()}</span>
+          <span class="flashdoc-ctx-dropdown">▼</span>
+          <div class="flashdoc-ctx-type-menu">
+            ${quickFormats.map(f => `
+              <button class="flashdoc-type-option ${f === detectedType ? 'detected' : ''}" data-override="${f}">
+                <span class="type-label">${f.toUpperCase()}</span>
+                ${f === detectedType ? '<span class="type-badge">AUTO</span>' : ''}
+              </button>
+            `).join('')}
+          </div>
+        </div>
       </div>
       <div class="flashdoc-ctx-options">
-        <button data-format="txt" title="Text">📄</button>
-        <button data-format="md" title="Markdown">📝</button>
-        <button data-format="docx" title="Word">📜</button>
-        <button data-format="pdf" title="PDF">📕</button>
-        <button data-format="saveas" title="Save As">📁</button>
+        ${this.renderSlotButtons()}
       </div>
     `;
 
-    // Smart positioning with 40px offset (F1: repositioned further right-up)
+    // Smart positioning: ~1.5cm (57px) from cursor, always in viewport
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
-    const buttonWidth = 140;
-    const buttonHeight = 40;
-    const offsetX = 40; // F1: New offset - further right
-    const offsetY = 40; // F1: New offset - further up
+    const buttonWidth = 180; // Approximate width including slots
+    const buttonHeight = 80; // Approximate height with options row
+    const cursorOffset = 57; // ~1.5cm at 96dpi
+    const padding = 12; // Minimum distance from viewport edges
 
-    let posX = x + offsetX;
-    let posY = y - buttonHeight - offsetY;
+    // Calculate initial position (prefer bottom-right of cursor)
+    let posX = x + cursorOffset;
+    let posY = y + cursorOffset;
 
-    // Viewport clamping with flip logic
-    if (posX + buttonWidth > viewportWidth - 10) {
-      // Flip to left side of cursor
-      posX = Math.max(10, x - buttonWidth - 10);
+    // Check if button would go outside right edge → flip to left
+    if (posX + buttonWidth > viewportWidth - padding) {
+      posX = x - buttonWidth - cursorOffset;
     }
-    if (posY < 10) {
-      // Flip to below cursor
-      posY = y + 20;
+
+    // Check if button would go outside bottom edge → flip to top
+    if (posY + buttonHeight > viewportHeight - padding) {
+      posY = y - buttonHeight - cursorOffset;
     }
-    // Final clamp to viewport
-    posX = Math.max(10, Math.min(posX, viewportWidth - buttonWidth - 10));
-    posY = Math.max(10, Math.min(posY, viewportHeight - buttonHeight - 10));
-    
+
+    // Final clamp to ensure button stays fully visible
+    posX = Math.max(padding, Math.min(posX, viewportWidth - buttonWidth - padding));
+    posY = Math.max(padding, Math.min(posY, viewportHeight - buttonHeight - padding));
+
+    // Collision detection: avoid covering interactive elements
+    const targetRect = { left: posX, top: posY, right: posX + buttonWidth, bottom: posY + buttonHeight };
+    const interactiveElements = document.querySelectorAll('button, a, input, select, textarea, [role="button"], [onclick]');
+
+    for (const el of interactiveElements) {
+      // Skip our own elements
+      if (el.closest('.flashdoc-contextual') || el.closest('.flashdoc-floating')) continue;
+
+      const elRect = el.getBoundingClientRect();
+      // Check if there's overlap
+      if (!(targetRect.right < elRect.left || targetRect.left > elRect.right ||
+            targetRect.bottom < elRect.top || targetRect.top > elRect.bottom)) {
+        // Collision detected - try to move button
+        // Prefer moving down, then up, then right, then left
+        const moveOptions = [
+          { x: posX, y: elRect.bottom + 10 }, // Below element
+          { x: posX, y: elRect.top - buttonHeight - 10 }, // Above element
+          { x: elRect.right + 10, y: posY }, // Right of element
+          { x: elRect.left - buttonWidth - 10, y: posY } // Left of element
+        ];
+
+        for (const opt of moveOptions) {
+          if (opt.x >= padding && opt.x + buttonWidth <= viewportWidth - padding &&
+              opt.y >= padding && opt.y + buttonHeight <= viewportHeight - padding) {
+            posX = opt.x;
+            posY = opt.y;
+            break;
+          }
+        }
+        break; // Only handle first collision
+      }
+    }
+
     button.style.left = `${posX}px`;
     button.style.top = `${posY}px`;
     
     // Event handlers
-    button.querySelector('.flashdoc-ctx-main').addEventListener('click', (e) => {
+    const mainBtn = button.querySelector('.flashdoc-ctx-main');
+    const typeSelector = button.querySelector('.flashdoc-ctx-type-selector');
+    const typeMenu = button.querySelector('.flashdoc-ctx-type-menu');
+    const typeDisplay = button.querySelector('.flashdoc-ctx-type');
+
+    // Click on main button (not type selector) → save with current type
+    mainBtn.addEventListener('click', (e) => {
+      // Don't trigger save if clicking the type selector
+      if (e.target.closest('.flashdoc-ctx-type-selector')) return;
       e.stopPropagation();
-      this.quickSave();
+      this.quickSaveWithType(this.currentOverrideType || this.currentDetectedType);
       this.hideContextualButton();
     });
-    
+
+    // Toggle type dropdown on type selector click
+    typeSelector.addEventListener('click', (e) => {
+      e.stopPropagation();
+      typeMenu.classList.toggle('show');
+    });
+
+    // Handle type override selection
+    button.querySelectorAll('.flashdoc-type-option').forEach(opt => {
+      opt.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const newType = opt.dataset.override;
+        this.currentOverrideType = newType;
+
+        // Update display
+        typeDisplay.textContent = newType.toUpperCase();
+        typeDisplay.classList.add('overridden');
+
+        // Update selection state
+        button.querySelectorAll('.flashdoc-type-option').forEach(o => o.classList.remove('selected'));
+        opt.classList.add('selected');
+
+        // Hide menu
+        typeMenu.classList.remove('show');
+      });
+    });
+
+    // v3.1: Handle slot button clicks (format or shortcut)
     button.querySelectorAll('.flashdoc-ctx-options button').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        this.saveWithFormat(btn.dataset.format);
+        if (btn.disabled) return;
+
+        // Check if it's a shortcut slot
+        if (btn.dataset.shortcut) {
+          const shortcutName = btn.dataset.shortcutName;
+          const shortcutFormat = btn.dataset.shortcutFormat;
+          this.saveWithShortcut(shortcutName, shortcutFormat);
+        } else if (btn.dataset.format) {
+          this.saveWithFormat(btn.dataset.format);
+        }
         this.hideContextualButton();
       });
     });
-    
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', this._closeTypeMenuHandler = (e) => {
+      if (!e.target.closest('.flashdoc-ctx-type-selector')) {
+        typeMenu.classList.remove('show');
+      }
+    }, { once: true });
+
     document.body.appendChild(button);
     
     // Auto-hide after 5 seconds
@@ -397,6 +538,33 @@ class FlashDocContent {
       el.style.animation = 'flashdoc-fade-out 0.2s ease-out';
       setTimeout(() => el.remove(), 200);
     });
+  }
+
+  // v3.1: Render dynamic slot buttons for contextual chip
+  renderSlotButtons() {
+    const slots = this.settings.floatingButtonSlots || [];
+    const shortcuts = this.settings.categoryShortcuts || [];
+
+    return slots.map((slot, index) => {
+      if (slot.type === 'format') {
+        const icon = this.FORMAT_ICONS[slot.format] || '📄';
+        const label = this.FORMAT_LABELS[slot.format] || slot.format.toUpperCase();
+        return `<button data-format="${slot.format}" data-slot-index="${index}" title="${label}">${icon}</button>`;
+      }
+
+      if (slot.type === 'shortcut') {
+        const shortcut = shortcuts.find(s => s.id === slot.shortcutId);
+        if (shortcut) {
+          const icon = this.FORMAT_ICONS[shortcut.format] || '📄';
+          return `<button data-shortcut="${shortcut.id}" data-shortcut-name="${shortcut.name}" data-shortcut-format="${shortcut.format}" data-slot-index="${index}" title="${shortcut.name}">${icon}</button>`;
+        }
+        // Shortcut deleted - show disabled
+        return `<button disabled data-slot-index="${index}" title="Not configured" class="slot-disabled">⬜</button>`;
+      }
+
+      // Disabled slot
+      return `<button disabled data-slot-index="${index}" title="Not configured" class="slot-disabled">⬜</button>`;
+    }).join('');
   }
 
   // Build HTML for category shortcuts
@@ -658,8 +826,14 @@ class FlashDocContent {
 
   // Content Type Detection
   detectContentType(text) {
-    if (typeof DetectionUtils?.detectContentType === 'function') {
-      return DetectionUtils.detectContentType(text);
+    // Avoid ReferenceError when DetectionUtils isn't injected (e.g., CSP-blocked iframes)
+    const detectionUtils =
+      (typeof DetectionUtils !== 'undefined' ? DetectionUtils : null) ||
+      globalThis.DetectionUtils ||
+      null;
+
+    if (detectionUtils && typeof detectionUtils.detectContentType === 'function') {
+      return detectionUtils.detectContentType(text);
     }
 
     if (!text) return 'txt';
@@ -675,12 +849,45 @@ class FlashDocContent {
       this.showToast('⚠️ No text selected', 'warning');
       return;
     }
-    
+
     try {
       const response = await this.safeSendMessage({
         action: 'saveContent',
         content: this.selectedText,
+        html: this.selectedHtml, // Include HTML for formatting
         type: 'auto'
+      });
+
+      if (response && response.success) {
+        this.showToast(`✅ Saved: ${this.selectedText.substring(0, 30)}...`, 'success');
+        this.updateButtonStats();
+        this.addSaveAnimation();
+        this.selectedText = '';
+        this.updateFloatingButton(false);
+      } else {
+        this.showToast('❌ Save failed', 'error');
+      }
+    } catch (error) {
+      console.error('Save error:', error);
+      const ignorable = this.isIgnorableRuntimeError(error);
+      const message = ignorable ? '⚠️ Extension unavailable' : '❌ Save failed';
+      this.showToast(message, ignorable ? 'warning' : 'error');
+    }
+  }
+
+  // Save with specific type (for type override feature)
+  async quickSaveWithType(type) {
+    if (!this.selectedText) {
+      this.showToast('⚠️ No text selected', 'warning');
+      return;
+    }
+
+    try {
+      const response = await this.safeSendMessage({
+        action: 'saveContent',
+        content: this.selectedText,
+        html: this.selectedHtml,
+        type: type || 'auto'
       });
 
       if (response && response.success) {
@@ -708,11 +915,13 @@ class FlashDocContent {
     }
 
     const content = this.selectedText || document.title + '\n' + window.location.href;
+    const html = this.selectedHtml || '';
 
     try {
       const response = await this.safeSendMessage({
         action: 'saveContent',
         content: content,
+        html: html, // Include HTML for formatting
         type: format === 'smart' ? 'auto' : format
       });
 
@@ -748,6 +957,7 @@ class FlashDocContent {
       const response = await this.safeSendMessage({
         action: 'saveContent',
         content: this.selectedText,
+        html: this.selectedHtml, // Include HTML for formatting
         type: format,
         prefix: categoryName // Pass the category name as prefix
       });
@@ -852,7 +1062,7 @@ class FlashDocContent {
         sendResponse({ text: window.getSelection().toString() });
       } else if (request.action === 'updateSettings') {
         this.loadSettings().then(() => {
-          // Rebuild floating button to include new shortcuts
+          // Rebuild floating button to include new shortcuts and slot config
           this.rebuildFloatingButton();
           // Update corner ball
           if (this.settings.showCornerBall && !this.cornerBall) {
@@ -864,6 +1074,35 @@ class FlashDocContent {
         });
       }
       return true;
+    });
+
+    // v3.1: Listen for storage changes to update slots in real-time
+    chrome.storage.onChanged.addListener((changes) => {
+      if (changes.floatingButtonSlots || changes.categoryShortcuts) {
+        this.loadSettings().then(() => {
+          // If contextual button is visible, update its slots
+          const existing = document.querySelector('.flashdoc-contextual');
+          if (existing) {
+            const optionsContainer = existing.querySelector('.flashdoc-ctx-options');
+            if (optionsContainer) {
+              optionsContainer.innerHTML = this.renderSlotButtons();
+              // Re-attach click handlers
+              optionsContainer.querySelectorAll('button').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                  e.stopPropagation();
+                  if (btn.disabled) return;
+                  if (btn.dataset.shortcut) {
+                    this.saveWithShortcut(btn.dataset.shortcutName, btn.dataset.shortcutFormat);
+                  } else if (btn.dataset.format) {
+                    this.saveWithFormat(btn.dataset.format);
+                  }
+                  this.hideContextualButton();
+                });
+              });
+            }
+          }
+        });
+      }
     });
   }
 
@@ -953,6 +1192,110 @@ class FlashDocContent {
         font-size: 10px;
         font-weight: bold;
         letter-spacing: 0.5px;
+        transition: all 0.2s;
+      }
+
+      .flashdoc-ctx-type.overridden {
+        background: rgba(240, 147, 251, 0.4);
+        box-shadow: 0 0 0 2px rgba(240, 147, 251, 0.3);
+      }
+
+      /* Type Selector Dropdown */
+      .flashdoc-ctx-type-selector {
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        cursor: pointer;
+        padding: 2px 4px;
+        border-radius: 12px;
+        transition: background 0.2s;
+      }
+
+      .flashdoc-ctx-type-selector:hover {
+        background: rgba(255, 255, 255, 0.15);
+      }
+
+      .flashdoc-ctx-dropdown {
+        font-size: 8px;
+        opacity: 0.7;
+        transition: transform 0.2s;
+      }
+
+      .flashdoc-ctx-type-menu.show + .flashdoc-ctx-dropdown,
+      .flashdoc-ctx-type-selector:has(.flashdoc-ctx-type-menu.show) .flashdoc-ctx-dropdown {
+        transform: rotate(180deg);
+      }
+
+      .flashdoc-ctx-type-menu {
+        position: absolute;
+        top: calc(100% + 8px);
+        left: 50%;
+        transform: translateX(-50%) scale(0.9);
+        display: none;
+        flex-direction: column;
+        gap: 2px;
+        padding: 8px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        z-index: 1000;
+        min-width: 120px;
+        opacity: 0;
+        transition: all 0.2s ease-out;
+      }
+
+      .flashdoc-ctx-type-menu.show {
+        display: flex;
+        opacity: 1;
+        transform: translateX(-50%) scale(1);
+      }
+
+      .flashdoc-type-option {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 6px 10px;
+        border: none;
+        background: transparent;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 11px;
+        font-weight: 600;
+        color: #333;
+        transition: all 0.15s;
+      }
+
+      .flashdoc-type-option:hover {
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.15), rgba(118, 75, 162, 0.15));
+      }
+
+      .flashdoc-type-option.detected {
+        background: rgba(102, 126, 234, 0.1);
+      }
+
+      .flashdoc-type-option.selected {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+      }
+
+      .type-label {
+        font-family: 'SF Mono', Monaco, 'Consolas', monospace;
+      }
+
+      .type-badge {
+        font-size: 8px;
+        padding: 2px 5px;
+        background: rgba(102, 126, 234, 0.2);
+        border-radius: 4px;
+        color: #667eea;
+        font-weight: 700;
+      }
+
+      .flashdoc-type-option.selected .type-badge {
+        background: rgba(255, 255, 255, 0.25);
+        color: white;
       }
       
       .flashdoc-ctx-options {
@@ -977,6 +1320,17 @@ class FlashDocContent {
       .flashdoc-ctx-options button:hover {
         transform: scale(1.15);
         box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      }
+
+      .flashdoc-ctx-options button.slot-disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+        background: rgba(148, 163, 184, 0.3);
+      }
+
+      .flashdoc-ctx-options button.slot-disabled:hover {
+        transform: none;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
       }
       
       /* Floating Button */
