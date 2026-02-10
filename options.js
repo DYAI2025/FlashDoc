@@ -1007,6 +1007,9 @@ function setupPresetManagement() {
   const saveBtn = document.getElementById('preset-save');
   const deleteBtn = document.getElementById('preset-delete');
   const newBtn = document.getElementById('preset-new');
+  const exportBtn = document.getElementById('preset-export');
+  const importBtn = document.getElementById('preset-import');
+  const shareBtn = document.getElementById('preset-share');
 
   if (selector) {
     // Don't auto-apply on selection - wait for Apply button
@@ -1029,6 +1032,22 @@ function setupPresetManagement() {
   if (newBtn) {
     newBtn.addEventListener('click', createNewPreset);
   }
+
+  // Import/Export/Share buttons
+  if (exportBtn) {
+    exportBtn.addEventListener('click', exportSelectedPreset);
+  }
+  
+  if (importBtn) {
+    importBtn.addEventListener('click', () => showImportModal());
+  }
+  
+  if (shareBtn) {
+    shareBtn.addEventListener('click', shareSelectedPreset);
+  }
+
+  // Modal event listeners
+  setupModalEventListeners();
 
   // Initial button state
   updatePresetButtonStates();
@@ -1089,12 +1108,16 @@ function updatePresetButtonStates() {
   const applyBtn = document.getElementById('preset-apply');
   const saveBtn = document.getElementById('preset-save');
   const deleteBtn = document.getElementById('preset-delete');
+  const exportBtn = document.getElementById('preset-export');
+  const shareBtn = document.getElementById('preset-share');
 
   const hasSelection = selector && selector.value;
 
   if (applyBtn) applyBtn.disabled = !hasSelection;
   if (saveBtn) saveBtn.disabled = !hasSelection;
   if (deleteBtn) deleteBtn.disabled = !hasSelection;
+  if (exportBtn) exportBtn.disabled = !hasSelection;
+  if (shareBtn) shareBtn.disabled = !hasSelection;
 }
 
 async function applySelectedPreset() {
@@ -1291,6 +1314,266 @@ async function createNewPreset() {
   } catch (error) {
     console.error('[FlashDoc] Create preset error:', error);
     showStatusMessage('Fehler beim Erstellen des Presets.', 'error');
+  }
+}
+
+// ============================================
+// v3.2: Preset Import/Export/Share
+// ============================================
+
+/**
+ * Generate a unique preset ID with timestamp and random suffix
+ */
+function generatePresetId() {
+  const timestamp = Date.now().toString(36);
+  const random = Math.random().toString(36).substring(2, 6);
+  return `preset_${timestamp}_${random}`;
+}
+
+/**
+ * Export selected preset to JSON
+ */
+async function exportSelectedPreset() {
+  const selector = document.getElementById('preset-selector');
+  if (!selector || !selector.value) {
+    showStatusMessage('Wähle zuerst ein Preset zum Exportieren aus.', 'error');
+    return;
+  }
+
+  try {
+    const presetId = selector.value;
+    const stored = await chrome.storage.sync.get(['floatingButtonPresets']);
+    const presets = stored.floatingButtonPresets || [];
+
+    const preset = presets.find(p => p && p.id === presetId);
+    if (!preset) {
+      showStatusMessage('Preset nicht gefunden.', 'error');
+      return;
+    }
+
+    // Create exportable preset object
+    const exportData = {
+      version: '3.2',
+      exportedAt: new Date().toISOString(),
+      name: preset.name,
+      slots: preset.slots
+    };
+
+    const jsonString = JSON.stringify(exportData, null, 2);
+    showExportModal('Preset exportieren', jsonString);
+
+    console.log('[FlashDoc] Preset exported:', preset.name);
+  } catch (error) {
+    console.error('[FlashDoc] Export preset error:', error);
+    showStatusMessage('Fehler beim Exportieren des Presets.', 'error');
+  }
+}
+
+/**
+ * Share preset - copy preset string to clipboard
+ */
+async function shareSelectedPreset() {
+  const selector = document.getElementById('preset-selector');
+  if (!selector || !selector.value) {
+    showStatusMessage('Wähle zuerst ein Preset zum Teilen aus.', 'error');
+    return;
+  }
+
+  try {
+    const presetId = selector.value;
+    const stored = await chrome.storage.sync.get(['floatingButtonPresets']);
+    const presets = stored.floatingButtonPresets || [];
+
+    const preset = presets.find(p => p && p.id === presetId);
+    if (!preset) {
+      showStatusMessage('Preset nicht gefunden.', 'error');
+      return;
+    }
+
+    // Create compact shareable string (base64 encoded JSON)
+    const exportData = {
+      v: '3.2', // version (compact)
+      n: preset.name, // name
+      s: preset.slots // slots
+    };
+
+    const jsonString = JSON.stringify(exportData);
+    const base64String = btoa(encodeURIComponent(jsonString).replace(/%([0-9A-F]{2})/g,
+      function toSolidBytes(match, p1) {
+        return String.fromCharCode('0x' + p1);
+    }));
+
+    const shareString = `FlashDocPreset:${base64String}`;
+
+    try {
+      await navigator.clipboard.writeText(shareString);
+      showStatusMessage('Preset-String in Zwischenablage kopiert!', 'success');
+    } catch (clipboardError) {
+      // Fallback: show in modal
+      showExportModal('Preset-String kopieren', shareString);
+    }
+
+    console.log('[FlashDoc] Preset shared:', preset.name);
+  } catch (error) {
+    console.error('[FlashDoc] Share preset error:', error);
+    showStatusMessage('Fehler beim Teilen des Presets.', 'error');
+  }
+}
+
+/**
+ * Show import modal
+ */
+function showImportModal() {
+  const modal = document.getElementById('import-modal');
+  const textarea = document.getElementById('import-textarea');
+  if (modal && textarea) {
+    textarea.value = '';
+    modal.showModal();
+    textarea.focus();
+  }
+}
+
+/**
+ * Show export/share modal
+ */
+function showExportModal(title, content) {
+  const modal = document.getElementById('export-modal');
+  const titleEl = document.getElementById('export-modal-title');
+  const textarea = document.getElementById('export-textarea');
+  if (modal && titleEl && textarea) {
+    titleEl.textContent = title;
+    textarea.value = content;
+    modal.showModal();
+  }
+}
+
+/**
+ * Setup modal event listeners
+ */
+function setupModalEventListeners() {
+  // Import modal
+  const importModal = document.getElementById('import-modal');
+  const importCancel = document.getElementById('import-cancel');
+  const importConfirm = document.getElementById('import-confirm');
+  const importTextarea = document.getElementById('import-textarea');
+
+  if (importCancel && importModal) {
+    importCancel.addEventListener('click', () => importModal.close());
+  }
+
+  if (importConfirm && importModal && importTextarea) {
+    importConfirm.addEventListener('click', async () => {
+      const jsonString = importTextarea.value.trim();
+      if (jsonString) {
+        await importPreset(jsonString);
+        importModal.close();
+      }
+    });
+  }
+
+  // Export modal
+  const exportModal = document.getElementById('export-modal');
+  const exportClose = document.getElementById('export-close');
+  const exportCopy = document.getElementById('export-copy');
+  const exportTextarea = document.getElementById('export-textarea');
+
+  if (exportClose && exportModal) {
+    exportClose.addEventListener('click', () => exportModal.close());
+  }
+
+  if (exportCopy && exportTextarea) {
+    exportCopy.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(exportTextarea.value);
+        showStatusMessage('In Zwischenablage kopiert!', 'success');
+      } catch (error) {
+        showStatusMessage('Kopieren fehlgeschlagen.', 'error');
+      }
+    });
+  }
+
+  // Close modals on backdrop click
+  if (importModal) {
+    importModal.addEventListener('click', (e) => {
+      if (e.target === importModal) importModal.close();
+    });
+  }
+  if (exportModal) {
+    exportModal.addEventListener('click', (e) => {
+      if (e.target === exportModal) exportModal.close();
+    });
+  }
+}
+
+/**
+ * Import preset from JSON string
+ */
+async function importPreset(jsonString) {
+  try {
+    let presetData;
+
+    // Try to parse as direct JSON first
+    try {
+      presetData = JSON.parse(jsonString);
+    } catch {
+      // Try to parse as share string (base64)
+      const sharePrefix = 'FlashDocPreset:';
+      if (jsonString.startsWith(sharePrefix)) {
+        const base64 = jsonString.substring(sharePrefix.length);
+        const decoded = decodeURIComponent(atob(base64).split('').map(function(c) {
+          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+        presetData = JSON.parse(decoded);
+      } else {
+        throw new Error('Ungültiges Format');
+      }
+    }
+
+    // Validate preset data
+    if (!presetData.name) {
+      showStatusMessage('Preset muss einen Namen haben.', 'error');
+      return;
+    }
+
+    if (!presetData.slots || !Array.isArray(presetData.slots)) {
+      showStatusMessage('Preset muss Slots enthalten.', 'error');
+      return;
+    }
+
+    // Get existing presets
+    const stored = await chrome.storage.sync.get(['floatingButtonPresets', 'categoryShortcuts']);
+    const shortcuts = stored.categoryShortcuts || [];
+    const existingPresets = stored.floatingButtonPresets || [];
+
+    if (existingPresets.length >= MAX_PRESETS) {
+      showStatusMessage(`Maximal ${MAX_PRESETS} Presets erlaubt. Bitte erst löschen.`, 'error');
+      return;
+    }
+
+    // Create new preset with new ID
+    const newPreset = {
+      id: generatePresetId(),
+      name: presetData.name,
+      slots: normalizeSlots(presetData.slots, shortcuts),
+      importedAt: Date.now(),
+      originalName: presetData.name // Keep original name in case of import
+    };
+
+    // Add to existing presets
+    const updatedPresets = [...existingPresets, newPreset];
+
+    await chrome.storage.sync.set({
+      floatingButtonPresets: updatedPresets,
+      activeFloatingButtonPresetId: newPreset.id
+    });
+
+    await renderPresetSelector();
+    showStatusMessage(`Preset "${newPreset.name}" importiert und aktiviert.`, 'success');
+
+    console.log('[FlashDoc] Preset imported:', newPreset.name, 'from:', presetData.name);
+  } catch (error) {
+    console.error('[FlashDoc] Import preset error:', error);
+    showStatusMessage('Fehler beim Importieren: Ungültiges Preset-Format.', 'error');
   }
 }
 

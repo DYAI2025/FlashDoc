@@ -1040,6 +1040,21 @@ body {
   align-items: center;
 }
 
+.preset-import-export {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.preset-import-export .btn {
+  flex: 1;
+  min-width: 80px;
+}
+
 .preset-count {
   display: block;
   margin-top: 10px;
@@ -1051,6 +1066,55 @@ body {
 .preset-count.at-limit {
   color: var(--danger);
   font-weight: 600;
+}
+
+/* Modal Styles */
+.modal {
+  border: none;
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 500px;
+  width: 90%;
+  background: var(--bg-card);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+}
+
+.modal::backdrop {
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.modal-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.modal-content h3 {
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.modal-content textarea {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: monospace;
+  font-size: 12px;
+  resize: vertical;
+}
+
+.modal-content textarea:focus {
+  outline: none;
+  border-color: var(--primary-gold);
+}
+
+.modal-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
 }
 
 /* Responsive */

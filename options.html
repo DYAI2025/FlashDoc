@@ -204,6 +204,36 @@
             <button type="button" class="btn secondary small" id="preset-save" title="Aktuelle Slots im ausgewählten Preset speichern">Speichern</button>
             <button type="button" class="btn danger small" id="preset-delete" title="Ausgewähltes Preset löschen">Löschen</button>
           </div>
+          
+          <div class="preset-import-export">
+            <button type="button" class="btn icon small" id="preset-export" title="Preset als JSON exportieren">📤 Export</button>
+            <button type="button" class="btn icon small" id="preset-import" title="Preset aus JSON importieren">📥 Import</button>
+            <button type="button" class="btn icon small" id="preset-share" title="Preset-String kopieren">🔗 Share</button>
+          </div>
+          
+          <!-- Import Modal -->
+          <dialog id="import-modal" class="modal">
+            <div class="modal-content">
+              <h3>Preset importieren</h3>
+              <textarea id="import-textarea" placeholder="FlashDoc Preset JSON hier einfügen..." rows="6"></textarea>
+              <div class="modal-actions">
+                <button type="button" class="btn secondary" id="import-cancel">Abbrechen</button>
+                <button type="button" class="btn primary" id="import-confirm">Importieren</button>
+              </div>
+            </div>
+          </dialog>
+          
+          <!-- Export/Share Modal -->
+          <dialog id="export-modal" class="modal">
+            <div class="modal-content">
+              <h3 id="export-modal-title">Preset exportieren</h3>
+              <textarea id="export-textarea" readonly rows="6"></textarea>
+              <div class="modal-actions">
+                <button type="button" class="btn secondary" id="export-close">Schließen</button>
+                <button type="button" class="btn primary" id="export-copy">Kopieren</button>
+              </div>
+            </div>
+          </dialog>
 
           <span class="preset-count" id="preset-count">0/5 Presets</span>
         </div>
