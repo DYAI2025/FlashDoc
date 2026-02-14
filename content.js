@@ -297,12 +297,36 @@ class FlashDocContent {
   }
 
   // Capture HTML content from selection for formatting preservation
+  // IMPROVED: Better HTML extraction using outerHTML + cloneContents fallback
   captureSelectionHtml(selection) {
     try {
       if (!selection || selection.rangeCount === 0) {
         return '';
       }
+
       const range = selection.getRangeAt(0);
+
+      // Strategy 1: Try to get common ancestor's outerHTML (preserves structure)
+      const commonAncestor = range.commonAncestorContainer;
+      if (commonAncestor.nodeType === Node.ELEMENT_NODE) {
+        // Deep clone to avoid modifying the live document
+        const clone = commonAncestor.cloneNode(true);
+        return this.sanitizeHtmlForExport(clone);
+      } else if (commonAncestor.parentNode) {
+        // For text nodes, get the parent element
+        const parent = commonAncestor.parentNode.cloneNode(true);
+        // Extract only the relevant portion using cloneContents
+        try {
+          const fragment = range.cloneContents();
+          parent.appendChild(fragment);
+          return this.sanitizeHtmlForExport(parent);
+        } catch (e) {
+          // Fallback to simple text
+          return '';
+        }
+      }
+
+      // Strategy 2: Fallback to cloneContents
       const fragment = range.cloneContents();
       const div = document.createElement('div');
       div.appendChild(fragment);
@@ -311,6 +335,25 @@ class FlashDocContent {
       console.warn('Could not capture HTML selection:', error);
       return '';
     }
+  }
+
+  // Sanitize and clean HTML for export
+  sanitizeHtmlForExport(node) {
+    if (!node) return '';
+
+    // If node is an Element, use innerHTML
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      let html = node.innerHTML;
+
+      // Clean up common artifacts
+      html = html.replace(/<span[^>]*>\s*<\/span>/gi, ''); // Empty spans
+      html = html.replace(/<font[^>]*>/gi, ''); // Legacy font tags
+      html = html.replace(/<\/font>/gi, '');
+
+      return html;
+    }
+
+    return '';
   }
 
   onSelectionCleared() {

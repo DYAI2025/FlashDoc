@@ -977,12 +977,13 @@ class FlashDoc {
 
   /**
    * Get HTML selection from tab and save
+   * IMPROVED: Better HTML extraction using common ancestor strategy
    */
   async getHtmlSelectionAndSave(fallbackText, type, tab) {
     let html = '';
     let text = fallbackText;
-    
-    // Try to get HTML from the tab
+
+    // Try to get HTML from the tab with improved extraction
     if (tab && tab.id) {
       try {
         const [result] = await chrome.scripting.executeScript({
@@ -990,8 +991,37 @@ class FlashDoc {
           func: () => {
             const sel = window.getSelection();
             if (!sel || sel.rangeCount === 0) return { html: '' };
+
             try {
               const range = sel.getRangeAt(0);
+              const commonAncestor = range.commonAncestorContainer;
+
+              // Strategy 1: Get common ancestor's outerHTML (preserves structure)
+              if (commonAncestor.nodeType === Node.ELEMENT_NODE) {
+                const clone = commonAncestor.cloneNode(true);
+                // Clean up artifacts
+                const html = clone.innerHTML
+                  .replace(/<span[^>]*>\s*<\/span>/gi, '')
+                  .replace(/<font[^>]*>/gi, '')
+                  .replace(/<\/font>/gi, '');
+                return { html };
+              } else if (commonAncestor.parentNode) {
+                // For text nodes, get parent element
+                const parent = commonAncestor.parentNode.cloneNode(true);
+                try {
+                  const fragment = range.cloneContents();
+                  parent.appendChild(fragment);
+                  const html = parent.innerHTML
+                    .replace(/<span[^>]*>\s*<\/span>/gi, '')
+                    .replace(/<font[^>]*>/gi, '')
+                    .replace(/<\/font>/gi, '');
+                  return { html };
+                } catch (e) {
+                  return { html: '' };
+                }
+              }
+
+              // Strategy 2: Fallback to cloneContents
               const container = document.createElement('div');
               container.appendChild(range.cloneContents());
               return { html: container.innerHTML };
@@ -1002,12 +1032,13 @@ class FlashDoc {
         });
         if (result && result.result && result.result.html) {
           html = result.result.html;
+          console.log('[FlashDoc] HTML captured:', html.length, 'chars');
         }
       } catch (e) {
         console.log('[FlashDoc] Could not get HTML selection:', e);
       }
     }
-    
+
     await this.handleSave(text, type, tab, { html });
   }
 
@@ -1026,25 +1057,51 @@ class FlashDoc {
         func: () => {
           const sel = window.getSelection();
           if (!sel || sel.rangeCount === 0) return { text: '', html: '' };
-          
+
           const text = sel.toString();
-          
-          // Extract HTML from selection
+
+          // Extract HTML from selection with improved strategy
           let html = '';
           try {
             const range = sel.getRangeAt(0);
-            const container = document.createElement('div');
-            container.appendChild(range.cloneContents());
-            html = container.innerHTML;
+            const commonAncestor = range.commonAncestorContainer;
+
+            // Strategy 1: Get common ancestor's outerHTML (preserves structure)
+            if (commonAncestor.nodeType === Node.ELEMENT_NODE) {
+              const clone = commonAncestor.cloneNode(true);
+              html = clone.innerHTML
+                .replace(/<span[^>]*>\s*<\/span>/gi, '')
+                .replace(/<font[^>]*>/gi, '')
+                .replace(/<\/font>/gi, '');
+            } else if (commonAncestor.parentNode) {
+              // For text nodes, get parent element
+              const parent = commonAncestor.parentNode.cloneNode(true);
+              try {
+                const fragment = range.cloneContents();
+                parent.appendChild(fragment);
+                html = parent.innerHTML
+                  .replace(/<span[^>]*>\s*<\/span>/gi, '')
+                  .replace(/<font[^>]*>/gi, '')
+                  .replace(/<\/font>/gi, '');
+              } catch (e) {
+                html = '';
+              }
+            } else {
+              // Strategy 2: Fallback
+              const container = document.createElement('div');
+              container.appendChild(range.cloneContents());
+              html = container.innerHTML;
+            }
           } catch (e) {
             html = '';
           }
-          
+
           return { text, html };
         }
       });
 
       if (selection && selection.result && selection.result.text && selection.result.text.trim()) {
+        console.log('[FlashDoc] Selection:', selection.result.text.length, 'chars, HTML:', selection.result.html?.length || 0, 'chars');
         await this.handleSave(selection.result.text, type, tab, { html: selection.result.html });
       } else {
         const error = new Error('No text selected');
