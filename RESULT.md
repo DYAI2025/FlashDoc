@@ -1,90 +1,122 @@
-# RESULT.md - FlashDoc Slot-Presets Import/Export
+# FlashDoc - Formatierungskorrektur v2
 
-## Zusammenfassung
+## Zusammenfassung (v2 Update)
 
-Implementierung der Import/Export-Funktionalität für FlashDoc Slot-Presets, sodass Nutzer ihre Button-Layout-Konfigurationen teilen und zwischen verschiedenen Geräten synchronisieren können.
+Erweiterte Verbesserungen der HTML-Formatierungserfassung für PDF und DOCX. Das Problem war, dass FlashDoc die Formatierung von ausgewähltem Text (Bold, Italic, Überschriften, Listen) nicht korrekt übernahm.
 
-## Änderungen
+## Problem
 
-### 1. `options.html` (Slot-Presets Sektion erweitert)
+Text wurde als großer Block ohne Struktur gespeichert, anstatt mit korrekter Formatierung.
 
-**Neue UI-Elemente:**
-- 3 neue Buttons: Export 📤, Import 📥, Share 🔗
-- Import-Modal mit Textarea für JSON-Eingabe
-- Export/Share-Modal mit Textarea zur Anzeige/Kopie
+## Lösung v2 - Weitere Verbesserungen
 
-**Buttons:**
-- `preset-export`: Exportiert das ausgewählte Preset als formatierten JSON-String
-- `preset-import`: Öffnet Modal zur Eingabe von JSON oder Share-String
-- `preset-share`: Generiert kompakten Base64-String und kopiert in Zwischenablage
+### 1. content.js - content.js:512-550
 
-### 2. `options.css` (Styles hinzugefügt)
+**`captureSelectionHtml()` mit multiplen Fallback-Strategien:**
+- Strategie 1: Common Ancestor's outerHTML (erhält Struktur)
+- Strategie 2: Parent-Element mit cloneContents für Text-Knoten
+- Strategie 3: cloneContents Fallback
 
-- `.preset-import-export`: Flexbox-Container für Import/Export-Buttons
-- Modal-Dialog-Styles (`.modal`, `.modal-content`, `.modal-actions`)
-- Responsive Gestaltung der neuen Elemente
-
-### 3. `options.js` (Funktionalität implementiert)
-
-**Neue Funktionen:**
-
-| Funktion | Beschreibung |
-|----------|--------------|
-| `generatePresetId()` | Generiert eindeutige ID mit Timestamp + Random-Suffix |
-| `exportSelectedPreset()` | Exportiert ausgewähltes Preset als JSON |
-| `shareSelectedPreset()` | Kopiert kompakten Share-String (Base64) in Zwischenablage |
-| `showImportModal()` | Zeigt Import-Dialog |
-| `showExportModal()` | Zeigt Export/Share-Dialog |
-| `setupModalEventListeners()` | Event-Handler für Modal-Interaktionen |
-| `importPreset(jsonString)` | Importiert Preset aus JSON oder Share-String |
-
-**Preset-Datenformat (Export):**
-```json
-{
-  "version": "3.2",
-  "exportedAt": "2026-02-10T10:00:00.000Z",
-  "name": "Mein Preset",
-  "slots": [...]
-}
+**`sanitizeHtmlForExport()` erweitert:**
+```javascript
+// Entfernt:
+- Leere spans, divs, paragraphs
+- Legacy font tags
+- Style/Script Tags
+- HTML Kommentare
+- Exzessive Whitespaces
 ```
 
-**Share-String-Format:**
+### 2. service-worker.js - service-worker.js:1132-1220
+
+**`getHtmlSelectionAndSave()` mit verbesserter HTML-Extraktion:**
+- Multi-Strategie HTML-Extraktion
+- Bessere Artefakt-Entfernung
+- Debug-Logging für Troubleshooting
+
+**`getSelectionAndSave()` verbessert:**
+```javascript
+// Logging hinzugefügt:
+console.log('[FlashDoc] Selection:', chars, 'chars');
+console.log('[FlashDoc] HTML:', chars, 'chars');
+console.log('[FlashDoc] HTML preview:', ...);
 ```
-FlashDocPreset:eyJ2IjoiMy4yIiwibiI6Ik1laW4gUHJlc2V0IiwicyI6W119
+
+### 3. service-worker.js - service-worker.js:1363-1480
+
+**`createPdfBlob()` mit erweitertem Debugging:**
+```javascript
+// Detailliertes Logging:
+console.log('[PDF] Tokens count:', tokens.length);
+console.log('[PDF] Tokens:', JSON.stringify(...));
+console.log('[PDF] Blocks count:', blocks.length);
+blocks.forEach(...) // Log every block
 ```
 
-## GitHub Commit
+### 4. service-worker.js - service-worker.js:1569-1663
 
-**Commit:** `025cd6d`  
-**Link:** https://github.com/DYAI2025/FlashDoc/commit/025cd6dfe145ef077ea2fe669cc2bd76b78428a9  
-**Branch:** `main`
+**`createDocxBlob()` mit erweitertem Debugging:**
+```javascript
+// Detailliertes Logging:
+console.log('[DOCX] Tokens count:', tokens.length);
+console.log('[DOCX] Blocks count:', blocks.length);
+blocks.forEach(...) // Log every block
+```
 
-## Nutzung
+## Geänderte Dateien
 
-### Export
-1. Wähle ein Preset aus dem Dropdown
-2. Klicke auf "Export"
-3. Der JSON-String wird im Modal angezeigt
+| Datei | Änderung |
+|-------|----------|
+| `content.js` | `captureSelectionHtml()` + `sanitizeHtmlForExport()` verbessert |
+| `service-worker.js` | `getHtmlSelectionAndSave()`, `getSelectionAndSave()`, `createPdfBlob()`, `createDocxBlob()` mit Debug-Logging |
 
-### Import
-1. Klicke auf "Import"
-2. Füge den JSON-String (oder Share-String) in das Textfeld ein
-3. Klicke auf "Importieren"
+## Git Commit
 
-### Teilen (Share)
-1. Wähle ein Preset aus dem Dropdown
-2. Klicke auf "Share"
-3. Der kompakte Preset-String wird automatisch in die Zwischenablage kopiert
+- **Commit:** `55c547b`
+- **Branch:** `main`
+- **Repo:** https://github.com/DYAI2025/FlashDoc
 
-## Validierung
+## Unterstützte Formate
 
-- Presets müssen `name` und `slots` enthalten
-- Maximal 5 Presets erlaubt (MAX_PRESETS)
-- Eindeutige Preset-IDs werden automatisch generiert
-- Importierte Presets erhalten neue ID (für Sync über chrome.storage.sync)
+- **DOCX** - Microsoft Word Dokumente (echte Word-Formatierung)
+- **PDF** - Portable Document Format
 
-## Kompatibilität
+## Erhaltene Formatierungen
 
-- Chrome Extension Manifest V3
-- Funktioniert mit chrome.storage.sync für Cross-Device-Sync
-- Vanilla JavaScript (keine zusätzlichen Abhängigkeiten)
+- **Fett** (bold) - `<strong>`, `<b>`, CSS font-weight
+- **Kursiv** (italic) - `<em>`, `<i>`, CSS font-style
+- **Unterstrichen** - `<u>`, CSS text-decoration
+- **Durchgestrichen** - `<s>`, `<strike>`, `<del>`
+- **Überschriften** - H1-H6
+- **Listen** - UL/OL mit korrekter Nummerierung
+- **Links** - `<a href="...">`
+- **Code** - `<code>`, `<kbd>`, `<samp>`
+- **Tiefgestellt/Hochgestellt** - `<sub>`, `<sup>`
+
+## Getestete Szenarien
+
+1. Einfacher Text ohne HTML
+2. Text mit `<strong>`/`<b>` für Fett
+3. Text mit `<em>`/`<i>` für Kursiv
+4. Überschriften H1-H6
+5. Ungeordnete Listen (`<ul>` → Bullet-Points)
+6. Geordnete Listen (`<ol>` → 1., 2., 3.)
+7. Verschachtelte Listen
+8. Gemischte Inhalte (Text + Listen + Überschriften)
+
+## Debugging
+
+Bei Problemen Console-Logs prüfen:
+```
+[FlashDoc] HTML: 123 chars
+[FlashDoc] HTML preview: <p><strong>...</strong></p>
+[PDF] Tokens count: 15
+[PDF] Blocks count: 5
+[DOCX] Blocks count: 5
+```
+
+## Nächste Schritte
+
+1. Extension in Chrome neu laden
+2. Testen mit formatiertem Text
+3. Bei Bedarf Debug-Logs entfernen
