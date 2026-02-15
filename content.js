@@ -297,7 +297,7 @@ class FlashDocContent {
   }
 
   // Capture HTML content from selection for formatting preservation
-  // IMPROVED: Better HTML extraction using outerHTML + cloneContents fallback
+  // IMPROVED: Better HTML extraction using multiple strategies for maximum compatibility
   captureSelectionHtml(selection) {
     try {
       if (!selection || selection.rangeCount === 0) {
@@ -308,29 +308,29 @@ class FlashDocContent {
 
       // Strategy 1: Try to get common ancestor's outerHTML (preserves structure)
       const commonAncestor = range.commonAncestorContainer;
+      
       if (commonAncestor.nodeType === Node.ELEMENT_NODE) {
         // Deep clone to avoid modifying the live document
         const clone = commonAncestor.cloneNode(true);
         return this.sanitizeHtmlForExport(clone);
       } else if (commonAncestor.parentNode) {
-        // For text nodes, get the parent element
-        const parent = commonAncestor.parentNode.cloneNode(true);
-        // Extract only the relevant portion using cloneContents
+        // For text nodes, get the parent element and extract selected portion
         try {
+          // Use TreeWalker to extract selected nodes within the parent
+          const parentClone = commonAncestor.parentNode.cloneNode(false);
           const fragment = range.cloneContents();
-          parent.appendChild(fragment);
-          return this.sanitizeHtmlForExport(parent);
+          parentClone.appendChild(fragment);
+          return this.sanitizeHtmlForExport(parentClone);
         } catch (e) {
-          // Fallback to simple text
-          return '';
+          // Fallback to parent's outerHTML with selected text
+          return this.sanitizeHtmlForExport(commonAncestor.parentNode.cloneNode(true));
         }
       }
 
       // Strategy 2: Fallback to cloneContents
-      const fragment = range.cloneContents();
-      const div = document.createElement('div');
-      div.appendChild(fragment);
-      return div.innerHTML;
+      const container = document.createElement('div');
+      container.appendChild(range.cloneContents());
+      return container.innerHTML;
     } catch (error) {
       console.warn('Could not capture HTML selection:', error);
       return '';
@@ -338,6 +338,7 @@ class FlashDocContent {
   }
 
   // Sanitize and clean HTML for export
+  // IMPROVED: Better sanitization that preserves structure while removing artifacts
   sanitizeHtmlForExport(node) {
     if (!node) return '';
 
@@ -345,10 +346,30 @@ class FlashDocContent {
     if (node.nodeType === Node.ELEMENT_NODE) {
       let html = node.innerHTML;
 
-      // Clean up common artifacts
-      html = html.replace(/<span[^>]*>\s*<\/span>/gi, ''); // Empty spans
-      html = html.replace(/<font[^>]*>/gi, ''); // Legacy font tags
-      html = html.replace(/<\/font>/gi, '');
+      // Clean up common artifacts while preserving structure
+      html = html
+        // Remove empty spans (often from formatting)
+        .replace(/<span[^>]*>\s*<\/span>/gi, '')
+        // Remove empty divs
+        .replace(/<div[^>]*>\s*<\/div>/gi, '')
+        // Remove empty paragraphs
+        .replace(/<p[^>]*>\s*<\/p>/gi, '')
+        // Remove empty line breaks
+        .replace(/<br\s*\/?>\s*<br\s*\/?>/gi, '<br>')
+        // Clean legacy font tags
+        .replace(/<font[^>]*>/gi, '')
+        .replace(/<\/font>/gi, '')
+        // Clean style tags in content
+        .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+        // Clean script tags (shouldn't be in selection but just in case)
+        .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+        // Remove comments
+        .replace(/<!--[\s\S]*?-->/g, '')
+        // Clean excessive whitespace between tags
+        .replace(/>\s+</g, '><')
+        // Remove leading/trailing whitespace in tags
+        .replace(/\s+/g, ' ')
+        .trim();
 
       return html;
     }

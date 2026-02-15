@@ -977,7 +977,7 @@ class FlashDoc {
 
   /**
    * Get HTML selection from tab and save
-   * IMPROVED: Better HTML extraction using common ancestor strategy
+   * IMPROVED: Better HTML extraction with multiple strategies for structure preservation
    */
   async getHtmlSelectionAndSave(fallbackText, type, tab) {
     let html = '';
@@ -994,34 +994,49 @@ class FlashDoc {
 
             try {
               const range = sel.getRangeAt(0);
-              const commonAncestor = range.commonAncestorContainer;
 
-              // Strategy 1: Get common ancestor's outerHTML (preserves structure)
+              // Strategy 1: Try common ancestor element
+              const commonAncestor = range.commonAncestorContainer;
+              
               if (commonAncestor.nodeType === Node.ELEMENT_NODE) {
+                // Clone and clean the element
                 const clone = commonAncestor.cloneNode(true);
-                // Clean up artifacts
                 const html = clone.innerHTML
                   .replace(/<span[^>]*>\s*<\/span>/gi, '')
                   .replace(/<font[^>]*>/gi, '')
-                  .replace(/<\/font>/gi, '');
+                  .replace(/<\/font>/gi, '')
+                  .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+                  .replace(/<!--[\s\S]*?-->/g, '')
+                  .replace(/>\s+</g, '><');
                 return { html };
-              } else if (commonAncestor.parentNode) {
-                // For text nodes, get parent element
-                const parent = commonAncestor.parentNode.cloneNode(true);
+              }
+              
+              // Strategy 2: For text nodes, get parent and extract selected portion
+              if (commonAncestor.parentNode) {
                 try {
+                  const parent = commonAncestor.parentNode.cloneNode(false);
                   const fragment = range.cloneContents();
                   parent.appendChild(fragment);
                   const html = parent.innerHTML
                     .replace(/<span[^>]*>\s*<\/span>/gi, '')
                     .replace(/<font[^>]*>/gi, '')
-                    .replace(/<\/font>/gi, '');
+                    .replace(/<\/font>/gi, '')
+                    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+                    .replace(/<!--[\s\S]*?-->/g, '')
+                    .replace(/>\s+</g, '><');
                   return { html };
                 } catch (e) {
-                  return { html: '' };
+                  // Fallback: get parent outerHTML
+                  const parent = commonAncestor.parentNode.cloneNode(true);
+                  const html = parent.innerHTML
+                    .replace(/<span[^>]*>\s*<\/span>/gi, '')
+                    .replace(/<font[^>]*>/gi, '')
+                    .replace(/<\/font>/gi, '');
+                  return { html };
                 }
               }
 
-              // Strategy 2: Fallback to cloneContents
+              // Strategy 3: Fallback to cloneContents
               const container = document.createElement('div');
               container.appendChild(range.cloneContents());
               return { html: container.innerHTML };
@@ -1033,6 +1048,7 @@ class FlashDoc {
         if (result && result.result && result.result.html) {
           html = result.result.html;
           console.log('[FlashDoc] HTML captured:', html.length, 'chars');
+          console.log('[FlashDoc] HTML preview:', html.substring(0, 300));
         }
       } catch (e) {
         console.log('[FlashDoc] Could not get HTML selection:', e);
@@ -1060,7 +1076,7 @@ class FlashDoc {
 
           const text = sel.toString();
 
-          // Extract HTML from selection with improved strategy
+          // Extract HTML from selection with multiple strategies for best structure preservation
           let html = '';
           try {
             const range = sel.getRangeAt(0);
@@ -1072,22 +1088,34 @@ class FlashDoc {
               html = clone.innerHTML
                 .replace(/<span[^>]*>\s*<\/span>/gi, '')
                 .replace(/<font[^>]*>/gi, '')
-                .replace(/<\/font>/gi, '');
-            } else if (commonAncestor.parentNode) {
-              // For text nodes, get parent element
-              const parent = commonAncestor.parentNode.cloneNode(true);
+                .replace(/<\/font>/gi, '')
+                .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+                .replace(/<!--[\s\S]*?-->/g, '')
+                .replace(/>\s+</g, '><');
+            } 
+            // Strategy 2: For text nodes, get parent and extract selected portion
+            else if (commonAncestor.parentNode) {
               try {
+                const parent = commonAncestor.parentNode.cloneNode(false);
                 const fragment = range.cloneContents();
                 parent.appendChild(fragment);
                 html = parent.innerHTML
                   .replace(/<span[^>]*>\s*<\/span>/gi, '')
                   .replace(/<font[^>]*>/gi, '')
-                  .replace(/<\/font>/gi, '');
+                  .replace(/<\/font>/gi, '')
+                  .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+                  .replace(/<!--[\s\S]*?-->/g, '')
+                  .replace(/>\s+</g, '><');
               } catch (e) {
-                html = '';
+                const parent = commonAncestor.parentNode.cloneNode(true);
+                html = parent.innerHTML
+                  .replace(/<span[^>]*>\s*<\/span>/gi, '')
+                  .replace(/<font[^>]*>/gi, '')
+                  .replace(/<\/font>/gi, '');
               }
-            } else {
-              // Strategy 2: Fallback
+            } 
+            // Strategy 3: Fallback
+            else {
               const container = document.createElement('div');
               container.appendChild(range.cloneContents());
               html = container.innerHTML;
@@ -1101,7 +1129,9 @@ class FlashDoc {
       });
 
       if (selection && selection.result && selection.result.text && selection.result.text.trim()) {
-        console.log('[FlashDoc] Selection:', selection.result.text.length, 'chars, HTML:', selection.result.html?.length || 0, 'chars');
+        console.log('[FlashDoc] Selection:', selection.result.text.length, 'chars');
+        console.log('[FlashDoc] HTML:', selection.result.html?.length || 0, 'chars');
+        console.log('[FlashDoc] HTML preview:', selection.result.html?.substring(0, 300) || 'none');
         await this.handleSave(selection.result.text, type, tab, { html: selection.result.html });
       } else {
         const error = new Error('No text selected');
@@ -1342,19 +1372,23 @@ class FlashDoc {
 
     // DEBUG: Log input
     console.log('[PDF] Input HTML length:', html?.length || 0);
-    console.log('[PDF] Input HTML preview:', html?.substring(0, 200));
+    console.log('[PDF] Input HTML preview:', html?.substring(0, 500));
 
     // Parse HTML using new tokenizer → builder pipeline
     let blocks;
     if (html && html.trim()) {
       const tokens = HtmlTokenizer.tokenize(html);
-      console.log('[PDF] Tokens:', tokens.length, tokens.slice(0, 5));
+      console.log('[PDF] Tokens count:', tokens.length);
+      console.log('[PDF] Tokens:', JSON.stringify(tokens.slice(0, 10), null, 2));
       blocks = BlockBuilder.build(tokens);
-      console.log('[PDF] Blocks:', blocks.length);
-      // Log first block with runs for debugging
-      if (blocks[0]) {
-        console.log('[PDF] First block:', JSON.stringify(blocks[0], null, 2));
-      }
+      console.log('[PDF] Blocks count:', blocks.length);
+      // Log all blocks for debugging
+      blocks.forEach((block, i) => {
+        console.log(`[PDF] Block ${i}: type=${block.type}, runs=${block.runs?.length || 0}`);
+        if (block.runs && block.runs.length > 0) {
+          console.log(`[PDF] Block ${i} text:`, block.runs.map(r => r.text).join('').substring(0, 100));
+        }
+      });
     } else {
       console.log('[PDF] No HTML - using plain text fallback');
       blocks = content.split(/\n\n+/).map(para => ({
@@ -1449,6 +1483,7 @@ class FlashDoc {
       else if (block.type === 'paragraph') y += 2;
     }
 
+    console.log('[PDF] Generation complete, y position:', y);
     return doc.output('blob');
   }
 
@@ -1535,13 +1570,27 @@ class FlashDoc {
     // NEW PIPELINE v2: Use Formatting Engine
     const { Document, Paragraph, TextRun, Packer, HeadingLevel } = docx;
 
+    // DEBUG: Log input
+    console.log('[DOCX] Input HTML length:', html?.length || 0);
+    console.log('[DOCX] Input HTML preview:', html?.substring(0, 500));
+
     // Parse HTML using new tokenizer → builder pipeline
     let blocks;
     if (html && html.trim()) {
       const tokens = HtmlTokenizer.tokenize(html);
+      console.log('[DOCX] Tokens count:', tokens.length);
+      console.log('[DOCX] Tokens:', JSON.stringify(tokens.slice(0, 10), null, 2));
       blocks = BlockBuilder.build(tokens);
+      console.log('[DOCX] Blocks count:', blocks.length);
+      // Log all blocks for debugging
+      blocks.forEach((block, i) => {
+        console.log(`[DOCX] Block ${i}: type=${block.type}, runs=${block.runs?.length || 0}`);
+        if (block.runs && block.runs.length > 0) {
+          console.log(`[DOCX] Block ${i} text:`, block.runs.map(r => r.text).join('').substring(0, 100));
+        }
+      });
     } else {
-      // Fallback: plain text to paragraphs
+      console.log('[DOCX] No HTML - using plain text fallback');
       blocks = content.split(/\n\n+/).map(para => ({
         type: 'paragraph',
         runs: [{ text: para.trim(), bold: false, italic: false }]
@@ -1619,6 +1668,7 @@ class FlashDoc {
       }]
     });
 
+    console.log('[DOCX] Generation complete, paragraphs:', paragraphs.length);
     return await Packer.toBlob(doc);
   }
 
