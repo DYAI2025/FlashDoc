@@ -201,7 +201,7 @@ const HtmlTokenizer = (function() {
  */
 const BlockBuilder = (function() {
   // Block-level tags that create new blocks
-  const BLOCK_TAGS = new Set(['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'li', 'div', 'blockquote', 'pre', 'tr']);
+  const BLOCK_TAGS = new Set(['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'li', 'div', 'blockquote', 'pre', 'tr', 'td', 'th']);
   
   // Inline formatting tags → property name
   const INLINE_FORMAT_MAP = {
@@ -214,7 +214,7 @@ const BlockBuilder = (function() {
   };
 
   // List container tags
-  const LIST_CONTAINERS = new Set(['ul', 'ol']);
+  const LIST_CONTAINERS = new Set(['ul', 'ol', 'li']);
 
   /**
    * Parse CSS style attribute for formatting
@@ -313,6 +313,31 @@ const BlockBuilder = (function() {
       currentBlock = null;
     }
 
+    /**
+     * Start a new list item
+     */
+    function startListItem() {
+      finalizeBlock();
+      const listCtx = listStack[listStack.length - 1] || { type: 'bullet', index: -1 };
+      
+      // Increment counter for ordered lists
+      if (listCtx.type === 'ordered') {
+        listCtx.index++;
+      } else {
+        // For bullet lists, increment but don't use the number
+        listCtx.index++;
+      }
+      
+      currentBlock = {
+        type: 'list-item',
+        listType: listCtx.type,
+        listLevel: Math.max(0, listStack.length - 1),
+        listIndex: listCtx.index,
+        runs: []
+      };
+      blocks.push(currentBlock);
+    }
+
     // Process each token in order (preserving document order!)
     for (const token of tokens) {
       if (token.type === 'open') {
@@ -330,18 +355,7 @@ const BlockBuilder = (function() {
         }
         // List items - create new block
         else if (tag === 'li') {
-          finalizeBlock();
-          const listCtx = listStack[listStack.length - 1] || { type: 'bullet', index: -1 };
-          listCtx.index++;
-          
-          currentBlock = {
-            type: 'list-item',
-            listType: listCtx.type,
-            listLevel: listStack.length - 1,
-            listIndex: listCtx.index,
-            runs: []
-          };
-          blocks.push(currentBlock);
+          startListItem();
         }
         // Headings
         else if (/^h([1-6])$/.test(tag)) {
@@ -385,11 +399,13 @@ const BlockBuilder = (function() {
         const tag = token.tag;
 
         // List container closes
-        if (LIST_CONTAINERS.has(tag)) {
-          listStack.pop();
-          if (listStack.length === 0) {
-            finalizeBlock(); // Exit list context
+        if (tag === 'ul' || tag === 'ol') {
+          // Pop the list container
+          if (listStack.length > 0) {
+            listStack.pop();
           }
+          // Exit list context
+          finalizeBlock();
         }
         // Block element closes
         else if (tag === 'li' || /^h[1-6]$/.test(tag) || BLOCK_TAGS.has(tag)) {
@@ -397,7 +413,7 @@ const BlockBuilder = (function() {
         }
         // Inline format closes - pop from stack (FIX for Bug #1!)
         else if (INLINE_FORMAT_MAP[tag] || tag === 'a') {
-          // Find and remove matching open tag
+          // Find and remove matching open tag (search backwards)
           for (let i = formatStack.length - 1; i >= 0; i--) {
             if (formatStack[i].tag === tag) {
               formatStack.splice(i, 1);
@@ -994,61 +1010,88 @@ class FlashDoc {
 
             try {
               const range = sel.getRangeAt(0);
-
-              // Strategy 1: Try common ancestor element
+              
+              // Strategy 1: cloneContents (most reliable for selections)
+              const container = document.createElement('div');
+              container.appendChild(range.cloneContents());
+              
+              if (container.innerHTML.trim() && container.innerHTML !== '&nbsp;') {
+                let html = container.innerHTML;
+                
+                // Clean up but preserve structure
+                html = html
+                  // Remove empty elements
+                  .replace(/<span[^>]*>\s*<\/span>/gi, '')
+                  .replace(/<font[^>]*>[\s\S]*?<\/font>/gi, '')
+                  // Remove non-content elements
+                  .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+                  .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+                  // Remove comments
+                  .replace(/<!--[\s\S]*?-->/g, '')
+                  // Clean whitespace between tags
+                  .replace(/>\s+</g, '><')
+                  // Normalize
+                  .replace(/\n+/g, '\n')
+                  .trim();
+                
+                if (html.length > 0) {
+                  console.log('[FlashDoc] HTML captured:', html.length, 'chars');
+                  console.log('[FlashDoc] HTML preview:', html.substring(0, 300));
+                  return { html };
+                }
+              }
+              
+              // Strategy 2: Get common ancestor
               const commonAncestor = range.commonAncestorContainer;
               
               if (commonAncestor.nodeType === Node.ELEMENT_NODE) {
-                // Clone and clean the element
                 const clone = commonAncestor.cloneNode(true);
-                const html = clone.innerHTML
+                let html = clone.innerHTML
                   .replace(/<span[^>]*>\s*<\/span>/gi, '')
-                  .replace(/<font[^>]*>/gi, '')
-                  .replace(/<\/font>/gi, '')
+                  .replace(/<font[^>]*>[\s\S]*?<\/font>/gi, '')
                   .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
                   .replace(/<!--[\s\S]*?-->/g, '')
-                  .replace(/>\s+</g, '><');
-                return { html };
+                  .replace(/>\s+</g, '><')
+                  .trim();
+                  
+                if (html.length > 0) {
+                  console.log('[FlashDoc] HTML via ancestor:', html.length, 'chars');
+                  return { html };
+                }
               }
               
-              // Strategy 2: For text nodes, get parent and extract selected portion
+              // Strategy 3: Parent element with selection
               if (commonAncestor.parentNode) {
                 try {
                   const parent = commonAncestor.parentNode.cloneNode(false);
                   const fragment = range.cloneContents();
                   parent.appendChild(fragment);
-                  const html = parent.innerHTML
+                  let html = parent.innerHTML
                     .replace(/<span[^>]*>\s*<\/span>/gi, '')
-                    .replace(/<font[^>]*>/gi, '')
-                    .replace(/<\/font>/gi, '')
+                    .replace(/<font[^>]*>[\s\S]*?<\/font>/gi, '')
                     .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
                     .replace(/<!--[\s\S]*?-->/g, '')
-                    .replace(/>\s+</g, '><');
-                  return { html };
+                    .replace(/>\s+</g, '><')
+                    .trim();
+                    
+                  if (html.length > 0) {
+                    console.log('[FlashDoc] HTML via parent:', html.length, 'chars');
+                    return { html };
+                  }
                 } catch (e) {
-                  // Fallback: get parent outerHTML
-                  const parent = commonAncestor.parentNode.cloneNode(true);
-                  const html = parent.innerHTML
-                    .replace(/<span[^>]*>\s*<\/span>/gi, '')
-                    .replace(/<font[^>]*>/gi, '')
-                    .replace(/<\/font>/gi, '');
-                  return { html };
+                  console.log('[FlashDoc] Parent strategy failed:', e);
                 }
               }
-
-              // Strategy 3: Fallback to cloneContents
-              const container = document.createElement('div');
-              container.appendChild(range.cloneContents());
-              return { html: container.innerHTML };
+              
+              return { html: '' };
             } catch (e) {
+              console.log('[FlashDoc] HTML extraction error:', e);
               return { html: '' };
             }
           }
         });
         if (result && result.result && result.result.html) {
           html = result.result.html;
-          console.log('[FlashDoc] HTML captured:', html.length, 'chars');
-          console.log('[FlashDoc] HTML preview:', html.substring(0, 300));
         }
       } catch (e) {
         console.log('[FlashDoc] Could not get HTML selection:', e);
@@ -1080,45 +1123,37 @@ class FlashDoc {
           let html = '';
           try {
             const range = sel.getRangeAt(0);
-            const commonAncestor = range.commonAncestorContainer;
-
-            // Strategy 1: Get common ancestor's outerHTML (preserves structure)
-            if (commonAncestor.nodeType === Node.ELEMENT_NODE) {
-              const clone = commonAncestor.cloneNode(true);
-              html = clone.innerHTML
+            
+            // Strategy 1: cloneContents (best for selections)
+            const container = document.createElement('div');
+            container.appendChild(range.cloneContents());
+            
+            if (container.innerHTML.trim() && container.innerHTML !== '&nbsp;') {
+              html = container.innerHTML
                 .replace(/<span[^>]*>\s*<\/span>/gi, '')
-                .replace(/<font[^>]*>/gi, '')
-                .replace(/<\/font>/gi, '')
+                .replace(/<font[^>]*>[\s\S]*?<\/font>/gi, '')
                 .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+                .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
                 .replace(/<!--[\s\S]*?-->/g, '')
-                .replace(/>\s+</g, '><');
-            } 
-            // Strategy 2: For text nodes, get parent and extract selected portion
-            else if (commonAncestor.parentNode) {
-              try {
-                const parent = commonAncestor.parentNode.cloneNode(false);
-                const fragment = range.cloneContents();
-                parent.appendChild(fragment);
-                html = parent.innerHTML
+                .replace(/>\s+</g, '><')
+                .replace(/\n+/g, '\n')
+                .trim();
+            }
+            
+            // Strategy 2: Fallback to common ancestor if no meaningful HTML
+            if (!html || html.length < 5) {
+              const commonAncestor = range.commonAncestorContainer;
+              
+              if (commonAncestor.nodeType === Node.ELEMENT_NODE) {
+                const clone = commonAncestor.cloneNode(true);
+                html = clone.innerHTML
                   .replace(/<span[^>]*>\s*<\/span>/gi, '')
-                  .replace(/<font[^>]*>/gi, '')
-                  .replace(/<\/font>/gi, '')
+                  .replace(/<font[^>]*>[\s\S]*?<\/font>/gi, '')
                   .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
                   .replace(/<!--[\s\S]*?-->/g, '')
-                  .replace(/>\s+</g, '><');
-              } catch (e) {
-                const parent = commonAncestor.parentNode.cloneNode(true);
-                html = parent.innerHTML
-                  .replace(/<span[^>]*>\s*<\/span>/gi, '')
-                  .replace(/<font[^>]*>/gi, '')
-                  .replace(/<\/font>/gi, '');
+                  .replace(/>\s+</g, '><')
+                  .trim();
               }
-            } 
-            // Strategy 3: Fallback
-            else {
-              const container = document.createElement('div');
-              container.appendChild(range.cloneContents());
-              html = container.innerHTML;
             }
           } catch (e) {
             html = '';
@@ -1131,7 +1166,9 @@ class FlashDoc {
       if (selection && selection.result && selection.result.text && selection.result.text.trim()) {
         console.log('[FlashDoc] Selection:', selection.result.text.length, 'chars');
         console.log('[FlashDoc] HTML:', selection.result.html?.length || 0, 'chars');
-        console.log('[FlashDoc] HTML preview:', selection.result.html?.substring(0, 300) || 'none');
+        if (selection.result.html && selection.result.html.length > 0) {
+          console.log('[FlashDoc] HTML preview:', selection.result.html.substring(0, 500));
+        }
         await this.handleSave(selection.result.text, type, tab, { html: selection.result.html });
       } else {
         const error = new Error('No text selected');

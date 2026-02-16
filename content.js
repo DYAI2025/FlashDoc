@@ -305,34 +305,97 @@ class FlashDocContent {
       }
 
       const range = selection.getRangeAt(0);
-
-      // Strategy 1: Try to get common ancestor's outerHTML (preserves structure)
+      
+      // Strategy 1: Try to get the selected portion's parent structure
+      // This preserves headings, lists, and other block elements
+      try {
+        const container = document.createElement('div');
+        container.appendChild(range.cloneContents());
+        
+        // If we got meaningful content, use it
+        if (container.innerHTML.trim() && container.innerHTML !== '&nbsp;') {
+          let html = container.innerHTML;
+          
+          // Clean up while preserving structure
+          html = html
+            // Remove empty elements that add no value
+            .replace(/<span[^>]*>\s*<\/span>/gi, '')
+            .replace(/<font[^>]*>[\s\S]*?<\/font>/gi, '')
+            .replace(/<span[^>]*>(?:\s*&nbsp;\s*)*<\/span>/gi, '')
+            // Remove style blocks (not content)
+            .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+            // Remove script tags
+            .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+            // Remove comments
+            .replace(/<!--[\s\S]*?-->/g, '')
+            // Clean excessive whitespace between tags while preserving line breaks
+            .replace(/>\s+</g, '><')
+            // Normalize line breaks
+            .replace(/\n+/g, '\n')
+            .trim();
+          
+          if (html.length > 0) {
+            console.log('[FlashDoc] HTML captured via cloneContents:', html.length, 'chars');
+            return html;
+          }
+        }
+      } catch (e) {
+        console.warn('[FlashDoc] cloneContents failed:', e);
+      }
+      
+      // Strategy 2: Get common ancestor container
       const commonAncestor = range.commonAncestorContainer;
       
       if (commonAncestor.nodeType === Node.ELEMENT_NODE) {
         // Deep clone to avoid modifying the live document
         const clone = commonAncestor.cloneNode(true);
-        return this.sanitizeHtmlForExport(clone);
+        
+        // Clean but preserve structure
+        let html = this.sanitizeHtmlForExport(clone);
+        
+        if (html.length > 0) {
+          console.log('[FlashDoc] HTML captured via ancestor:', html.length, 'chars');
+          return html;
+        }
       } else if (commonAncestor.parentNode) {
-        // For text nodes, get the parent element and extract selected portion
+        // For text nodes, get parent element
         try {
-          // Use TreeWalker to extract selected nodes within the parent
           const parentClone = commonAncestor.parentNode.cloneNode(false);
           const fragment = range.cloneContents();
           parentClone.appendChild(fragment);
-          return this.sanitizeHtmlForExport(parentClone);
+          
+          let html = this.sanitizeHtmlForExport(parentClone);
+          
+          if (html.length > 0) {
+            console.log('[FlashDoc] HTML captured via parent:', html.length, 'chars');
+            return html;
+          }
         } catch (e) {
-          // Fallback to parent's outerHTML with selected text
-          return this.sanitizeHtmlForExport(commonAncestor.parentNode.cloneNode(true));
+          console.warn('[FlashDoc] parent clone failed:', e);
+        }
+        
+        // Fallback: use parent's outerHTML but limit to selected portion
+        try {
+          const parent = commonAncestor.parentNode.cloneNode(true);
+          let html = this.sanitizeHtmlForExport(parent);
+          
+          // Extract only the selected text portion
+          const selectedText = selection.toString();
+          if (selectedText && html.includes(selectedText.substring(0, 100))) {
+            // Keep the structure around the selected text
+            console.log('[FlashDoc] HTML captured via fallback:', html.length, 'chars');
+            return html;
+          }
+        } catch (e) {
+          console.warn('[FlashDoc] parent fallback failed:', e);
         }
       }
-
-      // Strategy 2: Fallback to cloneContents
-      const container = document.createElement('div');
-      container.appendChild(range.cloneContents());
-      return container.innerHTML;
+      
+      // Final fallback: return empty string (will use plain text)
+      console.log('[FlashDoc] HTML capture failed, using plain text');
+      return '';
     } catch (error) {
-      console.warn('Could not capture HTML selection:', error);
+      console.warn('[FlashDoc] Could not capture HTML selection:', error);
       return '';
     }
   }
