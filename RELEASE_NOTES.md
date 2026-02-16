@@ -1,3 +1,20 @@
+### v3.1 - Release Notes
+
+- Configurable contextual chip slots (5 buttons, each customizable)
+- Slot presets for switching between different button layouts
+- Increased prefix shortcuts from 5 to 10
+- Live slot updates—changes in settings apply immediately
+- Fallback handling for deleted shortcuts in slot configurations
+
+
+### v3.0 - Release Notes
+
+- Added format override dropdown in the floating save UI
+- Added live filename preview in the options page
+- Added privacy mode for on-demand script injection
+- Added repeat last action button in the popup
+- Extended stats tracking with format type and content preview
+- Improved recent file display with format icons and badges
 
 
 
