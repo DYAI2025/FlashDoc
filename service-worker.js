@@ -370,8 +370,15 @@ const BlockBuilder = (function() {
           formatStack.push({ tag: tag, cssFormats: cssFormats, isStyled: true });
         }
         
+        // Horizontal rule - create a separator block
+        if (tag === 'hr') {
+          finalizeBlock();
+          currentBlock = { type: 'horizontal-rule', runs: [{ text: '---' }] };
+          blocks.push(currentBlock);
+          finalizeBlock();
+        }
         // Links - store href for potential use
-        if (tag === 'a') {
+        else if (tag === 'a') {
           formatStack.push({ tag: 'a', href: attrs.href || '' });
         }
         // Line breaks
@@ -428,10 +435,11 @@ const BlockBuilder = (function() {
     // Finalize any remaining block
     finalizeBlock();
 
-    // Clean up empty blocks
-    return blocks.filter(block => 
-      block.runs && block.runs.length > 0 && 
-      block.runs.some(run => run.text && run.text.trim())
+    // Clean up empty blocks (preserve horizontal rules)
+    return blocks.filter(block =>
+      block.type === 'horizontal-rule' ||
+      (block.runs && block.runs.length > 0 &&
+      block.runs.some(run => run.text && run.text.trim()))
     );
   }
 
@@ -573,7 +581,8 @@ const PdfListContext = (function() {
     }
 
     // Bullet list: return appropriate bullet for level
-    const bullets = ['•', '○', '▪'];
+    // Use WinAnsiEncoding-safe characters for PDF compatibility
+    const bullets = ['\u2022', '-', '*'];  // • (WinAnsi), -, *
     const bulletIndex = Math.min(level, bullets.length - 1);
     lastListType = type;
     lastListLevel = level;
@@ -646,6 +655,185 @@ const PdfRenderer = (function() {
   return { renderRun, renderRuns };
 })();
 
+/**
+ * sanitizeTextForPdf - Replaces Unicode characters unsupported by jsPDF's
+ * built-in fonts (WinAnsiEncoding) with ASCII/Latin-1 fallbacks.
+ * Prevents blank glyphs in Acrobat Reader and other PDF viewers.
+ * @param {string} text - Input text potentially containing unsupported chars
+ * @returns {string} - Text with unsupported chars replaced by safe alternatives
+ */
+function sanitizeTextForPdf(text) {
+  if (!text) return text;
+
+  // Map of unsupported Unicode → safe ASCII/Latin-1 replacements
+  const replacements = {
+    // Box-drawing characters → ASCII alternatives
+    '\u2500': '-',  // ─ horizontal line
+    '\u2501': '=',  // ━ heavy horizontal
+    '\u2502': '|',  // │ vertical line
+    '\u2503': '|',  // ┃ heavy vertical
+    '\u250C': '+',  // ┌ top-left corner
+    '\u250D': '+',  // ┍
+    '\u250E': '+',  // ┎
+    '\u250F': '+',  // ┏
+    '\u2510': '+',  // ┐ top-right corner
+    '\u2514': '+',  // └ bottom-left corner
+    '\u2518': '+',  // ┘ bottom-right corner
+    '\u251C': '+',  // ├ left tee
+    '\u2524': '+',  // ┤ right tee
+    '\u252C': '+',  // ┬ top tee
+    '\u2534': '+',  // ┴ bottom tee
+    '\u253C': '+',  // ┼ cross
+    '\u2550': '=',  // ═ double horizontal
+    '\u2551': '|',  // ║ double vertical
+    '\u2552': '+',  // ╒
+    '\u2553': '+',  // ╓
+    '\u2554': '+',  // ╔
+    '\u2555': '+',  // ╕
+    '\u2556': '+',  // ╖
+    '\u2557': '+',  // ╗
+    '\u2558': '+',  // ╘
+    '\u2559': '+',  // ╙
+    '\u255A': '+',  // ╚
+    '\u255B': '+',  // ╛
+    '\u255C': '+',  // ╜
+    '\u255D': '+',  // ╝
+    '\u255E': '+',  // ╞
+    '\u255F': '+',  // ╟
+    '\u2560': '+',  // ╠
+    '\u2561': '+',  // ╡
+    '\u2562': '+',  // ╢
+    '\u2563': '+',  // ╣
+    '\u2564': '+',  // ╤
+    '\u2565': '+',  // ╥
+    '\u2566': '+',  // ╦
+    '\u2567': '+',  // ╧
+    '\u2568': '+',  // ╨
+    '\u2569': '+',  // ╩
+    '\u256A': '+',  // ╪
+    '\u256B': '+',  // ╫
+    '\u256C': '+',  // ╬
+
+    // Arrows → ASCII alternatives
+    '\u2190': '<-',  // ← leftwards arrow
+    '\u2191': '^',   // ↑ upwards arrow
+    '\u2192': '->',  // → rightwards arrow
+    '\u2193': 'v',   // ↓ downwards arrow
+    '\u2194': '<->', // ↔ left right arrow
+    '\u21D0': '<=',  // ⇐ leftwards double arrow
+    '\u21D2': '=>',  // ⇒ rightwards double arrow
+    '\u21D4': '<=>', // ⇔ left right double arrow
+
+    // Mathematical operators not in WinAnsi
+    '\u2260': '!=',  // ≠ not equal to
+    '\u2264': '<=',  // ≤ less than or equal
+    '\u2265': '>=',  // ≥ greater than or equal
+    '\u2248': '~=',  // ≈ almost equal
+    '\u221E': 'inf', // ∞ infinity
+    '\u2211': 'Sum', // ∑ summation
+    '\u220F': 'Prod',// ∏ product
+    '\u221A': 'sqrt',// √ square root
+    '\u2202': 'd',   // ∂ partial differential
+    '\u222B': 'int', // ∫ integral
+    '\u2227': '^',   // ∧ logical and
+    '\u2228': 'v',   // ∨ logical or
+    '\u2229': 'n',   // ∩ intersection
+    '\u222A': 'u',   // ∪ union
+
+    // Greek letters (common, not in WinAnsi)
+    '\u0391': 'A',   // Α Alpha
+    '\u0392': 'B',   // Β Beta
+    '\u0393': 'G',   // Γ Gamma
+    '\u0394': 'D',   // Δ Delta
+    '\u0395': 'E',   // Ε Epsilon
+    '\u0396': 'Z',   // Ζ Zeta
+    '\u0397': 'H',   // Η Eta
+    '\u0398': 'Th',  // Θ Theta
+    '\u0399': 'I',   // Ι Iota
+    '\u039A': 'K',   // Κ Kappa
+    '\u039B': 'L',   // Λ Lambda
+    '\u039C': 'M',   // Μ Mu
+    '\u039D': 'N',   // Ν Nu
+    '\u039E': 'X',   // Ξ Xi
+    '\u039F': 'O',   // Ο Omicron
+    '\u03A0': 'P',   // Π Pi
+    '\u03A1': 'R',   // Ρ Rho
+    '\u03A3': 'S',   // Σ Sigma
+    '\u03A4': 'T',   // Τ Tau
+    '\u03A5': 'Y',   // Υ Upsilon
+    '\u03A6': 'Ph',  // Φ Phi
+    '\u03A7': 'X',   // Χ Chi
+    '\u03A8': 'Ps',  // Ψ Psi
+    '\u03A9': 'O',   // Ω Omega
+    '\u03B1': 'a',   // α alpha
+    '\u03B2': 'b',   // β beta
+    '\u03B3': 'g',   // γ gamma
+    '\u03B4': 'd',   // δ delta
+    '\u03B5': 'e',   // ε epsilon
+    '\u03B6': 'z',   // ζ zeta
+    '\u03B7': 'h',   // η eta
+    '\u03B8': 'th',  // θ theta
+    '\u03B9': 'i',   // ι iota
+    '\u03BA': 'k',   // κ kappa
+    '\u03BB': 'l',   // λ lambda
+    '\u03BC': 'u',   // μ mu
+    '\u03BD': 'v',   // ν nu
+    '\u03BE': 'x',   // ξ xi
+    '\u03BF': 'o',   // ο omicron
+    '\u03C0': 'pi',  // π pi
+    '\u03C1': 'r',   // ρ rho
+    '\u03C3': 's',   // σ sigma
+    '\u03C4': 't',   // τ tau
+    '\u03C5': 'y',   // υ upsilon
+    '\u03C6': 'ph',  // φ phi
+    '\u03C7': 'x',   // χ chi
+    '\u03C8': 'ps',  // ψ psi
+    '\u03C9': 'o',   // ω omega
+
+    // Miscellaneous symbols
+    '\u2713': 'v',   // ✓ check mark
+    '\u2714': 'v',   // ✔ heavy check mark
+    '\u2715': 'x',   // ✕ multiplication x
+    '\u2716': 'x',   // ✖ heavy multiplication x
+    '\u2717': 'x',   // ✗ ballot x
+    '\u2718': 'x',   // ✘ heavy ballot x
+    '\u25CF': '*',   // ● black circle
+    '\u25CB': 'o',   // ○ white circle
+    '\u25A0': '#',   // ■ black square
+    '\u25A1': '[]',  // □ white square
+    '\u25B2': '^',   // ▲ triangle up
+    '\u25BC': 'v',   // ▼ triangle down
+    '\u25C0': '<',   // ◀ triangle left
+    '\u25B6': '>',   // ▶ triangle right
+    '\u2605': '*',   // ★ black star
+    '\u2606': '*',   // ☆ white star
+
+    // Dingbats / emoticon placeholders
+    '\u2764': '<3',  // ❤ heavy heart
+    '\u2660': 'S',   // ♠ spade
+    '\u2663': 'C',   // ♣ club
+    '\u2665': 'H',   // ♥ heart
+    '\u2666': 'D',   // ♦ diamond
+  };
+
+  let result = text;
+
+  // Apply known replacements
+  for (const [char, replacement] of Object.entries(replacements)) {
+    if (result.includes(char)) {
+      result = result.split(char).join(replacement);
+    }
+  }
+
+  // Strip remaining characters outside WinAnsiEncoding range that would render as blanks.
+  // WinAnsi covers: U+0000-00FF (Latin-1) plus some extras at U+0152,0153,0160,0161,
+  // U+0178,017D,017E,0192,02C6,02DC, and U+2013-2022,2026,2030,2039,203A,20AC,2122.
+  // We keep those and replace anything else with '?'.
+  result = result.replace(/[^\x00-\xFF\u0152\u0153\u0160\u0161\u0178\u017D\u017E\u0192\u02C6\u02DC\u2013-\u2022\u2026\u2030\u2039\u203A\u20AC\u2122]/g, '?');
+
+  return result;
+}
+
 console.log('⚡ FlashDoc Renderer Layer loaded');
 
 // ============================================================================
@@ -717,7 +905,7 @@ class FlashDoc {
       autoDetectType: true,
       enableContextMenu: true,
       showFloatingButton: true,
-      showCornerBall: true, // F3: Corner ball visibility
+      showCornerBall: false, // F3: Corner ball visibility (disabled by default to avoid UI blocking)
       buttonPosition: 'bottom-right',
       autoHideButton: true,
       selectionThreshold: 10,
@@ -1326,6 +1514,17 @@ class FlashDoc {
       let lineHeight = 5;
       let x = margin;
 
+      // Horizontal rule - draw a line
+      if (block.type === 'horizontal-rule') {
+        checkPageBreak(lineHeight + 4);
+        y += 2;
+        doc.setDrawColor(180, 180, 180);
+        doc.setLineWidth(0.5);
+        doc.line(margin, y, pageWidth - margin, y);
+        y += 4;
+        continue;
+      }
+
       // Heading formatting
       if (block.type === 'heading') {
         fontSize = fontSizes[`h${block.level}`] || 14;
@@ -1346,23 +1545,30 @@ class FlashDoc {
 
       // Render all runs with formatting (FIX Bug #1!)
       for (const run of block.runs) {
-        if (!run.text || !run.text.trim()) continue;
-        
+        if (!run.text) continue;
+        // Skip completely empty runs but KEEP space-only runs (they separate formatted segments)
+        if (run.text.length === 0) continue;
+        // For runs that are only whitespace, just advance the x position without rendering
+        if (!run.text.trim()) {
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(fontSize);
+          x += doc.getTextWidth(run.text);
+          continue;
+        }
+
+        // Sanitize text for PDF (replace unsupported Unicode with ASCII fallbacks)
+        const sanitizedText = sanitizeTextForPdf(run.text);
+
         checkPageBreak(lineHeight);
-        
+
         // Set font style based on formatting
         let fontStyle = 'normal';
         if (run.bold && run.italic) fontStyle = 'bolditalic';
         else if (run.bold) fontStyle = 'bold';
         else if (run.italic) fontStyle = 'italic';
-        
+
         // Heading always bold
         if (block.type === 'heading') fontStyle = run.italic ? 'bolditalic' : 'bold';
-
-        // DEBUG: Log formatting being applied
-        if (run.bold || run.italic) {
-          console.log('[PDF] Applying format:', fontStyle, 'to:', run.text.substring(0, 30));
-        }
 
         const fontFamily = run.code ? 'courier' : 'helvetica';
         doc.setFont(fontFamily, fontStyle);
@@ -1370,8 +1576,8 @@ class FlashDoc {
 
         // Word wrap for long text
         const availableWidth = maxWidth - (x - margin);
-        const wrappedLines = doc.splitTextToSize(run.text, availableWidth);
-        
+        const wrappedLines = doc.splitTextToSize(sanitizedText, availableWidth);
+
         for (let i = 0; i < wrappedLines.length; i++) {
           if (i > 0) {
             y += lineHeight;
@@ -1381,7 +1587,7 @@ class FlashDoc {
           }
           doc.text(wrappedLines[i], x, y);
         }
-        
+
         x += doc.getTextWidth(wrappedLines[wrappedLines.length - 1] || '');
       }
 
@@ -1476,7 +1682,7 @@ class FlashDoc {
 
   async createDocxBlob(content, html = '') {
     // NEW PIPELINE v2: Use Formatting Engine
-    const { Document, Paragraph, TextRun, Packer, HeadingLevel } = docx;
+    const { Document, Paragraph, TextRun, Packer, HeadingLevel, BorderStyle } = docx;
 
     // Parse HTML using new tokenizer → builder pipeline
     let blocks;
@@ -1509,7 +1715,18 @@ class FlashDoc {
 
     // Build paragraphs with proper formatting
     const paragraphs = blocks.map(block => {
-      const fontSize = block.type === 'heading' 
+      // Horizontal rule → paragraph with bottom border
+      if (block.type === 'horizontal-rule') {
+        return new Paragraph({
+          children: [],
+          spacing: { before: 120, after: 120 },
+          border: {
+            bottom: { style: BorderStyle.SINGLE, size: 6, color: 'B4B4B4' }
+          }
+        });
+      }
+
+      const fontSize = block.type === 'heading'
         ? (fontSizes[`h${block.level}`] || 28)
         : (fontSizes[block.type] || 22);
 
