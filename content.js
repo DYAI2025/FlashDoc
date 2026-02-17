@@ -9,7 +9,7 @@ class FlashDocContent {
     this.cornerBall = null; // F3: Separate corner ball element
     this.settings = {
       showFloatingButton: true,
-      showCornerBall: true, // F3: Corner ball visibility setting
+      showCornerBall: false, // F3: Corner ball visibility setting (disabled by default)
       buttonPosition: 'bottom-right',
       autoHideButton: true,
       selectionThreshold: 10,

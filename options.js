@@ -43,7 +43,7 @@ const DEFAULT_SETTINGS = {
   autoDetectType: true,
   enableContextMenu: true,
   showFloatingButton: true,
-  showCornerBall: true, // F3: Corner ball visibility
+  showCornerBall: false, // F3: Corner ball visibility (disabled by default)
   buttonPosition: 'bottom-right',
   autoHideButton: true,
   selectionThreshold: 10,
