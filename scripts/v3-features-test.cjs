@@ -229,8 +229,8 @@ console.log('\n\x1b[1m[5] Manifest Configuration\x1b[0m');
 try {
   const manifest = JSON.parse(readFile('manifest.json'));
 
-  test('Manifest version is 3.0',
-    manifest.version === '3.0',
+  test('Manifest version is 3.2',
+    manifest.version === '3.2',
     `Current: ${manifest.version}`);
 
   test('Required permissions present',

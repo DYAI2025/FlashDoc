@@ -2,28 +2,43 @@
 
 All notable changes to FlashDoc are documented in this file.
 
-# FlashDoc Chrome Extension v3.1
+# FlashDoc Chrome Extension v3.2
 
 FlashDoc turns any selected text into instantly downloadable files. Context menus, keyboard shortcuts, and a floating action button let you save snippets without leaving the page.
 
+## What's New in v3.2
+
+Version 3.2 delivers professional-quality document exports. PDF, DOCX, and Markdown files now preserve formatting, structure, and all selected text reliably.
+
+### Professional Document Quality
+- PDF: proper margins (20mm), heading hierarchy with H1 underlines, segment-based word wrapping across mixed formatting
+- DOCX: Calibri font, themed heading colors (#1E5C4A / #2A7A62), 1.15 line spacing, real Word numbering for lists
+- Markdown: full HTML-to-Markdown conversion with `#` headings, `**bold**`, `*italic*`, `` `code` ``, and list syntax
+
+### Smart Plain Text Structuring
+When no HTML formatting is available, FlashDoc now detects structure automatically: titles, ALL CAPS section headers, colon-ending labels, bullet lists, numbered lists, and paragraph grouping.
+
+### Formatting Pipeline Fixes
+- Whitespace between inline formatted spans is no longer dropped
+- CSS-styled spans (`font-weight: bold` etc.) properly track and release formatting
+- Consecutive runs with identical formatting are merged to reduce fragmentation
+- Block-level trimming preserves meaningful inter-word spaces
+
+### Testing
+140 format quality tests covering the entire pipeline: EntityDecoder, HtmlTokenizer, BlockBuilder, PlainTextStructurer, HtmlToMarkdown, PdfListContext, and real-world content scenarios.
+
+---
+
 ## What's New in v3.1
 
-Version 3.1 focuses on customization. You now control exactly which buttons appear when you select text.
-
-### Customizable Quick-Save Buttons
-The five buttons that pop up near your selection are now fully configurable. Each slot can be a format (like PDF or Markdown), one of your saved shortcuts, or disabled entirely. Set them up once in the options page—they update everywhere instantly.
-
-### Slot Presets
-Save different button layouts for different workflows. A preset for writing might show Markdown and DOCX, while a coding preset shows JS, Python, and JSON. Switch between up to five presets without reconfiguring anything.
-
-### More Shortcuts
-The prefix shortcut limit increased from 5 to 10. Create more category-based save actions like "Meeting Notes + .md" or "Code Review + .txt" for one-click organized saving.
+- Configurable contextual chip slots (5 buttons, each customizable)
+- Slot presets for switching between different button layouts
+- Increased prefix shortcuts from 5 to 10
+- Live slot updates from settings
 
 ---
 
 ## What's New in v3.0
-
-These features shipped in the previous release:
 
 ### Format Override Before Saving
 The floating save button now shows a dropdown where you can change the detected format before downloading. If FlashDoc guesses Markdown but you need a PDF, just pick the right format from the menu. No more saving first and converting later.
