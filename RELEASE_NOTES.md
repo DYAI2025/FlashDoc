@@ -1,3 +1,17 @@
+### v3.2 - Release Notes
+
+**Formatierung**
+- `<hr>` Horizontal Lines werden jetzt korrekt in PDF und DOCX dargestellt
+- PDF: Leerzeichen zwischen formatierten Textabschnitten bleiben erhalten (z.B. **fett** *kursiv*)
+- PDF: Unicode-Sonderzeichen (Box-Drawing ─═│, Pfeile →←, griechische Buchstaben, Checkmarks) werden als lesbare ASCII-Alternativen dargestellt statt als leere Stellen
+- PDF: Listen-Bullets auf allen Ebenen korrekt sichtbar (WinAnsi-kompatibel)
+
+**UI**
+- Corner Ball ist jetzt standardmäßig deaktiviert - blockiert keine UI-Elemente mehr
+- Der Floating Button bleibt als einziges On-Screen-Element aktiv
+- Corner Ball kann bei Bedarf in den Einstellungen wieder aktiviert werden
+
+
 ### v3.1 - Release Notes
 
 - Configurable contextual chip slots (5 buttons, each customizable)

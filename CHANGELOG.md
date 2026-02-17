@@ -2,9 +2,27 @@
 
 All notable changes to FlashDoc are documented in this file.
 
-# FlashDoc Chrome Extension v3.1
+# FlashDoc Chrome Extension v3.2
 
 FlashDoc turns any selected text into instantly downloadable files. Context menus, keyboard shortcuts, and a floating action button let you save snippets without leaving the page.
+
+## What's New in v3.2
+
+Version 3.2 fixes formatting issues when copying content with lines and special characters to PDF and DOCX, and removes the intrusive corner ball from the default experience.
+
+### Horizontal Rule Support
+Horizontal lines (`<hr>`) copied from web pages are now rendered correctly. PDFs show a gray separator line, and DOCX files show a bordered paragraph. Previously these were silently dropped.
+
+### PDF Special Character Handling
+Characters outside jsPDF's built-in font encoding (WinAnsiEncoding) no longer appear as blank spaces. Box-drawing characters (`─═│┌┐└┘`), arrows (`→←↑↓`), Greek letters (`αβπ`), check marks (`✓✔`), and other symbols are automatically replaced with readable ASCII alternatives. This also fixes list bullets at nested levels that were previously invisible.
+
+### PDF Formatting Fidelity
+Whitespace between formatted text segments is now preserved. Previously, a space between `<b>bold</b> <i>italic</i>` was lost, causing words to merge together in the PDF output.
+
+### Corner Ball Disabled by Default
+The draggable corner ball no longer appears on every page. It was covering important UI elements and interfering with normal browsing. The floating save button remains active. The corner ball can be re-enabled in settings if desired.
+
+---
 
 ## What's New in v3.1
 
