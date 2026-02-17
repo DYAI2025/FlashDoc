@@ -16,7 +16,7 @@ class FlashDocContent {
       enableContextMenu: true,
       enableSmartDetection: true,
       categoryShortcuts: [], // Category shortcuts: {id, name, format}
-      // v3.1: Configurable contextual chip slots
+      // v3.2: Configurable contextual chip slots
       floatingButtonSlots: [
         { type: 'format', format: 'txt' },
         { type: 'format', format: 'md' },
@@ -25,7 +25,7 @@ class FlashDocContent {
         { type: 'format', format: 'saveas' }
       ]
     };
-    // v3.1: Format icons and labels for dynamic slots
+    // v3.2: Format icons and labels for dynamic slots
     this.FORMAT_ICONS = {
       txt: '📄', md: '📝', docx: '📜', pdf: '📕', json: '🧩',
       js: '🟡', ts: '🔵', py: '🐍', html: '🌐', css: '🎨',
@@ -499,7 +499,7 @@ class FlashDocContent {
       });
     });
 
-    // v3.1: Handle slot button clicks (format or shortcut)
+    // v3.2: Handle slot button clicks (format or shortcut)
     button.querySelectorAll('.flashdoc-ctx-options button').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -540,7 +540,7 @@ class FlashDocContent {
     });
   }
 
-  // v3.1: Render dynamic slot buttons for contextual chip
+  // v3.2: Render dynamic slot buttons for contextual chip
   renderSlotButtons() {
     const slots = this.settings.floatingButtonSlots || [];
     const shortcuts = this.settings.categoryShortcuts || [];
@@ -1076,7 +1076,7 @@ class FlashDocContent {
       return true;
     });
 
-    // v3.1: Listen for storage changes to update slots in real-time
+    // v3.2: Listen for storage changes to update slots in real-time
     chrome.storage.onChanged.addListener((changes) => {
       if (changes.floatingButtonSlots || changes.categoryShortcuts) {
         this.loadSettings().then(() => {

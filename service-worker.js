@@ -918,7 +918,7 @@ class FlashDoc {
       categoryShortcuts: [], // Array of {id, name, format} objects, max 10
       // Privacy Mode: on-demand injection only
       privacyMode: false,
-      // v3.1: Configurable contextual chip slots
+      // v3.2: Configurable contextual chip slots
       floatingButtonSlots: [
         { type: 'format', format: 'txt' },
         { type: 'format', format: 'md' },

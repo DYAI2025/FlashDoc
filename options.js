@@ -19,7 +19,7 @@ const CONTEXT_MENU_OPTIONS = [
   { id: 'saveas', label: 'Save As…', description: 'Pick folder & filename each time', emoji: '📁' }
 ];
 
-// v3.1 Constants (must be defined before DEFAULT_SETTINGS)
+// v3.2 Constants (must be defined before DEFAULT_SETTINGS)
 const MAX_SHORTCUTS = 10;
 const MAX_SLOTS = 5;
 const MAX_PRESETS = 5;
@@ -56,7 +56,7 @@ const DEFAULT_SETTINGS = {
   categoryShortcuts: [], // Array of {id, name, format} objects, max 10
   // Privacy Mode: On-demand injection
   privacyMode: false,
-  // v3.1: Configurable contextual chip slots
+  // v3.2: Configurable contextual chip slots
   floatingButtonSlots: DEFAULT_SLOTS,
   floatingButtonPresets: [],
   activeFloatingButtonPresetId: null
@@ -132,7 +132,7 @@ document.addEventListener('DOMContentLoaded', () => {
   loadShortcuts();
   // Live filename preview
   setupFilenamePreview();
-  // v3.1: Contextual chip slots and presets
+  // v3.2: Contextual chip slots and presets
   setupSlotConfiguration();
   setupPresetManagement();
 });
@@ -840,7 +840,7 @@ function normalizeFolderPath(path) {
 }
 
 // ============================================
-// v3.1: Contextual Chip Slot Configuration
+// v3.2: Contextual Chip Slot Configuration
 // ============================================
 
 const FORMAT_LABELS = {
@@ -998,7 +998,7 @@ async function saveSlotConfiguration() {
 }
 
 // ============================================
-// v3.1: Preset Management
+// v3.2: Preset Management
 // ============================================
 
 function setupPresetManagement() {
