@@ -9,14 +9,14 @@ class FlashDocContent {
     this.cornerBall = null; // F3: Separate corner ball element
     this.settings = {
       showFloatingButton: true,
-      showCornerBall: true, // F3: Corner ball visibility setting
+      showCornerBall: false, // F3: Corner ball visibility setting (disabled by default)
       buttonPosition: 'bottom-right',
       autoHideButton: true,
       selectionThreshold: 10,
       enableContextMenu: true,
       enableSmartDetection: true,
       categoryShortcuts: [], // Category shortcuts: {id, name, format}
-      // v3.1: Configurable contextual chip slots
+      // v3.2: Configurable contextual chip slots
       floatingButtonSlots: [
         { type: 'format', format: 'txt' },
         { type: 'format', format: 'md' },
@@ -25,7 +25,7 @@ class FlashDocContent {
         { type: 'format', format: 'saveas' }
       ]
     };
-    // v3.1: Format icons and labels for dynamic slots
+    // v3.2: Format icons and labels for dynamic slots
     this.FORMAT_ICONS = {
       txt: '📄', md: '📝', docx: '📜', pdf: '📕', json: '🧩',
       js: '🟡', ts: '🔵', py: '🐍', html: '🌐', css: '🎨',
@@ -46,8 +46,25 @@ class FlashDocContent {
 
   async init() {
     await this.loadSettings();
-    this.setupSelectionListener();
+
+    // Privacy mode: check if this page is blocked
+    this.privacyBlocked = false;
+    this.privacyActivated = false;
+    const privacyCheck = await this.checkPrivacyMode();
+
+    // Always set up message listener (needed for activation commands)
     this.setupMessageListener();
+
+    if (privacyCheck.blocked) {
+      this.privacyBlocked = true;
+      // In split-mode: don't attach selection listeners or UI
+      // The extension popup and keyboard shortcuts still work
+      this.injectStyles(); // Styles needed for toast messages
+      console.log('🔒 FlashDoc privacy mode: scripts paused on this page');
+      return;
+    }
+
+    this.setupSelectionListener();
     this.setupKeyboardShortcuts();
     this.injectStyles();
 
@@ -61,6 +78,46 @@ class FlashDocContent {
     }
 
     console.log('⚡ FlashDoc content script initialized');
+  }
+
+  /**
+   * Check with the service worker whether this page is privacy-blocked
+   * @returns {Promise<{blocked: boolean, mode: string}>}
+   */
+  async checkPrivacyMode() {
+    try {
+      const response = await this.safeSendMessage({
+        action: 'checkPrivacyForUrl',
+        url: window.location.href
+      }, { retries: 1, delay: 100 });
+      return response || { blocked: false, mode: 'off' };
+    } catch (e) {
+      // If service worker is unavailable, default to not blocked
+      return { blocked: false, mode: 'off' };
+    }
+  }
+
+  /**
+   * Activate FlashDoc on a privacy-blocked page (split-mode activation)
+   */
+  activateOnPage() {
+    if (this.privacyActivated) return;
+    this.privacyActivated = true;
+    this.privacyBlocked = false;
+
+    // Now initialize all the UI and listeners that were skipped
+    this.setupSelectionListener();
+    this.setupKeyboardShortcuts();
+
+    if (this.settings.showFloatingButton) {
+      this.createFloatingButton();
+    }
+    if (this.settings.showCornerBall) {
+      this.createCornerBall();
+    }
+
+    this.showToast('⚡ FlashDoc activated on this page', 'success');
+    console.log('⚡ FlashDoc activated on privacy-blocked page');
   }
 
   // F3: Corner Ball - Draggable corner icon
@@ -499,7 +556,7 @@ class FlashDocContent {
       });
     });
 
-    // v3.1: Handle slot button clicks (format or shortcut)
+    // v3.2: Handle slot button clicks (format or shortcut)
     button.querySelectorAll('.flashdoc-ctx-options button').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -540,7 +597,7 @@ class FlashDocContent {
     });
   }
 
-  // v3.1: Render dynamic slot buttons for contextual chip
+  // v3.2: Render dynamic slot buttons for contextual chip
   renderSlotButtons() {
     const slots = this.settings.floatingButtonSlots || [];
     const shortcuts = this.settings.categoryShortcuts || [];
@@ -1060,9 +1117,35 @@ class FlashDocContent {
     chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       if (request.action === 'getSelection') {
         sendResponse({ text: window.getSelection().toString() });
+      } else if (request.action === 'activateOnPage') {
+        // Split-mode: explicitly activate scripts on this page
+        this.activateOnPage();
+        sendResponse({ success: true });
       } else if (request.action === 'updateSettings') {
-        this.loadSettings().then(() => {
-          // Rebuild floating button to include new shortcuts and slot config
+        this.loadSettings().then(async () => {
+          // Re-check privacy mode — the mode or patterns might have changed
+          const privacyCheck = await this.checkPrivacyMode();
+          if (privacyCheck.blocked && !this.privacyActivated) {
+            // Became blocked: tear down UI
+            if (this.floatingButton) {
+              this.floatingButton.remove();
+              this.floatingButton = null;
+            }
+            if (this.cornerBall) {
+              this.cornerBall.remove();
+              this.cornerBall = null;
+            }
+            this.privacyBlocked = true;
+            return;
+          }
+
+          if (!privacyCheck.blocked && this.privacyBlocked && !this.privacyActivated) {
+            // Was blocked, now unblocked: activate
+            this.activateOnPage();
+            return;
+          }
+
+          // Normal settings update: rebuild floating button
           this.rebuildFloatingButton();
           // Update corner ball
           if (this.settings.showCornerBall && !this.cornerBall) {
@@ -1076,7 +1159,7 @@ class FlashDocContent {
       return true;
     });
 
-    // v3.1: Listen for storage changes to update slots in real-time
+    // v3.2: Listen for storage changes to update slots in real-time
     chrome.storage.onChanged.addListener((changes) => {
       if (changes.floatingButtonSlots || changes.categoryShortcuts) {
         this.loadSettings().then(() => {
@@ -1146,11 +1229,11 @@ class FlashDocContent {
       
       /* Highlight */
       .flashdoc-highlight {
-        background: linear-gradient(135deg, 
-          rgba(102, 126, 234, 0.1), 
-          rgba(118, 75, 162, 0.1));
-        border: 2px solid rgba(102, 126, 234, 0.3);
-        border-radius: 4px;
+        background: linear-gradient(135deg,
+          rgba(30, 92, 74, 0.1),
+          rgba(42, 122, 98, 0.1));
+        border: 2px solid rgba(30, 92, 74, 0.3);
+        border-radius: 8px;
         animation: flashdoc-pulse 2s ease-in-out infinite;
       }
       
@@ -1166,19 +1249,19 @@ class FlashDocContent {
         display: flex;
         align-items: center;
         gap: 8px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #1E5C4A 0%, #2A7A62 100%);
         color: white;
         padding: 8px 16px;
         border-radius: 20px;
         cursor: pointer;
-        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        box-shadow: 0 4px 12px rgba(30, 92, 74, 0.4);
         transition: all 0.2s;
         font-size: 14px;
       }
-      
+
       .flashdoc-ctx-main:hover {
         transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        box-shadow: 0 6px 20px rgba(255, 215, 0, 0.4);
       }
       
       .flashdoc-ctx-icon {
@@ -1196,8 +1279,8 @@ class FlashDocContent {
       }
 
       .flashdoc-ctx-type.overridden {
-        background: rgba(240, 147, 251, 0.4);
-        box-shadow: 0 0 0 2px rgba(240, 147, 251, 0.3);
+        background: rgba(255, 215, 0, 0.4);
+        box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.3);
       }
 
       /* Type Selector Dropdown */
@@ -1268,15 +1351,15 @@ class FlashDocContent {
       }
 
       .flashdoc-type-option:hover {
-        background: linear-gradient(135deg, rgba(102, 126, 234, 0.15), rgba(118, 75, 162, 0.15));
+        background: linear-gradient(135deg, rgba(30, 92, 74, 0.15), rgba(42, 122, 98, 0.15));
       }
 
       .flashdoc-type-option.detected {
-        background: rgba(102, 126, 234, 0.1);
+        background: rgba(30, 92, 74, 0.1);
       }
 
       .flashdoc-type-option.selected {
-        background: linear-gradient(135deg, #667eea, #764ba2);
+        background: linear-gradient(135deg, #1E5C4A, #2A7A62);
         color: white;
       }
 
@@ -1287,9 +1370,9 @@ class FlashDocContent {
       .type-badge {
         font-size: 8px;
         padding: 2px 5px;
-        background: rgba(102, 126, 234, 0.2);
+        background: rgba(30, 92, 74, 0.2);
         border-radius: 4px;
-        color: #667eea;
+        color: #1E5C4A;
         font-weight: 700;
       }
 
@@ -1343,25 +1426,25 @@ class FlashDocContent {
       .flashdoc-fab-icon {
         width: 56px;
         height: 56px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #1E5C4A 0%, #2A7A62 100%);
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
         font-size: 24px;
         cursor: pointer;
-        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        box-shadow: 0 4px 12px rgba(30, 92, 74, 0.4);
         transition: all 0.3s;
         position: relative;
       }
-      
+
       .flashdoc-fab-icon:hover {
         transform: scale(1.1);
-        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        box-shadow: 0 6px 20px rgba(255, 215, 0, 0.5);
       }
-      
+
       .flashdoc-fab-icon.active {
-        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
         animation: flashdoc-pulse 2s infinite;
       }
       
@@ -1404,8 +1487,8 @@ class FlashDocContent {
       
       .flashdoc-fab-option:hover {
         transform: translateX(-4px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        box-shadow: 0 4px 12px rgba(30, 92, 74, 0.3);
+        background: linear-gradient(135deg, #1E5C4A 0%, #2A7A62 100%);
         color: white;
       }
       
@@ -1421,17 +1504,17 @@ class FlashDocContent {
 
       .flashdoc-fab-divider {
         height: 1px;
-        background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.3), transparent);
+        background: linear-gradient(90deg, transparent, rgba(30, 92, 74, 0.3), transparent);
         margin: 8px 0;
       }
 
       .flashdoc-shortcut {
-        background: linear-gradient(135deg, rgba(102, 126, 234, 0.15), rgba(118, 75, 162, 0.15));
-        border: 1px solid rgba(102, 126, 234, 0.3);
+        background: linear-gradient(135deg, rgba(30, 92, 74, 0.15), rgba(42, 122, 98, 0.15));
+        border: 1px solid rgba(30, 92, 74, 0.3);
       }
 
       .flashdoc-shortcut:hover {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #1E5C4A 0%, #2A7A62 100%);
         border-color: transparent;
       }
       
@@ -1439,15 +1522,15 @@ class FlashDocContent {
         position: absolute;
         top: -8px;
         right: -8px;
-        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-        color: white;
+        background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+        color: #0A1612;
         font-size: 11px;
         font-weight: bold;
         padding: 4px 8px;
         border-radius: 12px;
         min-width: 24px;
         text-align: center;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        box-shadow: 0 2px 6px rgba(255, 215, 0, 0.3);
       }
       
       /* Toast Notifications */
@@ -1508,19 +1591,19 @@ class FlashDocContent {
       .flashdoc-ball-icon {
         width: 48px;
         height: 48px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #1E5C4A 0%, #2A7A62 100%);
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
         font-size: 20px;
-        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        box-shadow: 0 4px 12px rgba(30, 92, 74, 0.4);
         transition: all 0.2s;
       }
 
       .flashdoc-corner-ball:hover .flashdoc-ball-icon {
         transform: scale(1.05);
-        box-shadow: 0 6px 16px rgba(102, 126, 234, 0.5);
+        box-shadow: 0 6px 16px rgba(255, 215, 0, 0.4);
       }
 
       .flashdoc-ball-pin {
@@ -1550,11 +1633,28 @@ class FlashDocContent {
       .flashdoc-corner-ball.pinned .flashdoc-ball-pin {
         opacity: 1;
         transform: scale(1);
-        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
       }
 
       .flashdoc-corner-ball.pinned .flashdoc-ball-icon {
-        box-shadow: 0 0 0 3px rgba(240, 147, 251, 0.4), 0 4px 12px rgba(102, 126, 234, 0.4);
+        box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.4), 0 4px 12px rgba(30, 92, 74, 0.4);
+      }
+
+      /* Accessibility: Reduced Motion */
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+        }
+        .flashdoc-highlight {
+          animation: none;
+        }
+        .flashdoc-fab-icon.active {
+          animation: none;
+        }
       }
     `;
 
