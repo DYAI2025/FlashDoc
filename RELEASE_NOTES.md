@@ -1,15 +1,13 @@
 ### v3.2 - Release Notes
 
-**Formatierung**
-- `<hr>` Horizontal Lines werden jetzt korrekt in PDF und DOCX dargestellt
-- PDF: Leerzeichen zwischen formatierten Textabschnitten bleiben erhalten (z.B. **fett** *kursiv*)
-- PDF: Unicode-Sonderzeichen (Box-Drawing ─═│, Pfeile →←, griechische Buchstaben, Checkmarks) werden als lesbare ASCII-Alternativen dargestellt statt als leere Stellen
-- PDF: Listen-Bullets auf allen Ebenen korrekt sichtbar (WinAnsi-kompatibel)
-
-**UI**
-- Corner Ball ist jetzt standardmäßig deaktiviert - blockiert keine UI-Elemente mehr
-- Der Floating Button bleibt als einziges On-Screen-Element aktiv
-- Corner Ball kann bei Bedarf in den Einstellungen wieder aktiviert werden
+- Professional PDF output: proper margins, H1 underlines, segment-based word wrapping for mixed formatting
+- Professional DOCX output: Calibri font, themed heading colors, 1.15 line spacing, Word-native list numbering
+- HTML-to-Markdown conversion: headings, bold/italic/code/strikethrough, ordered and unordered lists
+- Smart plain text structuring: auto-detects titles, ALL CAPS headers, bullet/numbered lists, paragraphs
+- Fixed whitespace loss between formatted inline spans (e.g. bold + space + italic)
+- Fixed CSS-styled span format stack not releasing on close
+- Run merging to reduce text fragmentation
+- 140 format quality tests covering the full pipeline
 
 
 ### v3.1 - Release Notes

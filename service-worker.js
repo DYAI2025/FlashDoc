@@ -141,8 +141,9 @@ const HtmlTokenizer = (function() {
       // 1. Capture text BEFORE this tag (preserves order)
       if (match.index > lastIndex) {
         const textContent = html.slice(lastIndex, match.index);
-        // Keep whitespace-only text if it contains actual content
-        if (textContent.length > 0 && (textContent.trim() || /[\u00A0]/.test(textContent))) {
+        // Keep ALL text including single spaces between inline tags
+        // (e.g. "<strong>Hello</strong> <em>World</em>" must keep the space)
+        if (textContent.length > 0) {
           tokens.push({
             type: 'text',
             content: EntityDecoder.decode(textContent)
@@ -179,7 +180,7 @@ const HtmlTokenizer = (function() {
     // 2. Capture remaining text after last tag
     if (lastIndex < html.length) {
       const remaining = html.slice(lastIndex);
-      if (remaining.length > 0 && (remaining.trim() || /[\u00A0]/.test(remaining))) {
+      if (remaining.length > 0) {
         tokens.push({
           type: 'text',
           content: EntityDecoder.decode(remaining)
@@ -302,12 +303,44 @@ const BlockBuilder = (function() {
      */
     function finalizeBlock() {
       if (currentBlock && currentBlock.runs.length > 0) {
-        // Trim leading/trailing empty runs
-        while (currentBlock.runs.length > 0 && !currentBlock.runs[0].text.trim()) {
+        // Merge consecutive runs with identical formatting to reduce fragments
+        const merged = [];
+        for (const run of currentBlock.runs) {
+          const last = merged[merged.length - 1];
+          if (last &&
+              last.bold === run.bold &&
+              last.italic === run.italic &&
+              last.underline === run.underline &&
+              last.strikethrough === run.strikethrough &&
+              last.code === run.code) {
+            last.text += run.text;
+          } else {
+            merged.push({ ...run });
+          }
+        }
+        currentBlock.runs = merged;
+
+        // Only trim leading/trailing runs that are purely whitespace
+        // (but preserve single spaces between inline elements)
+        while (currentBlock.runs.length > 0 &&
+               currentBlock.runs[0].text.length > 0 &&
+               !currentBlock.runs[0].text.trim() &&
+               currentBlock.runs.length > 1) {
+          // Only remove leading whitespace if there's other content
           currentBlock.runs.shift();
         }
-        while (currentBlock.runs.length > 0 && !currentBlock.runs[currentBlock.runs.length - 1].text.trim()) {
+        while (currentBlock.runs.length > 0 &&
+               currentBlock.runs[currentBlock.runs.length - 1].text.length > 0 &&
+               !currentBlock.runs[currentBlock.runs.length - 1].text.trim() &&
+               currentBlock.runs.length > 1) {
           currentBlock.runs.pop();
+        }
+
+        // Trim leading whitespace in first run and trailing in last
+        if (currentBlock.runs.length > 0) {
+          currentBlock.runs[0].text = currentBlock.runs[0].text.replace(/^\s+/, '');
+          const lastRun = currentBlock.runs[currentBlock.runs.length - 1];
+          lastRun.text = lastRun.text.replace(/\s+$/, '');
         }
       }
       currentBlock = null;
@@ -403,10 +436,18 @@ const BlockBuilder = (function() {
           finalizeBlock();
         }
         // Inline format closes - pop from stack (FIX for Bug #1!)
-        else if (INLINE_FORMAT_MAP[tag] || tag === 'a') {
-          // Find and remove matching open tag
+        // Also handle CSS-styled spans/divs that were pushed to formatStack
+        if (INLINE_FORMAT_MAP[tag] || tag === 'a') {
           for (let i = formatStack.length - 1; i >= 0; i--) {
             if (formatStack[i].tag === tag) {
+              formatStack.splice(i, 1);
+              break;
+            }
+          }
+        } else {
+          // Check if this closing tag has a matching CSS-styled entry in formatStack
+          for (let i = formatStack.length - 1; i >= 0; i--) {
+            if (formatStack[i].tag === tag && formatStack[i].isStyled) {
               formatStack.splice(i, 1);
               break;
             }
@@ -835,6 +876,290 @@ function sanitizeTextForPdf(text) {
 }
 
 console.log('⚡ FlashDoc Renderer Layer loaded');
+
+// ============================================================================
+// PLAIN TEXT STRUCTURER - Intelligent structure detection for unformatted text
+// Ensures every export (PDF, DOCX, MD) gets proper headings, paragraphs, lists
+// ============================================================================
+
+const PlainTextStructurer = (function() {
+  /**
+   * Detect if a line is likely a heading
+   * Heuristics: short line, ALL CAPS, ends with no period, first line, etc.
+   */
+  function isLikelyHeading(line, index, allLines) {
+    const trimmed = line.trim();
+    if (!trimmed) return false;
+    if (trimmed.length > 120) return false; // Too long for a heading
+
+    // First non-empty line is often a title
+    if (index === 0 && trimmed.length <= 80 && !trimmed.endsWith('.') && !trimmed.endsWith(',')) {
+      return { level: 1 };
+    }
+
+    // ALL CAPS line (at least 3 chars, not a sentence)
+    if (trimmed.length >= 3 && trimmed.length <= 80 &&
+        trimmed === trimmed.toUpperCase() && /[A-Z]/.test(trimmed) &&
+        !trimmed.endsWith('.') && !trimmed.endsWith(',')) {
+      return { level: 2 };
+    }
+
+    // Line followed by a blank line, short, no ending punctuation
+    const nextLine = allLines[index + 1];
+    const prevLine = index > 0 ? allLines[index - 1] : undefined;
+    if (trimmed.length <= 60 &&
+        !trimmed.endsWith('.') && !trimmed.endsWith(',') && !trimmed.endsWith(';') &&
+        (nextLine === undefined || nextLine.trim() === '') &&
+        (prevLine === undefined || prevLine.trim() === '')) {
+      return { level: 2 };
+    }
+
+    // Lines ending with colon (section headers like "Introduction:")
+    if (trimmed.endsWith(':') && trimmed.length <= 60) {
+      return { level: 3 };
+    }
+
+    return false;
+  }
+
+  /**
+   * Detect if a line is a list item
+   */
+  function parseListItem(line) {
+    const trimmed = line.trim();
+
+    // Bullet lists: -, *, •, ‣, ▪, ○
+    const bulletMatch = trimmed.match(/^([•\-*▪○‣])\s+(.+)/);
+    if (bulletMatch) {
+      return { type: 'bullet', text: bulletMatch[2], level: 0 };
+    }
+
+    // Indented bullet (sub-list)
+    const indentedBullet = line.match(/^(\s{2,})([•\-*▪○‣])\s+(.+)/);
+    if (indentedBullet) {
+      const indent = indentedBullet[1].length;
+      return { type: 'bullet', text: indentedBullet[3], level: Math.min(Math.floor(indent / 2), 2) };
+    }
+
+    // Numbered lists: 1. 2. 3. or 1) 2) 3)
+    const numberedMatch = trimmed.match(/^(\d+)[.)]\s+(.+)/);
+    if (numberedMatch) {
+      return { type: 'ordered', text: numberedMatch[2], index: parseInt(numberedMatch[1], 10) - 1, level: 0 };
+    }
+
+    // Letter lists: a) b) c) or a. b. c.
+    const letterMatch = trimmed.match(/^([a-z])[.)]\s+(.+)/i);
+    if (letterMatch) {
+      return { type: 'ordered', text: letterMatch[2], index: letterMatch[1].toLowerCase().charCodeAt(0) - 97, level: 1 };
+    }
+
+    return null;
+  }
+
+  /**
+   * Structure plain text into blocks compatible with BlockBuilder output
+   * @param {string} text - Plain text content
+   * @returns {Array} - Array of structured blocks
+   */
+  function structure(text) {
+    if (!text || typeof text !== 'string') return [];
+
+    const blocks = [];
+    const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+
+    let i = 0;
+    let listIndex = -1;
+
+    while (i < lines.length) {
+      const line = lines[i];
+      const trimmed = line.trim();
+
+      // Skip empty lines
+      if (!trimmed) {
+        listIndex = -1; // Reset list context on empty line
+        i++;
+        continue;
+      }
+
+      // Check for heading
+      const heading = isLikelyHeading(trimmed, i, lines);
+      if (heading) {
+        blocks.push({
+          type: 'heading',
+          level: heading.level,
+          runs: [{ text: trimmed, bold: true, italic: false, underline: false, strikethrough: false, code: false }]
+        });
+        i++;
+        continue;
+      }
+
+      // Check for list item
+      const listItem = parseListItem(line);
+      if (listItem) {
+        listIndex++;
+        blocks.push({
+          type: 'list-item',
+          listType: listItem.type,
+          listLevel: listItem.level,
+          listIndex: listItem.index !== undefined ? listItem.index : listIndex,
+          runs: [{ text: listItem.text, bold: false, italic: false, underline: false, strikethrough: false, code: false }]
+        });
+        i++;
+        continue;
+      }
+
+      // Regular paragraph - collect consecutive non-empty, non-special lines
+      const paraLines = [trimmed];
+      i++;
+      while (i < lines.length) {
+        const nextLine = lines[i];
+        const nextTrimmed = nextLine.trim();
+        if (!nextTrimmed) break; // Empty line ends paragraph
+        if (parseListItem(nextLine)) break; // List item starts
+        if (isLikelyHeading(nextTrimmed, i, lines)) break; // Heading starts
+        paraLines.push(nextTrimmed);
+        i++;
+      }
+
+      blocks.push({
+        type: 'paragraph',
+        runs: [{ text: paraLines.join(' '), bold: false, italic: false, underline: false, strikethrough: false, code: false }]
+      });
+      listIndex = -1;
+    }
+
+    return blocks;
+  }
+
+  return { structure, isLikelyHeading, parseListItem };
+})();
+
+// ============================================================================
+// HTML TO MARKDOWN CONVERTER - Converts HTML token stream to Markdown text
+// ============================================================================
+
+const HtmlToMarkdown = (function() {
+  /**
+   * Convert HTML string to well-formatted Markdown
+   * @param {string} html - HTML content
+   * @param {string} plainText - Fallback plain text
+   * @returns {string} - Markdown formatted string
+   */
+  function convert(html, plainText) {
+    if (!html || !html.trim()) {
+      return convertPlainText(plainText);
+    }
+
+    const tokens = HtmlTokenizer.tokenize(html);
+    if (!tokens || tokens.length === 0) {
+      return convertPlainText(plainText);
+    }
+
+    const blocks = BlockBuilder.build(tokens);
+    if (!blocks || blocks.length === 0) {
+      return convertPlainText(plainText);
+    }
+
+    return blocksToMarkdown(blocks);
+  }
+
+  /**
+   * Convert structured blocks to Markdown text
+   */
+  function blocksToMarkdown(blocks) {
+    const lines = [];
+
+    for (const block of blocks) {
+      if (block.type === 'heading') {
+        const prefix = '#'.repeat(Math.min(block.level || 1, 6));
+        // For headings, strip bold since # already implies heading weight
+        const text = runsToMarkdownInline(block.runs, { stripBold: true });
+        lines.push('');
+        lines.push(`${prefix} ${text}`);
+        lines.push('');
+      } else if (block.type === 'list-item') {
+        const indent = '  '.repeat(block.listLevel || 0);
+        const text = runsToMarkdownInline(block.runs);
+        if (block.listType === 'ordered') {
+          const num = (block.listIndex || 0) + 1;
+          lines.push(`${indent}${num}. ${text}`);
+        } else {
+          lines.push(`${indent}- ${text}`);
+        }
+      } else {
+        // Paragraph
+        const text = runsToMarkdownInline(block.runs);
+        if (text.trim()) {
+          lines.push('');
+          lines.push(text);
+        }
+      }
+    }
+
+    // Clean up: remove leading empty lines, collapse multiple empty lines
+    let result = lines.join('\n');
+    result = result.replace(/^\n+/, '');
+    result = result.replace(/\n{3,}/g, '\n\n');
+    return result.trim() + '\n';
+  }
+
+  /**
+   * Convert runs to inline Markdown (bold, italic, code)
+   * @param {Array} runs - Array of run objects
+   * @param {Object} opts - Options: { stripBold: true } to skip bold (for headings)
+   */
+  function runsToMarkdownInline(runs, opts = {}) {
+    if (!runs || runs.length === 0) return '';
+
+    return runs.map(run => {
+      let text = run.text || '';
+      if (!text) return '';
+
+      const isBold = run.bold && !opts.stripBold;
+      const isItalic = run.italic;
+
+      // Code formatting (must be first - no nesting inside code)
+      if (run.code) {
+        return '`' + text + '`';
+      }
+
+      // Bold + Italic
+      if (isBold && isItalic) {
+        return '***' + text + '***';
+      }
+      if (isBold) {
+        return '**' + text + '**';
+      }
+      if (isItalic) {
+        return '*' + text + '*';
+      }
+      if (run.strikethrough) {
+        return '~~' + text + '~~';
+      }
+
+      return text;
+    }).join('');
+  }
+
+  /**
+   * Convert plain text to structured Markdown using PlainTextStructurer
+   */
+  function convertPlainText(text) {
+    if (!text || !text.trim()) return '';
+
+    const blocks = PlainTextStructurer.structure(text);
+    if (blocks.length === 0) {
+      // Absolute fallback: just return the text as-is
+      return text.trim() + '\n';
+    }
+
+    return blocksToMarkdown(blocks);
+  }
+
+  return { convert, blocksToMarkdown, runsToMarkdownInline, convertPlainText };
+})();
+
+console.log('⚡ FlashDoc PlainTextStructurer & HtmlToMarkdown loaded');
 
 // ============================================================================
 // END FORMATTING ENGINE v2
@@ -1481,9 +1806,9 @@ class FlashDoc {
     }
 
     if (extension === 'md') {
-      // Normalize line endings to Unix-style for Markdown
-      const normalizedContent = content.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-      const blob = new Blob([normalizedContent], { type: 'text/markdown;charset=utf-8' });
+      // Convert HTML to proper Markdown, or structure plain text
+      const markdownContent = HtmlToMarkdown.convert(html, content);
+      const blob = new Blob([markdownContent], { type: 'text/markdown;charset=utf-8' });
       return { blob, mimeType: 'text/markdown;charset=utf-8' };
     }
 
@@ -1522,79 +1847,138 @@ class FlashDoc {
   // See FORMATTING ENGINE v2 at top of file
 
   createPdfBlob(content, html = '') {
-    // NEW PIPELINE v2: Use Formatting Engine
     const { jsPDF } = jspdf;
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
-    const margin = 15;
+    const margin = 20;
     const maxWidth = pageWidth - (margin * 2);
 
-    // DEBUG: Log input
-    console.log('[PDF] Input HTML length:', html?.length || 0);
-    console.log('[PDF] Input HTML preview:', html?.substring(0, 200));
-
-    // Parse HTML using new tokenizer → builder pipeline
+    // Parse HTML or structure plain text
     let blocks;
     if (html && html.trim()) {
       const tokens = HtmlTokenizer.tokenize(html);
-      console.log('[PDF] Tokens:', tokens.length, tokens.slice(0, 5));
       blocks = BlockBuilder.build(tokens);
-      console.log('[PDF] Blocks:', blocks.length);
-      // Log first block with runs for debugging
-      if (blocks[0]) {
-        console.log('[PDF] First block:', JSON.stringify(blocks[0], null, 2));
-      }
-    } else {
-      console.log('[PDF] No HTML - using plain text fallback');
-      blocks = content.split(/\n\n+/).map(para => ({
+    }
+    if (!blocks || blocks.length === 0) {
+      // Use PlainTextStructurer for intelligent structure detection
+      blocks = PlainTextStructurer.structure(content);
+    }
+    if (!blocks || blocks.length === 0) {
+      // Absolute fallback: single paragraph with all content
+      blocks = [{
         type: 'paragraph',
-        runs: [{ text: para.trim(), bold: false, italic: false }]
-      })).filter(b => b.runs.length > 0 && b.runs[0].text.length > 0);
+        runs: [{ text: content.trim(), bold: false, italic: false, underline: false, strikethrough: false, code: false }]
+      }];
     }
 
     const fontSizes = {
-      h1: 18, h2: 16, h3: 14, h4: 12, h5: 11, h6: 10,
+      h1: 20, h2: 16, h3: 14, h4: 12, h5: 11, h6: 10,
       paragraph: 11, 'list-item': 11
     };
+    const lineHeights = {
+      h1: 9, h2: 7.5, h3: 6.5, h4: 5.5, h5: 5, h6: 5,
+      paragraph: 5, 'list-item': 5
+    };
+    const spacingAfter = {
+      h1: 4, h2: 3, h3: 2.5, h4: 2, h5: 1.5, h6: 1.5,
+      paragraph: 3, 'list-item': 1.5
+    };
 
-    let y = margin + 5;
-    PdfListContext.reset(); // Reset list counters for new document
+    let y = margin;
+    PdfListContext.reset();
 
     const checkPageBreak = (neededHeight) => {
       if (y + neededHeight > pageHeight - margin) {
         doc.addPage();
-        y = margin + 5;
+        y = margin;
+        return true;
+      }
+      return false;
+    };
+
+    /**
+     * Collect all text from a block's runs into segments with formatting info,
+     * then word-wrap them together across the full line width.
+     * This fixes the issue where individual runs would overflow the line.
+     */
+    const renderBlockRuns = (block, startX, fontSize, lineHeight) => {
+      // Build a flat list of word-segments with formatting
+      const segments = [];
+      for (const run of block.runs) {
+        if (!run.text) continue;
+        // Don't skip whitespace-only runs - they may be spaces between words
+        const text = run.text;
+
+        let fontStyle = 'normal';
+        if (run.bold && run.italic) fontStyle = 'bolditalic';
+        else if (run.bold) fontStyle = 'bold';
+        else if (run.italic) fontStyle = 'italic';
+        if (block.type === 'heading') fontStyle = run.italic ? 'bolditalic' : 'bold';
+
+        const fontFamily = run.code ? 'courier' : 'helvetica';
+
+        // Split text into words, preserving spaces
+        const words = text.split(/(\s+)/);
+        for (const word of words) {
+          if (word.length === 0) continue;
+          segments.push({
+            text: word,
+            fontFamily,
+            fontStyle,
+            fontSize,
+            isSpace: !word.trim()
+          });
+        }
+      }
+
+      if (segments.length === 0) return;
+
+      // Render segments with proper word wrapping
+      let x = startX;
+      const indentX = startX; // Return to this X on new line
+
+      for (let si = 0; si < segments.length; si++) {
+        const seg = segments[si];
+        doc.setFont(seg.fontFamily, seg.fontStyle);
+        doc.setFontSize(seg.fontSize);
+        const segWidth = doc.getTextWidth(seg.text);
+
+        // Check if this word would overflow the line
+        if (!seg.isSpace && x + segWidth > margin + maxWidth + 0.5 && x > indentX + 1) {
+          // Move to next line
+          y += lineHeight;
+          checkPageBreak(lineHeight);
+          x = indentX;
+          // Skip leading spaces on new line
+          if (seg.isSpace) continue;
+        }
+
+        // Skip trailing spaces at line start
+        if (seg.isSpace && Math.abs(x - indentX) < 0.5) continue;
+
+        checkPageBreak(lineHeight);
+        doc.text(seg.text, x, y);
+        x += segWidth;
       }
     };
 
     for (const block of blocks) {
-      let fontSize = fontSizes.paragraph;
-      let lineHeight = 5;
+      const blockType = block.type === 'heading' ? `h${block.level}` : block.type;
+      const fontSize = fontSizes[blockType] || fontSizes.paragraph;
+      const lineHeight = lineHeights[blockType] || lineHeights.paragraph;
       let x = margin;
 
-      // Horizontal rule - draw a line
-      if (block.type === 'horizontal-rule') {
-        checkPageBreak(lineHeight + 4);
-        y += 2;
-        doc.setDrawColor(180, 180, 180);
-        doc.setLineWidth(0.5);
-        doc.line(margin, y, pageWidth - margin, y);
+      // Extra spacing before headings (not for the very first element)
+      if (block.type === 'heading' && y > margin + 1) {
         y += 4;
-        continue;
       }
 
-      // Heading formatting
-      if (block.type === 'heading') {
-        fontSize = fontSizes[`h${block.level}`] || 14;
-        lineHeight = fontSize * 0.45;
-      }
-
-      // Get list prefix (FIX Bug #4 and #7!)
+      // Get list prefix
       const prefix = PdfListContext.getPrefix(block);
       if (prefix) {
-        const indent = (block.listLevel || 0) * 5;
+        const indent = (block.listLevel || 0) * 6;
         x = margin + indent;
         checkPageBreak(lineHeight);
         doc.setFont('helvetica', 'normal');
@@ -1603,59 +1987,20 @@ class FlashDoc {
         x += doc.getTextWidth(prefix);
       }
 
-      // Render all runs with formatting (FIX Bug #1!)
-      for (const run of block.runs) {
-        if (!run.text) continue;
-        // Skip completely empty runs but KEEP space-only runs (they separate formatted segments)
-        if (run.text.length === 0) continue;
-        // For runs that are only whitespace, just advance the x position without rendering
-        if (!run.text.trim()) {
-          doc.setFont('helvetica', 'normal');
-          doc.setFontSize(fontSize);
-          x += doc.getTextWidth(run.text);
-          continue;
-        }
+      checkPageBreak(lineHeight);
 
-        // Sanitize text for PDF (replace unsupported Unicode with ASCII fallbacks)
-        const sanitizedText = sanitizeTextForPdf(run.text);
-
-        checkPageBreak(lineHeight);
-
-        // Set font style based on formatting
-        let fontStyle = 'normal';
-        if (run.bold && run.italic) fontStyle = 'bolditalic';
-        else if (run.bold) fontStyle = 'bold';
-        else if (run.italic) fontStyle = 'italic';
-
-        // Heading always bold
-        if (block.type === 'heading') fontStyle = run.italic ? 'bolditalic' : 'bold';
-
-        const fontFamily = run.code ? 'courier' : 'helvetica';
-        doc.setFont(fontFamily, fontStyle);
-        doc.setFontSize(fontSize);
-
-        // Word wrap for long text
-        const availableWidth = maxWidth - (x - margin);
-        const wrappedLines = doc.splitTextToSize(sanitizedText, availableWidth);
-
-        for (let i = 0; i < wrappedLines.length; i++) {
-          if (i > 0) {
-            y += lineHeight;
-            checkPageBreak(lineHeight);
-            x = margin + ((block.listLevel || 0) * 5);
-            if (prefix) x += doc.getTextWidth(prefix);
-          }
-          doc.text(wrappedLines[i], x, y);
-        }
-
-        x += doc.getTextWidth(wrappedLines[wrappedLines.length - 1] || '');
+      // Draw heading underline for H1
+      if (block.type === 'heading' && block.level === 1) {
+        renderBlockRuns(block, x, fontSize, lineHeight);
+        y += 1.5;
+        doc.setDrawColor(60, 60, 60);
+        doc.setLineWidth(0.3);
+        doc.line(margin, y, margin + maxWidth, y);
+        y += spacingAfter.h1;
+      } else {
+        renderBlockRuns(block, x, fontSize, lineHeight);
+        y += lineHeight + (spacingAfter[blockType] || spacingAfter.paragraph);
       }
-
-      y += lineHeight;
-
-      // Extra spacing after blocks
-      if (block.type === 'heading') y += 3;
-      else if (block.type === 'paragraph') y += 2;
     }
 
     return doc.output('blob');
@@ -1741,23 +2086,26 @@ class FlashDoc {
   }
 
   async createDocxBlob(content, html = '') {
-    // NEW PIPELINE v2: Use Formatting Engine
-    const { Document, Paragraph, TextRun, Packer, HeadingLevel, BorderStyle } = docx;
+    const { Document, Paragraph, TextRun, Packer, HeadingLevel, AlignmentType, BorderStyle } = docx;
 
-    // Parse HTML using new tokenizer → builder pipeline
+    // Parse HTML or structure plain text
     let blocks;
     if (html && html.trim()) {
       const tokens = HtmlTokenizer.tokenize(html);
       blocks = BlockBuilder.build(tokens);
-    } else {
-      // Fallback: plain text to paragraphs
-      blocks = content.split(/\n\n+/).map(para => ({
+    }
+    if (!blocks || blocks.length === 0) {
+      // Use PlainTextStructurer for intelligent structure detection
+      blocks = PlainTextStructurer.structure(content);
+    }
+    if (!blocks || blocks.length === 0) {
+      // Absolute fallback: single paragraph
+      blocks = [{
         type: 'paragraph',
-        runs: [{ text: para.trim(), bold: false, italic: false }]
-      })).filter(b => b.runs.length > 0 && b.runs[0].text.length > 0);
+        runs: [{ text: content.trim(), bold: false, italic: false, underline: false, strikethrough: false, code: false }]
+      }];
     }
 
-    // Heading level mapping
     const headingLevels = {
       1: HeadingLevel.HEADING_1,
       2: HeadingLevel.HEADING_2,
@@ -1767,79 +2115,119 @@ class FlashDoc {
       6: HeadingLevel.HEADING_6
     };
 
-    // Font sizes in half-points (11pt = 22)
     const fontSizes = {
-      h1: 36, h2: 32, h3: 28, h4: 24, h5: 22, h6: 20,
-      paragraph: 22, 'list-item': 22, heading: 28
+      h1: 40, h2: 32, h3: 28, h4: 24, h5: 22, h6: 20,
+      paragraph: 22, 'list-item': 22
     };
 
     // Build paragraphs with proper formatting
-    const paragraphs = blocks.map(block => {
-      // Horizontal rule → paragraph with bottom border
-      if (block.type === 'horizontal-rule') {
-        return new Paragraph({
-          children: [],
-          spacing: { before: 120, after: 120 },
-          border: {
-            bottom: { style: BorderStyle.SINGLE, size: 6, color: 'B4B4B4' }
-          }
-        });
-      }
+    const paragraphs = [];
 
+    for (const block of blocks) {
       const fontSize = block.type === 'heading'
         ? (fontSizes[`h${block.level}`] || 28)
         : (fontSizes[block.type] || 22);
 
-      // Create text runs with formatting (FIX Bug #1!)
-      const textRuns = block.runs.map(run => {
-        const config = DocxRenderer.createTextRun(run, fontSize);
-        if (block.type === 'heading') config.bold = true;
-        return new TextRun(config);
-      });
+      // Create text runs with formatting
+      const textRuns = block.runs
+        .filter(run => run.text) // Keep space-only runs but not null/empty
+        .map(run => {
+          const config = DocxRenderer.createTextRun(run, fontSize);
+          if (block.type === 'heading') config.bold = true;
+          return new TextRun(config);
+        });
 
-      // List items with REAL Word numbering (FIX Bug #2!)
+      if (textRuns.length === 0) continue;
+
       if (block.type === 'list-item') {
         const level = Math.min(block.listLevel || 0, 2);
         const reference = block.listType === 'ordered' ? 'ordered-list' : 'bullet-list';
-        
-        return new Paragraph({
+
+        paragraphs.push(new Paragraph({
           children: textRuns,
           numbering: { reference, level },
-          spacing: { after: 80 }
-        });
-      }
-
-      // Headings
-      if (block.type === 'heading') {
-        return new Paragraph({
+          spacing: { after: 80, line: 276 }
+        }));
+      } else if (block.type === 'heading') {
+        paragraphs.push(new Paragraph({
           children: textRuns,
           heading: headingLevels[block.level] || HeadingLevel.HEADING_1,
-          spacing: { before: 240, after: 120 }
-        });
+          spacing: {
+            before: block.level === 1 ? 360 : 240,
+            after: block.level === 1 ? 200 : 120
+          }
+        }));
+      } else {
+        // Regular paragraph with comfortable line spacing
+        paragraphs.push(new Paragraph({
+          children: textRuns,
+          spacing: { after: 160, line: 276 }
+        }));
       }
+    }
 
-      // Regular paragraph
-      return new Paragraph({
-        children: textRuns,
-        spacing: { after: 120 }
-      });
-    });
-
-    // Create document with numbering configuration (FIX Bug #2!)
-    const doc = new Document({
+    // Create professional document with proper styles
+    const docDocument = new Document({
       numbering: DocxRenderer.createNumberingConfig(),
+      styles: {
+        default: {
+          document: {
+            run: {
+              font: 'Calibri',
+              size: 22, // 11pt
+              color: '333333'
+            },
+            paragraph: {
+              spacing: { line: 276 }
+            }
+          },
+          heading1: {
+            run: {
+              font: 'Calibri',
+              size: 40, // 20pt
+              bold: true,
+              color: '1E5C4A'
+            },
+            paragraph: {
+              spacing: { before: 360, after: 200 }
+            }
+          },
+          heading2: {
+            run: {
+              font: 'Calibri',
+              size: 32, // 16pt
+              bold: true,
+              color: '2A7A62'
+            },
+            paragraph: {
+              spacing: { before: 240, after: 120 }
+            }
+          },
+          heading3: {
+            run: {
+              font: 'Calibri',
+              size: 28, // 14pt
+              bold: true,
+              color: '333333'
+            },
+            paragraph: {
+              spacing: { before: 200, after: 100 }
+            }
+          }
+        }
+      },
       sections: [{
         properties: {
           page: {
-            size: { width: 12240, height: 15840 },
-            margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 }
+            size: { width: 12240, height: 15840 }, // Letter size
+            margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 } // 1 inch margins
           }
         },
         children: paragraphs
       }]
     });
 
-    return await Packer.toBlob(doc);
+    return await Packer.toBlob(docDocument);
   }
 
   detectContentType(content) {
