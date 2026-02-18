@@ -355,8 +355,15 @@ document.addEventListener('DOMContentLoaded', () => {
   // Check privacy mode and show activation banner if needed
   const checkPrivacyMode = async () => {
     try {
-      const response = await sendMessageWithTimeout({ action: 'getPrivacyMode' }, 1000);
-      if (response && response.privacyMode) {
+      const tab = await queryActiveTab();
+      const tabUrl = tab ? tab.url || '' : '';
+
+      const response = await sendMessageWithTimeout({
+        action: 'checkPrivacyForUrl',
+        url: tabUrl
+      }, 1000);
+
+      if (response && response.blocked) {
         privacyBanner.classList.remove('hidden');
       } else {
         privacyBanner.classList.add('hidden');
@@ -365,7 +372,9 @@ document.addEventListener('DOMContentLoaded', () => {
       // Fallback: check storage directly
       try {
         const result = await chrome.storage.sync.get('privacyMode');
-        if (result && result.privacyMode) {
+        const mode = result && result.privacyMode;
+        // Show banner if mode is 'on' (always) — can't check 'smart' without URL matching
+        if (mode === 'on' || mode === true) {
           privacyBanner.classList.remove('hidden');
         }
       } catch (e) {
@@ -374,7 +383,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  // Handle activation button click
+  // Handle activation button click (split-mode: inject scripts + tell content script to activate)
   const handleActivate = async () => {
     setStatus('Activating...', 'info');
     activateBtn.disabled = true;
@@ -389,24 +398,36 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      const response = await sendMessageWithTimeout({
+      // Step 1: Ensure content scripts are injected (they may have been blocked by privacy mode)
+      const injectResponse = await sendMessageWithTimeout({
         action: 'activateTab',
         tabId: tab.id
       }, 3000);
 
-      if (response && response.success) {
-        setStatus('FlashDoc activated!', 'ok');
-        activateBtn.textContent = '✓ Active';
-        activateBtn.classList.add('activated');
-        // Hide banner after short delay
-        setTimeout(() => {
-          privacyBanner.classList.add('activated');
-        }, 1500);
-      } else {
-        setStatus(response?.error || 'Activation failed', 'error');
+      if (!injectResponse || !injectResponse.success) {
+        setStatus(injectResponse?.error || 'Injection failed', 'error');
         activateBtn.disabled = false;
         activateBtn.textContent = 'Retry';
+        return;
       }
+
+      // Step 2: Tell the content script to activate (enable listeners + UI)
+      // Small delay to let the content script initialize
+      await new Promise(resolve => setTimeout(resolve, 200));
+      try {
+        await chrome.tabs.sendMessage(tab.id, { action: 'activateOnPage' });
+      } catch (e) {
+        // Content script may already be active or just injected
+        console.log('activateOnPage message:', e.message || e);
+      }
+
+      setStatus('FlashDoc activated!', 'ok');
+      activateBtn.textContent = '✓ Active';
+      activateBtn.classList.add('activated');
+      // Hide banner after short delay
+      setTimeout(() => {
+        privacyBanner.classList.add('activated');
+      }, 1500);
     } catch (error) {
       console.error('Activation error:', error);
       setStatus('Activation failed', 'error');

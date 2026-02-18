@@ -22,22 +22,26 @@ The corner ball no longer appears on every page. The floating save button remain
 
 ## What's New in v3.1
 
-Version 3.1 focuses on customization. You now control exactly which buttons appear when you select text.
+Version 3.2 delivers professional-quality document exports. PDF, DOCX, and Markdown files now preserve formatting, structure, and all selected text reliably.
 
-### Customizable Quick-Save Buttons
-The five buttons that pop up near your selection are now fully configurable. Each slot can be a format (like PDF or Markdown), one of your saved shortcuts, or disabled entirely. Set them up once in the options page—they update everywhere instantly.
+### Professional PDF Output
+PDFs now have proper margins, heading hierarchy with H1 underlines, and segment-based word wrapping that handles mixed bold/italic text on the same line without overflow.
 
-### Slot Presets
-Save different button layouts for different workflows. A preset for writing might show Markdown and DOCX, while a coding preset shows JS, Python, and JSON. Switch between up to five presets without reconfiguring anything.
+### Professional DOCX Output
+Word documents use Calibri font, themed heading colors, 1.15 line spacing, and real Word numbering for lists. Plain text is automatically structured with detected headings and lists.
 
-### More Shortcuts
-The prefix shortcut limit increased from 5 to 10. Create more category-based save actions like "Meeting Notes + .md" or "Code Review + .txt" for one-click organized saving.
+### HTML-to-Markdown Conversion
+Markdown export now actually converts HTML formatting: headings become `#` syntax, bold/italic become `**`/`*`, lists become `-` and `1.` items. Previously it just saved raw text.
+
+### Smart Plain Text Structuring
+When selected text has no HTML formatting, FlashDoc detects structure automatically: first lines become titles, ALL CAPS lines become section headers, bullet and numbered lists are recognized.
+
+### Formatting Pipeline Fixes
+Spaces between formatted spans (e.g. `<b>Hello</b> <i>World</i>`) are no longer dropped. CSS-styled spans now properly track formatting. Runs are merged to reduce fragmentation.
 
 ---
 
-## What's New in v3.0
-
-These features shipped in the previous release:
+## Previous Releases
 
 ### Format Override Before Saving
 The floating save button now shows a dropdown where you can change the detected format before downloading. If FlashDoc guesses Markdown but you need a PDF, just pick the right format from the menu. No more saving first and converting later.
@@ -90,6 +94,11 @@ node scripts/detection-check.js
 Run the v3.0/v3.2 feature tests:
 ```bash
 node scripts/v3-features-test.cjs
+```
+
+Run the v3.2 format quality tests:
+```bash
+node scripts/format-quality-test.cjs
 ```
 
 Both scripts exit with code 0 on success, making them suitable for CI pipelines.

@@ -94,15 +94,48 @@
 
       <section class="options-card">
         <h2>Privacy</h2>
-        <div class="toggle">
-          <label for="privacyMode">Privacy mode (on-demand injection)</label>
-          <label class="switch">
-            <input id="privacyMode" name="privacyMode" type="checkbox">
-            <span class="slider"></span>
-          </label>
+        <p class="help privacy-help">Control when FlashDoc content scripts run on pages. In split-mode, the extension icon and popup remain accessible &mdash; only page-level scripts are controlled.</p>
+
+        <div class="field">
+          <label for="privacyMode">Privacy mode</label>
+          <select id="privacyMode" name="privacyMode">
+            <option value="off">Always Off &mdash; Scripts active on all pages</option>
+            <option value="on">Always On &mdash; Scripts only on explicit click</option>
+            <option value="smart">Smart &mdash; Based on URL patterns</option>
+          </select>
         </div>
-        <p class="help privacy-help">When enabled, FlashDoc only activates when you click the extension icon or use a keyboard shortcut. No scripts run on pages until you explicitly activate them.</p>
+
         <div class="privacy-status" id="privacy-status"></div>
+
+        <!-- URL Pattern Manager (visible only in Smart mode) -->
+        <div class="privacy-patterns-section hidden" id="privacy-patterns-section">
+          <h3>URL Patterns</h3>
+          <p class="help">Add URL patterns where FlashDoc scripts should <strong>not</strong> auto-load. Supports wildcards (<code>*</code>). The extension popup and keyboard shortcuts still work &mdash; scripts load on explicit activation.</p>
+
+          <div class="pattern-add-form">
+            <input type="text" id="new-pattern-input" placeholder="e.g. *://banking.example.com/* or *://*.internal.corp/*" maxlength="200">
+            <button type="button" class="btn primary small" id="add-pattern-btn">Add</button>
+          </div>
+
+          <div class="pattern-presets">
+            <span class="preset-label">Quick add:</span>
+            <button type="button" class="btn secondary tiny pattern-preset" data-pattern="*://*.bank.*/*">Banking</button>
+            <button type="button" class="btn secondary tiny pattern-preset" data-pattern="*://mail.google.com/*">Gmail</button>
+            <button type="button" class="btn secondary tiny pattern-preset" data-pattern="*://*.paypal.com/*">PayPal</button>
+            <button type="button" class="btn secondary tiny pattern-preset" data-pattern="*://localhost:*/*">Localhost</button>
+          </div>
+
+          <div class="pattern-list" id="pattern-list">
+            <div class="empty-state">
+              <span class="empty-icon">🔒</span>
+              <p>No URL patterns yet. Add patterns above.</p>
+            </div>
+          </div>
+          <div class="pattern-footer">
+            <span class="pattern-count" id="pattern-count">0/20 Patterns</span>
+          </div>
+        </div>
+
         <div class="section-actions">
           <button type="button" class="btn primary small" data-save-section="privacy">Anwenden</button>
         </div>
