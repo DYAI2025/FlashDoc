@@ -1,0 +1,106 @@
+{
+  "extensionName": { "message": "FlashDoc - Creador Instantáneo de Documentos", "description": "Extension name (ES)" },
+  "extensionDescription": { "message": "⚡ Seleccionar → Guardar → Listo. Creación instantánea de archivos desde cualquier texto.", "description": "Extension description (ES)" },
+  "popup": {
+    "title": { "message": "FlashDoc", "description": "Popup title (ES)" },
+    "tagline": { "message": "Seleccionar → Guardar → Listo", "description": "Tagline (ES)" },
+    "statusReady": { "message": "Listo", "description": "Status ready (ES)" },
+    "privacyBannerTitle": { "message": "Modo Privacidad Activo", "description": "Privacy (ES)" },
+    "activateBtn": { "message": "Activar", "description": "Activate (ES)" },
+    "totalFiles": { "message": "Archivos Totales", "description": "Total files (ES)" },
+    "todayLabel": { "message": "Hoy", "description": "Today (ES)" },
+    "lastSaveLabel": { "message": "Último Guardado", "description": "Last save (ES)" },
+    "quickSaveTitle": { "message": "Guardado Rápido", "description": "Quick save (ES)" },
+    "shortcutsTitle": { "message": "Atajos", "description": "Shortcuts (ES)" },
+    "openFolder": { "message": "Abrir Carpeta", "description": "Open folder (ES)" },
+    "settings": { "message": "Configuración", "description": "Settings (ES)" },
+    "help": { "message": "Ayuda", "description": "Help (ES)" },
+    "timeNever": { "message": "Nunca", "description": "Never (ES)" }
+  },
+  "options": {
+    "pageTitle": { "message": "Preferencias de FlashDoc", "description": "Options (ES)" },
+    "subtitle": { "message": "Personaliza cómo FlashDoc guarda en todas partes.", "description": "Subtitle (ES)" },
+    "storageSection": { "message": "Almacenamiento", "description": "Storage (ES)" },
+    "folderPathLabel": { "message": "Carpeta predeterminada", "description": "Folder (ES)" },
+    "folderPathPlaceholder": { "message": "FlashDocs/", "description": "Folder path (ES)" },
+    "namingPatternLabel": { "message": "Patrón de nombres", "description": "Naming pattern (ES)" },
+    "patternTimestamp": { "message": "Marca temporal — flashdoc_AAAA-MM-DD", "description": "Timestamp (ES)" },
+    "patternFirstline": { "message": "Primera línea de la selección", "description": "First line (ES)" },
+    "patternCustom": { "message": "Personalizado", "description": "Custom (ES)" },
+    "livePreviewLabel": { "message": "Vista Previa", "description": "Preview (ES)" },
+    "organizeByTypeLabel": { "message": "Organizar por formato", "description": "Organize (ES)" },
+    "applyBtn": { "message": "Aplicar", "description": "Apply (ES)" },
+    "captureSection": { "message": "Captura", "description": "Capture (ES)" },
+    "autoDetectLabel": { "message": "Detección inteligente", "description": "Auto detect (ES)" },
+    "privacySection": { "message": "Privacidad", "description": "Privacy (ES)" },
+    "privacyModeLabel": { "message": "Modo privacidad", "description": "Privacy mode (ES)" },
+    "interfaceSection": { "message": "Interfaz", "description": "Interface (ES)" },
+    "floatingButtonLabel": { "message": "Botón flotante", "description": "Floating button (ES)" },
+    "buttonPositionLabel": { "message": "Posición del botón", "description": "Button position (ES)" },
+    "contextMenuSection": { "message": "Formatos del menú contextual", "description": "Context menu (ES)" },
+    "cornerBallSection": { "message": "Bola de Esquina", "description": "Corner ball (ES)" },
+    "feedbackSection": { "message": "Comentarios", "description": "Feedback (ES)" },
+    "notificationsLabel": { "message": "Mostrar notificaciones", "description": "Notifications (ES)" },
+    "soundLabel": { "message": "Reproducir sonido", "description": "Sound (ES)" },
+    "trackingSection": { "message": "Seguimiento y Recomendaciones", "description": "Tracking (ES)" },
+    "resetDefaults": { "message": "Restablecer Todo", "description": "Reset (ES)" },
+    "savedSuccess": { "message": "Guardado", "description": "Saved (ES)" },
+    "savedError": { "message": "Error al guardar", "description": "Save error (ES)" }
+  },
+  "commands": {
+    "smartDesc": { "message": "Guardado inteligente", "description": "Smart save (ES)" },
+    "txtDesc": { "message": "Guardar como .txt", "description": "Save as TXT (ES)" },
+    "mdDesc": { "message": "Guardar como .md", "description": "Save as MD (ES)" },
+    "pdfDesc": { "message": "Guardar como PDF", "description": "Save as PDF (ES)" }
+  },
+  "actions": {
+    "smart": { "message": "Smart", "description": "Smart (ES)" },
+    "text": { "message": "Texto", "description": "Text (ES)" },
+    "markdown": { "message": "Markdown", "description": "Markdown (ES)" },
+    "word": { "message": "Word", "description": "Word (ES)" },
+    "pdfAction": { "message": "PDF", "description": "PDF (ES)" },
+    "labelAction": { "message": "Etiqueta", "description": "Label (ES)" },
+    "code": { "message": "Código", "description": "Code (ES)" },
+    "data": { "message": "Datos", "description": "Data (ES)" }
+  },
+  "status": {
+    "preparing": { "message": "Preparando guardado...", "description": "Preparing (ES)" },
+    "noActiveTab": { "message": "Sin pestaña activa", "description": "No tab (ES)" },
+    "selectText": { "message": "Selecciona texto primero", "description": "Select text (ES)" },
+    "savingPageSource": { "message": "Guardando código fuente...", "description": "Saving page (ES)" },
+    "savedAs": { "message": "Guardado como", "description": "Saved as (ES)" },
+    "activating": { "message": "Activando...", "description": "Activating (ES)" },
+    "flashdocActivated": { "message": "¡FlashDoc activado!", "description": "Activated (ES)" }
+  },
+  "slots": {
+    "sectionTitle": { "message": "Ranuras de Botones", "description": "Slots (ES)" },
+    "presetSection": { "message": "Presets de Ranuras", "description": "Presets (ES)" },
+    "selectPreset": { "message": "— Elegir Preset —", "description": "Select preset (ES)" },
+    "applyPreset": { "message": "Aplicar", "description": "Apply (ES)" },
+    "newPreset": { "message": "+ Nuevo", "description": "New (ES)" },
+    "savePreset": { "message": "Guardar", "description": "Save (ES)" },
+    "deletePreset": { "message": "Eliminar", "description": "Delete (ES)" },
+    "exportPreset": { "message": "Exportar", "description": "Export (ES)" },
+    "importPreset": { "message": "Importar", "description": "Import (ES)" },
+    "sharePreset": { "message": "Compartir", "description": "Share (ES)" },
+    "cancelBtn": { "message": "Cancelar", "description": "Cancel (ES)" },
+    "confirmImport": { "message": "Importar", "description": "Import (ES)" },
+    "closeBtn": { "message": "Cerrar", "description": "Close (ES)" },
+    "copyBtn": { "message": "Copiar", "description": "Copy (ES)" }
+  },
+  "shortcuts": {
+    "sectionTitle": { "message": "Atajos de Prefijo", "description": "Shortcuts (ES)" },
+    "help": { "message": "Crea combinaciones de guardado rápido.", "description": "Help (ES)" },
+    "addBtn": { "message": "Añadir", "description": "Add (ES)" },
+    "deleteBtn": { "message": "Eliminar", "description": "Delete (ES)" },
+    "addedSuccess": { "message": "Añadido \"$name$_save.$format$\"", "description": "Added (ES)" }
+  },
+  "recommendations": {
+    "mostUsedFormat": { "message": "Formato Más Usado: $format$", "description": "Most used (ES)" },
+    "detectionAccuracy": { "message": "Precisión de Detección: $percentage$%", "description": "Accuracy (ES)" },
+    "filesSaved": { "message": "$count$ Archivos Guardados", "description": "Files saved (ES)" }
+  },
+  "rtl": {
+    "warning": { "message": "Soporte RTL: Hebreo y árabe soportados.", "description": "RTL notice (ES)" }
+  }
+}

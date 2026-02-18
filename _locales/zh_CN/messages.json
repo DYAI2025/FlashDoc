@@ -1,0 +1,99 @@
+{
+  "extensionName": { "message": "FlashDoc - 即时文档创建器", "description": "Extension name (ZH)" },
+  "extensionDescription": { "message": "⚡ 选择 → 保存 → 完成。从任意文本即时创建文件。", "description": "Extension description (ZH)" },
+  "popup": {
+    "title": { "message": "FlashDoc", "description": "Popup title (ZH)" },
+    "tagline": { "message": "选择 → 保存 → 完成", "description": "Tagline (ZH)" },
+    "statusReady": { "message": "就绪", "description": "Status ready (ZH)" },
+    "privacyBannerTitle": { "message": "隐私模式已启用", "description": "Privacy (ZH)" },
+    "activateBtn": { "message": "启用", "description": "Activate (ZH)" },
+    "totalFiles": { "message": "总文件数", "description": "Total files (ZH)" },
+    "todayLabel": { "message": "今天", "description": "Today (ZH)" },
+    "lastSaveLabel": { "message": "上次保存", "description": "Last save (ZH)" },
+    "quickSaveTitle": { "message": "快速保存", "description": "Quick save (ZH)" },
+    "shortcutsTitle": { "message": "快捷键", "description": "Shortcuts (ZH)" },
+    "openFolder": { "message": "打开文件夹", "description": "Open folder (ZH)" },
+    "settings": { "message": "设置", "description": "Settings (ZH)" },
+    "help": { "message": "帮助", "description": "Help (ZH)" },
+    "timeNever": { "message": "从不", "description": "Never (ZH)" }
+  },
+  "options": {
+    "pageTitle": { "message": "FlashDoc 设置", "description": "Options (ZH)" },
+    "subtitle": { "message": "自定义FlashDoc的保存行为。", "description": "Subtitle (ZH)" },
+    "storageSection": { "message": "存储", "description": "Storage (ZH)" },
+    "folderPathLabel": { "message": "默认文件夹", "description": "Folder (ZH)" },
+    "folderPathPlaceholder": { "message": "FlashDocs/", "description": "Folder path (ZH)" },
+    "namingPatternLabel": { "message": "命名模式", "description": "Naming pattern (ZH)" },
+    "patternTimestamp": { "message": "时间戳 — flashdoc_YYYY-MM-DD", "description": "Timestamp (ZH)" },
+    "patternFirstline": { "message": "选区第一行", "description": "First line (ZH)" },
+    "patternCustom": { "message": "自定义", "description": "Custom (ZH)" },
+    "livePreviewLabel": { "message": "实时预览", "description": "Preview (ZH)" },
+    "organizeByTypeLabel": { "message": "按格式整理", "description": "Organize (ZH)" },
+    "applyBtn": { "message": "应用", "description": "Apply (ZH)" },
+    "captureSection": { "message": "捕获", "description": "Capture (ZH)" },
+    "autoDetectLabel": { "message": "智能检测", "description": "Auto detect (ZH)" },
+    "privacySection": { "message": "隐私", "description": "Privacy (ZH)" },
+    "privacyModeLabel": { "message": "隐私模式", "description": "Privacy mode (ZH)" },
+    "interfaceSection": { "message": "界面", "description": "Interface (ZH)" },
+    "floatingButtonLabel": { "message": "浮动按钮", "description": "Floating button (ZH)" },
+    "contextMenuSection": { "message": "上下文菜单格式", "description": "Context menu (ZH)" },
+    "feedbackSection": { "message": "反馈", "description": "Feedback (ZH)" },
+    "notificationsLabel": { "message": "显示通知", "description": "Notifications (ZH)" },
+    "trackingSection": { "message": "追踪与推荐", "description": "Tracking (ZH)" },
+    "resetDefaults": { "message": "全部重置", "description": "Reset (ZH)" },
+    "savedSuccess": { "message": "已保存", "description": "Saved (ZH)" },
+    "savedError": { "message": "保存失败", "description": "Save error (ZH)" }
+  },
+  "commands": {
+    "smartDesc": { "message": "智能保存", "description": "Smart save (ZH)" },
+    "txtDesc": { "message": "保存为 .txt", "description": "Save as TXT (ZH)" },
+    "mdDesc": { "message": "保存为 .md", "description": "Save as MD (ZH)" },
+    "pdfDesc": { "message": "保存为 PDF", "description": "Save as PDF (ZH)" }
+  },
+  "actions": {
+    "smart": { "message": "智能", "description": "Smart (ZH)" },
+    "text": { "message": "文本", "description": "Text (ZH)" },
+    "markdown": { "message": "Markdown", "description": "Markdown (ZH)" },
+    "word": { "message": "Word", "description": "Word (ZH)" },
+    "pdfAction": { "message": "PDF", "description": "PDF (ZH)" },
+    "labelAction": { "message": "标签", "description": "Label (ZH)" },
+    "code": { "message": "代码", "description": "Code (ZH)" },
+    "data": { "message": "数据", "description": "Data (ZH)" }
+  },
+  "status": {
+    "preparing": { "message": "准备保存...", "description": "Preparing (ZH)" },
+    "noActiveTab": { "message": "没有活动标签页", "description": "No tab (ZH)" },
+    "selectText": { "message": "请先选择文本", "description": "Select text (ZH)" },
+    "savedAs": { "message": "已保存为", "description": "Saved as (ZH)" },
+    "activating": { "message": "正在启用...", "description": "Activating (ZH)" },
+    "flashdocActivated": { "message": "FlashDoc已启用！", "description": "Activated (ZH)" }
+  },
+  "slots": {
+    "sectionTitle": { "message": "按钮插槽", "description": "Slots (ZH)" },
+    "presetSection": { "message": "预设", "description": "Presets (ZH)" },
+    "selectPreset": { "message": "— 选择预设 —", "description": "Select preset (ZH)" },
+    "applyPreset": { "message": "应用", "description": "Apply (ZH)" },
+    "newPreset": { "message": "+ 新建", "description": "New (ZH)" },
+    "savePreset": { "message": "保存", "description": "Save (ZH)" },
+    "deletePreset": { "message": "删除", "description": "Delete (ZH)" },
+    "exportPreset": { "message": "导出", "description": "Export (ZH)" },
+    "importPreset": { "message": "导入", "description": "Import (ZH)" },
+    "sharePreset": { "message": "分享", "description": "Share (ZH)" },
+    "cancelBtn": { "message": "取消", "description": "Cancel (ZH)" },
+    "confirmImport": { "message": "导入", "description": "Import (ZH)" },
+    "closeBtn": { "message": "关闭", "description": "Close (ZH)" },
+    "copyBtn": { "message": "复制", "description": "Copy (ZH)" }
+  },
+  "shortcuts": {
+    "sectionTitle": { "message": "前缀快捷方式", "description": "Shortcuts (ZH)" },
+    "addBtn": { "message": "添加", "description": "Add (ZH)" },
+    "deleteBtn": { "message": "删除", "description": "Delete (ZH)" }
+  },
+  "recommendations": {
+    "mostUsedFormat": { "message": "最常用格式: $format$", "description": "Most used (ZH)" },
+    "detectionAccuracy": { "message": "检测准确率: $percentage$%", "description": "Accuracy (ZH)" }
+  },
+  "rtl": {
+    "warning": { "message": "RTL支持: 支持希伯来语和阿拉伯语。", "description": "RTL notice (ZH)" }
+  }
+}

@@ -1,0 +1,852 @@
+{
+  "extensionName": {
+    "message": "FlashDoc - Instant Document Creator",
+    "description": "Extension name"
+  },
+  "extensionDescription": {
+    "message": "⚡ Select → Save → Done. Instant file creation from any text. PDF, Markdown, Code, YAML - all formats, zero friction.",
+    "description": "Extension description"
+  },
+
+  "popup": {
+    "title": {
+      "message": "FlashDoc",
+      "description": "Popup title"
+    },
+    "tagline": {
+      "message": "Select → Save → Done",
+      "description": "Tagline"
+    },
+    "statusReady": {
+      "message": "Ready",
+      "description": "Status ready"
+    },
+    "privacyBannerTitle": {
+      "message": "Privacy Mode Active",
+      "description": "Privacy banner title"
+    },
+    "privacyBannerSubtitle": {
+      "message": "Click to activate FlashDoc on this page",
+      "description": "Privacy banner subtitle"
+    },
+    "activateBtn": {
+      "message": "Activate",
+      "description": "Activate button"
+    },
+    "totalFiles": {
+      "message": "Total Files",
+      "description": "Total files label"
+    },
+    "todayLabel": {
+      "message": "Today",
+      "description": "Today label"
+    },
+    "lastSaveLabel": {
+      "message": "Last Save",
+      "description": "Last save label"
+    },
+    "quickSaveTitle": {
+      "message": "Quick Save",
+      "description": "Quick save section title"
+    },
+    "lastActionTitle": {
+      "message": "Last Action",
+      "description": "Last action section title"
+    },
+    "noRecentFiles": {
+      "message": "No recent files yet",
+      "description": "No recent files message"
+    },
+    "repeatAction": {
+      "message": "Repeat",
+      "description": "Repeat action prefix"
+    },
+    "shortcutsTitle": {
+      "message": "Shortcuts",
+      "description": "Shortcuts section title"
+    },
+    "openFolder": {
+      "message": "Open Folder",
+      "description": "Open folder button"
+    },
+    "settings": {
+      "message": "Settings",
+      "description": "Settings button"
+    },
+    "help": {
+      "message": "Help",
+      "description": "Help button"
+    },
+    "timeNever": {
+      "message": "Never",
+      "description": "Never (time)"
+    },
+    "timeJustNow": {
+      "message": "Just now",
+      "description": "Just now (time)"
+    },
+    "timeMinuteAgo": {
+      "message": "1 minute ago",
+      "description": "1 minute ago"
+    },
+    "timeMinutesAgo": {
+      "message": "$minutes$ minute(s) ago",
+      "description": "Minutes ago (placeholder: $minutes$)"
+    },
+    "timeHourAgo": {
+      "message": "1 hour ago",
+      "description": "1 hour ago"
+    },
+    "timeHoursAgo": {
+      "message": "$hours$ hour(s) ago",
+      "description": "Hours ago (placeholder: $hours$)"
+    },
+    "timeDayAgo": {
+      "message": "1 day ago",
+      "description": "1 day ago"
+    },
+    "timeDaysAgo": {
+      "message": "$days$ day(s) ago",
+      "description": "Days ago (placeholder: $days$)"
+    }
+  },
+
+  "options": {
+    "pageTitle": {
+      "message": "FlashDoc Preferences",
+      "description": "Options page title"
+    },
+    "subtitle": {
+      "message": "Customize how FlashDoc saves behave everywhere.",
+      "description": "Options subtitle"
+    },
+    "versionLabel": {
+      "message": "v",
+      "description": "Version prefix"
+    },
+    "storageSection": {
+      "message": "Storage",
+      "description": "Storage section title"
+    },
+    "folderPathLabel": {
+      "message": "Default folder",
+      "description": "Folder path label"
+    },
+    "folderPathPlaceholder": {
+      "message": "FlashDocs/",
+      "description": "Folder path placeholder"
+    },
+    "folderPathHelp": {
+      "message": "Relative to your default Downloads directory.",
+      "description": "Folder path help"
+    },
+    "namingPatternLabel": {
+      "message": "Naming pattern",
+      "description": "Naming pattern label"
+    },
+    "patternTimestamp": {
+      "message": "Timestamp — flashdoc_YYYY-MM-DD",
+      "description": "Timestamp pattern"
+    },
+    "patternFirstline": {
+      "message": "First line of selection",
+      "description": "First line pattern"
+    },
+    "patternCustom": {
+      "message": "Custom template",
+      "description": "Custom pattern"
+    },
+    "customPatternLabel": {
+      "message": "Custom filename template",
+      "description": "Custom pattern label"
+    },
+    "customPatternPlaceholder": {
+      "message": "file_{date}_{type}",
+      "description": "Custom pattern placeholder"
+    },
+    "tokensHelp": {
+      "message": "Available tokens: {date}, {time}, {type}",
+      "description": "Tokens help (braces are literal)"
+    },
+    "livePreviewLabel": {
+      "message": "Live Preview",
+      "description": "Live preview label"
+    },
+    "previewHelp": {
+      "message": "This is how your next file will be named (format depends on content type)",
+      "description": "Preview help"
+    },
+    "organizeByTypeLabel": {
+      "message": "Organize by format",
+      "description": "Organize by type label"
+    },
+    "applyBtn": {
+      "message": "Apply",
+      "description": "Apply button"
+    },
+    "captureSection": {
+      "message": "Capture intelligence",
+      "description": "Capture section title"
+    },
+    "autoDetectLabel": {
+      "message": "Smart format detection",
+      "description": "Auto detect label"
+    },
+    "highlightLabel": {
+      "message": "Highlight detected type in page",
+      "description": "Highlight label"
+    },
+    "selectionThresholdLabel": {
+      "message": "Minimum selection length",
+      "description": "Selection threshold label"
+    },
+    "charactersLabel": {
+      "message": "characters",
+      "description": "Characters unit"
+    },
+    "privacySection": {
+      "message": "Privacy",
+      "description": "Privacy section title"
+    },
+    "privacyModeLabel": {
+      "message": "Privacy mode (on-demand injection)",
+      "description": "Privacy mode label"
+    },
+    "privacyHelp": {
+      "message": "When enabled, FlashDoc only activates when you click the extension icon or use a keyboard shortcut. No scripts run on pages until you explicitly activate them.",
+      "description": "Privacy help text"
+    },
+    "privacyActive": {
+      "message": "Privacy Mode Active",
+      "description": "Privacy active status"
+    },
+    "privacyStandard": {
+      "message": "Standard Mode",
+      "description": "Privacy standard mode"
+    },
+    "privacyNoteActive": {
+      "message": "Content scripts will not run automatically. Use the extension popup or keyboard shortcuts to activate FlashDoc on individual pages.",
+      "description": "Privacy active note"
+    },
+    "privacyNoteStandard": {
+      "message": "FlashDoc is active on all pages for instant text selection.",
+      "description": "Privacy standard note"
+    },
+    "interfaceSection": {
+      "message": "Interface",
+      "description": "Interface section title"
+    },
+    "floatingButtonLabel": {
+      "message": "Floating quick-save button",
+      "description": "Floating button label"
+    },
+    "buttonPositionLabel": {
+      "message": "Button position",
+      "description": "Button position label"
+    },
+    "positionBottomRight": {
+      "message": "Bottom right",
+      "description": "Position bottom right"
+    },
+    "positionBottomLeft": {
+      "message": "Bottom left",
+      "description": "Position bottom left"
+    },
+    "positionTopRight": {
+      "message": "Top right",
+      "description": "Position top right"
+    },
+    "positionTopLeft": {
+      "message": "Top left",
+      "description": "Position top left"
+    },
+    "autoHideLabel": {
+      "message": "Auto-hide when idle",
+      "description": "Auto hide label"
+    },
+    "contextMenuLabel": {
+      "message": "Context menu integration",
+      "description": "Context menu label"
+    },
+    "contextMenuSection": {
+      "message": "Context menu formats",
+      "description": "Context menu formats section"
+    },
+    "contextMenuHelp": {
+      "message": "Choose which formats appear when you right-click selected text.",
+      "description": "Context menu help"
+    },
+    "cornerBallSection": {
+      "message": "Corner Ball",
+      "description": "Corner ball section"
+    },
+    "cornerBallHelp": {
+      "message": "The FlashDoc ball appears in the corner and can be dragged out of the way.",
+      "description": "Corner ball help"
+    },
+    "cornerBallLabel": {
+      "message": "Show corner ball",
+      "description": "Corner ball label"
+    },
+    "feedbackSection": {
+      "message": "Feedback",
+      "description": "Feedback section title"
+    },
+    "notificationsLabel": {
+      "message": "Show notifications",
+      "description": "Notifications label"
+    },
+    "soundLabel": {
+      "message": "Play confirmation sound",
+      "description": "Sound label"
+    },
+    "trackingSection": {
+      "message": "Event Tracking & Recommendations",
+      "description": "Tracking section title"
+    },
+    "trackingHelp": {
+      "message": "Track key events and get format recommendations based on your usage patterns",
+      "description": "Tracking help"
+    },
+    "trackFormatUsageLabel": {
+      "message": "Track format usage statistics",
+      "description": "Track format usage label"
+    },
+    "trackAccuracyLabel": {
+      "message": "Track auto-detection accuracy",
+      "description": "Track accuracy label"
+    },
+    "recommendationsLabel": {
+      "message": "Show format recommendations",
+      "description": "Recommendations label"
+    },
+    "recommendationsTitle": {
+      "message": "Available Recommendations",
+      "description": "Recommendations title"
+    },
+    "loadingRecommendations": {
+      "message": "Loading recommendations...",
+      "description": "Loading recommendations"
+    },
+    "resetDefaults": {
+      "message": "Reset All",
+      "description": "Reset defaults button"
+    },
+    "resetConfirm": {
+      "message": "Reset all settings to default?",
+      "description": "Reset confirmation"
+    },
+    "savedSuccess": {
+      "message": "Saved",
+      "description": "Saved success message"
+    },
+    "savedError": {
+      "message": "Save failed",
+      "description": "Saved error message"
+    },
+    "loadError": {
+      "message": "Unable to load saved settings.",
+      "description": "Load error message"
+    }
+  },
+
+  "contextMenu": {
+    "autoLabel": {
+      "message": "Smart auto-detect",
+      "description": "Auto detect context menu"
+    },
+    "autoDesc": {
+      "message": "Let FlashDoc choose the best format",
+      "description": "Auto detect description"
+    },
+    "txtLabel": {
+      "message": "Plain text (.txt)",
+      "description": "TXT label"
+    },
+    "txtDesc": {
+      "message": "Simple notes and prose",
+      "description": "TXT description"
+    },
+    "mdLabel": {
+      "message": "Markdown (.md)",
+      "description": "MD label"
+    },
+    "mdDesc": {
+      "message": "Lightweight formatted docs",
+      "description": "MD description"
+    },
+    "docxLabel": {
+      "message": "Word (.docx)",
+      "description": "DOCX label"
+    },
+    "docxDesc": {
+      "message": "Microsoft Word documents",
+      "description": "DOCX description"
+    },
+    "jsonLabel": {
+      "message": "JSON (.json)",
+      "description": "JSON label"
+    },
+    "jsonDesc": {
+      "message": "APIs and structured data",
+      "description": "JSON description"
+    },
+    "jsLabel": {
+      "message": "JavaScript (.js)",
+      "description": "JS label"
+    },
+    "jsDesc": {
+      "message": "Browser and Node snippets",
+      "description": "JS description"
+    },
+    "tsLabel": {
+      "message": "TypeScript (.ts)",
+      "description": "TS label"
+    },
+    "tsDesc": {
+      "message": "Typed code blocks",
+      "description": "TS description"
+    },
+    "pyLabel": {
+      "message": "Python (.py)",
+      "description": "PY label"
+    },
+    "pyDesc": {
+      "message": "Scripts & notebooks",
+      "description": "PY description"
+    },
+    "htmlLabel": {
+      "message": "HTML (.html)",
+      "description": "HTML label"
+    },
+    "htmlDesc": {
+      "message": "Templates and snippets",
+      "description": "HTML description"
+    },
+    "cssLabel": {
+      "message": "CSS (.css)",
+      "description": "CSS label"
+    },
+    "cssDesc": {
+      "message": "Stylesheets",
+      "description": "CSS description"
+    },
+    "xmlLabel": {
+      "message": "XML (.xml)",
+      "description": "XML label"
+    },
+    "xmlDesc": {
+      "message": "Configs and feeds",
+      "description": "XML description"
+    },
+    "sqlLabel": {
+      "message": "SQL (.sql)",
+      "description": "SQL label"
+    },
+    "sqlDesc": {
+      "message": "Database queries",
+      "description": "SQL description"
+    },
+    "shLabel": {
+      "message": "Shell (.sh)",
+      "description": "SH label"
+    },
+    "shDesc": {
+      "message": "Bash & shell scripts",
+      "description": "SH description"
+    },
+    "yamlLabel": {
+      "message": "YAML (.yaml)",
+      "description": "YAML label"
+    },
+    "yamlDesc": {
+      "message": "Configs & workflows",
+      "description": "YAML description"
+    },
+    "csvLabel": {
+      "message": "CSV (.csv)",
+      "description": "CSV label"
+    },
+    "csvDesc": {
+      "message": "Spreadsheets and tables",
+      "description": "CSV description"
+    },
+    "pdfLabel": {
+      "message": "PDF (.pdf)",
+      "description": "PDF label"
+    },
+    "pdfDesc": {
+      "message": "Portable documents",
+      "description": "PDF description"
+    },
+    "labelLabel": {
+      "message": "Label (89×28mm PDF)",
+      "description": "Label format"
+    },
+    "labelDesc": {
+      "message": "Ready-to-print labels",
+      "description": "Label description"
+    },
+    "saveasLabel": {
+      "message": "Save As…",
+      "description": "Save as option"
+    },
+    "saveasDesc": {
+      "message": "Pick folder & filename each time",
+      "description": "Save as description"
+    }
+  },
+
+  "commands": {
+    "smartDesc": {
+      "message": "Smart save (auto-detect format)",
+      "description": "Smart save command"
+    },
+    "txtDesc": {
+      "message": "Save as .txt",
+      "description": "TXT save command"
+    },
+    "mdDesc": {
+      "message": "Save as .md",
+      "description": "MD save command"
+    },
+    "pdfDesc": {
+      "message": "Save as PDF",
+      "description": "PDF save command"
+    }
+  },
+
+  "actions": {
+    "smart": {
+      "message": "Smart",
+      "description": "Smart action"
+    },
+    "smartDesc": {
+      "message": "Auto-detect",
+      "description": "Smart action description"
+    },
+    "text": {
+      "message": "Text",
+      "description": "Text action"
+    },
+    "textDesc": {
+      "message": ".txt file",
+      "description": "Text action description"
+    },
+    "markdown": {
+      "message": "Markdown",
+      "description": "Markdown action"
+    },
+    "markdownDesc": {
+      "message": ".md file",
+      "description": "Markdown action description"
+    },
+    "word": {
+      "message": "Word",
+      "description": "Word action"
+    },
+    "wordDesc": {
+      "message": ".docx file",
+      "description": "Word action description"
+    },
+    "pdfAction": {
+      "message": "PDF",
+      "description": "PDF action"
+    },
+    "pdfActionDesc": {
+      "message": "Document",
+      "description": "PDF action description"
+    },
+    "labelAction": {
+      "message": "Label",
+      "description": "Label action"
+    },
+    "labelDesc": {
+      "message": "89×28 mm",
+      "description": "Label dimensions"
+    },
+    "code": {
+      "message": "Code",
+      "description": "Code action"
+    },
+    "codeDesc": {
+      "message": "Auto-detect",
+      "description": "Code action description"
+    },
+    "data": {
+      "message": "Data",
+      "description": "Data action"
+    },
+    "dataDesc": {
+      "message": "CSV/JSON",
+      "description": "Data action description"
+    }
+  },
+
+  "status": {
+    "preparing": {
+      "message": "Preparing save...",
+      "description": "Preparing save status"
+    },
+    "noActiveTab": {
+      "message": "No active tab detected",
+      "description": "No active tab"
+    },
+    "cannotAccess": {
+      "message": "Cannot access this page. Try a different tab.",
+      "description": "Cannot access page"
+    },
+    "selectText": {
+      "message": "Select text first",
+      "description": "Select text prompt"
+    },
+    "savingPageSource": {
+      "message": "Saving page source...",
+      "description": "Saving page source"
+    },
+    "pageSourceSaved": {
+      "message": "Page source saved",
+      "description": "Page source saved"
+    },
+    "savedAs": {
+      "message": "Saved as",
+      "description": "Saved as prefix"
+    },
+    "activating": {
+      "message": "Activating...",
+      "description": "Activating status"
+    },
+    "noActiveTab": {
+      "message": "No active tab",
+      "description": "No active tab"
+    },
+    "flashdocActivated": {
+      "message": "FlashDoc activated!",
+      "description": "Activated message"
+    },
+    "activeStatus": {
+      "message": "Active",
+      "description": "Active status"
+    },
+    "retryStatus": {
+      "message": "Retry",
+      "description": "Retry button"
+    },
+    "noActionToRepeat": {
+      "message": "No action to repeat",
+      "description": "No action to repeat"
+    },
+    "repeating": {
+      "message": "Repeating",
+      "description": "Repeating status"
+    },
+    "repeatFailed": {
+      "message": "Repeat failed",
+      "description": "Repeat failed"
+    },
+    "serviceWorkerUnavailable": {
+      "message": "Service worker unavailable. Please try again.",
+      "description": "Service worker unavailable"
+    }
+  },
+
+  "slots": {
+    "sectionTitle": {
+      "message": "Contextual Chip Slots",
+      "description": "Slots section title"
+    },
+    "help": {
+      "message": "Configure the 5 action buttons that appear when you select text.",
+      "description": "Slots help"
+    },
+    "presetSection": {
+      "message": "Slot Presets",
+      "description": "Preset section title"
+    },
+    "presetHelp": {
+      "message": "Save slot configurations as presets and quickly switch between them.",
+      "description": "Preset help"
+    },
+    "activeIndicator": {
+      "message": "Active:",
+      "description": "Active preset indicator"
+    },
+    "noneActive": {
+      "message": "None",
+      "description": "No active preset"
+    },
+    "selectPreset": {
+      "message": "— Preset wählen —",
+      "description": "Select preset placeholder"
+    },
+    "applyPreset": {
+      "message": "Apply",
+      "description": "Apply preset button"
+    },
+    "newPreset": {
+      "message": "+ New",
+      "description": "New preset button"
+    },
+    "savePreset": {
+      "message": "Save",
+      "description": "Save preset button"
+    },
+    "deletePreset": {
+      "message": "Delete",
+      "description": "Delete preset button"
+    },
+    "exportPreset": {
+      "message": "Export",
+      "description": "Export preset button"
+    },
+    "importPreset": {
+      "message": "Import",
+      "description": "Import preset button"
+    },
+    "sharePreset": {
+      "message": "Share",
+      "description": "Share preset button"
+    },
+    "presetCount": {
+      "message": "$used$/ $max$ Presets",
+      "description": "Preset count (placeholders: used, max)"
+    },
+    "importTitle": {
+      "message": "Import Preset",
+      "description": "Import modal title"
+    },
+    "importPlaceholder": {
+      "message": "Paste FlashDoc Preset JSON here...",
+      "description": "Import placeholder"
+    },
+    "cancelBtn": {
+      "message": "Cancel",
+      "description": "Cancel button"
+    },
+    "confirmImport": {
+      "message": "Import",
+      "description": "Confirm import"
+    },
+    "exportTitle": {
+      "message": "Export Preset",
+      "description": "Export modal title"
+    },
+    "closeBtn": {
+      "message": "Close",
+      "description": "Close button"
+    },
+    "copyBtn": {
+      "message": "Copy",
+      "description": "Copy button"
+    }
+  },
+
+  "shortcuts": {
+    "sectionTitle": {
+      "message": "Prefix Shortcuts",
+      "description": "Shortcuts section title"
+    },
+    "help": {
+      "message": "Create quick-save combinations. Example: 'Design' + '.md' = saves as 'Design_save.md'",
+      "description": "Shortcuts help"
+    },
+    "namePlaceholder": {
+      "message": "Enter prefix (e.g. Design)",
+      "description": "Shortcut name placeholder"
+    },
+    "addBtn": {
+      "message": "Add",
+      "description": "Add shortcut button"
+    },
+    "emptyState": {
+      "message": "No shortcuts created yet",
+      "description": "No shortcuts message"
+    },
+    "shortcutCount": {
+      "message": "$used$/ $max$ Shortcuts",
+      "description": "Shortcut count (placeholders: used, max)"
+    },
+    "deleteBtn": {
+      "message": "Delete",
+      "description": "Delete button"
+    },
+    "errorNoName": {
+      "message": "Please enter a prefix name.",
+      "description": "Error: no name entered"
+    },
+    "errorMaxReached": {
+      "message": "Maximum $max$ shortcuts allowed.",
+      "description": "Error: max shortcuts reached"
+    },
+    "errorDuplicate": {
+      "message": "This shortcut already exists.",
+      "description": "Error: duplicate shortcut"
+    },
+    "addedSuccess": {
+      "message": "Added \"$name$_save.$format$\"",
+      "description": "Shortcut added success"
+    },
+    "deletedSuccess": {
+      "message": "Shortcut deleted.",
+      "description": "Shortcut deleted"
+    }
+  },
+
+  "recommendations": {
+    "loading": {
+      "message": "Loading recommendations...",
+      "description": "Loading recommendations"
+    },
+    "mostUsedFormat": {
+      "message": "Most Used Format: $format$",
+      "description": "Most used format (placeholder: format)"
+    },
+    "mostUsedCount": {
+      "message": "You've saved $count$ files in this format ($percentage$% of total)",
+      "description": "Most used count (placeholders: count, percentage)"
+    },
+    "smartDetectionEnabled": {
+      "message": "Smart Auto-Detection Enabled",
+      "description": "Smart detection enabled"
+    },
+    "detectionAccuracy": {
+      "message": "Detection Accuracy: $percentage$%",
+      "description": "Detection accuracy (placeholder: percentage)"
+    },
+    "detectionDetails": {
+      "message": "$correct$ out of $total$ auto-detections were accurate",
+      "description": "Detection details (placeholders: correct, total)"
+    },
+    "newFeatures": {
+      "message": "New Format Detection Features",
+      "description": "New features title"
+    },
+    "newFeaturesDesc": {
+      "message": "Now supports TypeScript, XML, SQL, Shell scripts, and more!",
+      "description": "New features description"
+    },
+    "tryNewFormats": {
+      "message": "Try New Formats",
+      "description": "Try new formats title"
+    },
+    "exploreFormats": {
+      "message": "Explore these newly available formats: $formats$",
+      "description": "Explore formats (placeholder: formats)"
+    },
+    "filesSaved": {
+      "message": "$count$ Files Saved",
+      "description": "Files saved (placeholder: count)"
+    },
+    "keepSaving": {
+      "message": "Keep saving with FlashDoc for better recommendations!",
+      "description": "Keep saving message"
+    }
+  },
+
+  "rtl": {
+    "warning": {
+      "message": "RTL Support: Hebrew and Arabic interfaces are supported. Layout will adapt automatically.",
+      "description": "RTL support notice"
+    }
+  }
+}

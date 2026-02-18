@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FlashDoc - Zero Friction File Creation</title>
     <link rel="stylesheet" href="popup.css">
+    <link rel="stylesheet" href="_locales/rtl.css">
+    <script src="i18n.js"></script>
 </head>
 <body>
     <div class="container">
@@ -13,13 +15,13 @@
             <div class="logo-container">
                 <div class="logo-icon">⚡</div>
                 <div class="logo-text">
-                    <h1>FlashDoc</h1>
-                    <p class="tagline">Select → Save → Done</p>
+                    <h1>__MSG_popup.title__</h1>
+                    <p class="tagline">__MSG_popup.tagline__</p>
                 </div>
             </div>
             <div class="status-indicator">
                 <span class="status-dot"></span>
-                <span class="status-text">Ready</span>
+                <span class="status-text">__MSG_popup.statusReady__</span>
             </div>
         </header>
 
@@ -28,11 +30,11 @@
             <div class="privacy-banner-content">
                 <span class="privacy-icon">🔒</span>
                 <div class="privacy-text">
-                    <strong>Privacy Mode Active</strong>
-                    <span>Click to activate FlashDoc on this page</span>
+                    <strong>__MSG_popup.privacyBannerTitle__</strong>
+                    <span>__MSG_popup.privacyBannerSubtitle__</span>
                 </div>
             </div>
-            <button class="activate-btn" id="activate-btn">Activate</button>
+            <button class="activate-btn" id="activate-btn">__MSG_popup.activateBtn__</button>
         </section>
 
         <!-- Live Stats Dashboard -->
@@ -41,107 +43,107 @@
                 <div class="stat-icon">📊</div>
                 <div class="stat-content">
                     <span class="stat-value" id="total-files">0</span>
-                    <span class="stat-label">Total Files</span>
+                    <span class="stat-label">__MSG_popup.totalFiles__</span>
                 </div>
             </div>
             <div class="stat-card secondary">
                 <div class="stat-icon">📁</div>
                 <div class="stat-content">
                     <span class="stat-value" id="today-files">0</span>
-                    <span class="stat-label">Today</span>
+                    <span class="stat-label">__MSG_popup.todayLabel__</span>
                 </div>
             </div>
             <div class="stat-card accent">
                 <div class="stat-icon">⏱️</div>
                 <div class="stat-content">
-                    <span class="stat-value" id="last-saved">Never</span>
-                    <span class="stat-label">Last Save</span>
+                    <span class="stat-value" id="last-saved">__MSG_popup.timeNever__</span>
+                    <span class="stat-label">__MSG_popup.lastSaveLabel__</span>
                 </div>
             </div>
         </section>
 
         <!-- Quick Actions Grid -->
         <section class="quick-actions">
-            <h2 class="section-title">Quick Save</h2>
+            <h2 class="section-title">__MSG_popup.quickSaveTitle__</h2>
             <div class="actions-grid">
                 <button class="action-card" data-action="smart">
                     <span class="action-icon">🎯</span>
-                    <span class="action-name">Smart</span>
-                    <span class="action-desc">Auto-detect</span>
+                    <span class="action-name">__MSG_actions.smart__</span>
+                    <span class="action-desc">__MSG_actions.smartDesc__</span>
                 </button>
                 <button class="action-card" data-action="txt">
                     <span class="action-icon">📄</span>
-                    <span class="action-name">Text</span>
-                    <span class="action-desc">.txt file</span>
+                    <span class="action-name">__MSG_actions.text__</span>
+                    <span class="action-desc">__MSG_actions.textDesc__</span>
                 </button>
                 <button class="action-card" data-action="md">
                     <span class="action-icon">📝</span>
-                    <span class="action-name">Markdown</span>
-                    <span class="action-desc">.md file</span>
+                    <span class="action-name">__MSG_actions.markdown__</span>
+                    <span class="action-desc">__MSG_actions.markdownDesc__</span>
                 </button>
                 <button class="action-card" data-action="docx">
                     <span class="action-icon">📜</span>
-                    <span class="action-name">Word</span>
-                    <span class="action-desc">.docx file</span>
+                    <span class="action-name">__MSG_actions.word__</span>
+                    <span class="action-desc">__MSG_actions.wordDesc__</span>
                 </button>
                 <button class="action-card" data-action="pdf">
                     <span class="action-icon">📕</span>
-                    <span class="action-name">PDF</span>
-                    <span class="action-desc">Document</span>
+                    <span class="action-name">__MSG_actions.pdfAction__</span>
+                    <span class="action-desc">__MSG_actions.pdfActionDesc__</span>
                 </button>
                 <button class="action-card" data-action="label">
                     <span class="action-icon">🏷️</span>
-                    <span class="action-name">Label</span>
-                    <span class="action-desc">89&times;28 mm</span>
+                    <span class="action-name">__MSG_actions.labelAction__</span>
+                    <span class="action-desc">__MSG_actions.labelDesc__</span>
                 </button>
                 <button class="action-card" data-action="code">
                     <span class="action-icon">👨‍💻</span>
-                    <span class="action-name">Code</span>
-                    <span class="action-desc">Auto-detect</span>
+                    <span class="action-name">__MSG_actions.code__</span>
+                    <span class="action-desc">__MSG_actions.codeDesc__</span>
                 </button>
                 <button class="action-card" data-action="data">
                     <span class="action-icon">📊</span>
-                    <span class="action-name">Data</span>
-                    <span class="action-desc">CSV/JSON</span>
+                    <span class="action-name">__MSG_actions.data__</span>
+                    <span class="action-desc">__MSG_actions.dataDesc__</span>
                 </button>
             </div>
         </section>
 
         <!-- Recent Files / Last Action -->
         <section class="recent-files">
-            <h2 class="section-title">Last Action</h2>
+            <h2 class="section-title">__MSG_popup.lastActionTitle__</h2>
             <div class="recent-list" id="recent-list">
                 <div class="empty-state">
                     <span class="empty-icon">📂</span>
-                    <p>No recent files yet</p>
+                    <p>__MSG_popup.noRecentFiles__</p>
                 </div>
             </div>
             <!-- Repeat Last Action Button -->
             <button class="repeat-action-btn hidden" id="repeat-action-btn">
                 <span class="repeat-icon">🔄</span>
-                <span class="repeat-text">Repeat: Save as <span id="repeat-type">.txt</span></span>
+                <span class="repeat-text">__MSG_popup.repeatAction__: <span id="repeat-type">.txt</span></span>
             </button>
         </section>
 
         <!-- Keyboard Shortcuts -->
         <section class="shortcuts">
-            <h2 class="section-title">Shortcuts</h2>
+            <h2 class="section-title">__MSG_popup.shortcutsTitle__</h2>
             <div class="shortcut-list">
                 <div class="shortcut">
                     <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd>
-                    <span>Smart Save</span>
+                    <span>__MSG_commands.smartDesc__</span>
                 </div>
                 <div class="shortcut">
                     <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>T</kbd>
-                    <span>Save as Text</span>
+                    <span>__MSG_commands.txtDesc__</span>
                 </div>
                 <div class="shortcut">
                     <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>M</kbd>
-                    <span>Save as Markdown</span>
+                    <span>__MSG_commands.mdDesc__</span>
                 </div>
                 <div class="shortcut">
                     <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>
-                    <span>Save as PDF</span>
+                    <span>__MSG_commands.pdfDesc__</span>
                 </div>
             </div>
         </section>
@@ -150,15 +152,15 @@
         <footer class="footer">
             <button class="footer-btn" id="open-folder">
                 <span>📁</span>
-                <span>Open Folder</span>
+                <span>__MSG_popup.openFolder__</span>
             </button>
             <button class="footer-btn" id="settings">
                 <span>⚙️</span>
-                <span>Settings</span>
+                <span>__MSG_popup.settings__</span>
             </button>
             <button class="footer-btn" id="help">
                 <span>❓</span>
-                <span>Help</span>
+                <span>__MSG_popup.help__</span>
             </button>
         </footer>
     </div>

@@ -3,8 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FlashDoc Preferences</title>
+  <title>__MSG_options.pageTitle__</title>
   <link rel="stylesheet" href="options.css">
+  <link rel="stylesheet" href="_locales/rtl.css">
+  <script src="i18n.js"></script>
 </head>
 <body>
   <main class="options-container">
@@ -12,152 +14,152 @@
       <div class="options-title">
         <span class="logo">⚡</span>
         <div>
-          <h1>FlashDoc Preferences</h1>
-          <p class="subtitle">Customize how FlashDoc saves behave everywhere.</p>
+          <h1>__MSG_options.pageTitle__</h1>
+          <p class="subtitle">__MSG_options.subtitle__</p>
         </div>
       </div>
-      <div class="version" id="extension-version"></div>
+      <div class="version" id="extension-version">__MSG_options.versionLabel__</div>
     </header>
 
     <form id="options-form">
       <section class="options-card">
-        <h2>Storage</h2>
+        <h2>__MSG_options.storageSection__</h2>
         <div class="field">
-          <label for="folderPath">Default folder</label>
-          <input id="folderPath" name="folderPath" type="text" placeholder="FlashDocs/">
-          <p class="help">Relative to your default Downloads directory.</p>
+          <label for="folderPath">__MSG_options.folderPathLabel__</label>
+          <input id="folderPath" name="folderPath" type="text" placeholder="__MSG_options.folderPathPlaceholder__">
+          <p class="help">__MSG_options.folderPathHelp__</p>
         </div>
         <div class="field">
-          <label for="namingPattern">Naming pattern</label>
+          <label for="namingPattern">__MSG_options.namingPatternLabel__</label>
           <select id="namingPattern" name="namingPattern">
-            <option value="timestamp">Timestamp &mdash; <code>flashdoc_YYYY-MM-DD</code></option>
-            <option value="firstline">First line of selection</option>
-            <option value="custom">Custom template</option>
+            <option value="timestamp">__MSG_options.patternTimestamp__</option>
+            <option value="firstline">__MSG_options.patternFirstline__</option>
+            <option value="custom">__MSG_options.patternCustom__</option>
           </select>
         </div>
         <div class="field hidden" id="custom-pattern-row">
-          <label for="customPattern">Custom filename template</label>
-          <input id="customPattern" name="customPattern" type="text" placeholder="file_{date}_{type}">
-          <p class="help">Available tokens: <code>{date}</code>, <code>{time}</code>, <code>{type}</code></p>
+          <label for="customPattern">__MSG_options.customPatternLabel__</label>
+          <input id="customPattern" name="customPattern" type="text" placeholder="__MSG_options.customPatternPlaceholder__">
+          <p class="help">__MSG_options.tokensHelp__</p>
         </div>
 
         <!-- Live Filename Preview -->
         <div class="field" id="filename-preview-row">
-          <label>Live Preview</label>
+          <label>__MSG_options.livePreviewLabel__</label>
           <div class="filename-preview" id="filename-preview">
             <span class="preview-folder" id="preview-folder">FlashDocs/</span>
             <span class="preview-filename" id="preview-filename">flashdoc_2026-01-05_1423</span>
             <span class="preview-ext" id="preview-ext">.md</span>
           </div>
-          <p class="help">This is how your next file will be named (format depends on content type)</p>
+          <p class="help">__MSG_options.previewHelp__</p>
         </div>
 
         <div class="toggle">
-          <label for="organizeByType">Organize by format</label>
+          <label for="organizeByType">__MSG_options.organizeByTypeLabel__</label>
           <label class="switch">
             <input id="organizeByType" name="organizeByType" type="checkbox">
             <span class="slider"></span>
           </label>
         </div>
         <div class="section-actions">
-          <button type="button" class="btn primary small" data-save-section="storage">Anwenden</button>
+          <button type="button" class="btn primary small" data-save-section="storage">__MSG_options.applyBtn__</button>
         </div>
       </section>
 
       <section class="options-card">
-        <h2>Capture intelligence</h2>
+        <h2>__MSG_options.captureSection__</h2>
         <div class="toggle">
-          <label for="autoDetectType">Smart format detection</label>
+          <label for="autoDetectType">__MSG_options.autoDetectLabel__</label>
           <label class="switch">
             <input id="autoDetectType" name="autoDetectType" type="checkbox">
             <span class="slider"></span>
           </label>
         </div>
         <div class="toggle">
-          <label for="enableSmartDetection">Highlight detected type in page</label>
+          <label for="enableSmartDetection">__MSG_options.highlightLabel__</label>
           <label class="switch">
             <input id="enableSmartDetection" name="enableSmartDetection" type="checkbox">
             <span class="slider"></span>
           </label>
         </div>
         <div class="field">
-          <label for="selectionThreshold">Minimum selection length</label>
+          <label for="selectionThreshold">__MSG_options.selectionThresholdLabel__</label>
           <div class="range-field">
             <input id="selectionThreshold" name="selectionThreshold" type="range" min="0" max="200" step="5">
-            <span class="range-value"><span id="selectionThresholdValue">0</span> characters</span>
+            <span class="range-value"><span id="selectionThresholdValue">0</span> __MSG_options.charactersLabel__</span>
           </div>
         </div>
         <div class="section-actions">
-          <button type="button" class="btn primary small" data-save-section="capture">Anwenden</button>
+          <button type="button" class="btn primary small" data-save-section="capture">__MSG_options.applyBtn__</button>
         </div>
       </section>
 
       <section class="options-card">
-        <h2>Privacy</h2>
+        <h2>__MSG_options.privacySection__</h2>
         <div class="toggle">
-          <label for="privacyMode">Privacy mode (on-demand injection)</label>
+          <label for="privacyMode">__MSG_options.privacyModeLabel__</label>
           <label class="switch">
             <input id="privacyMode" name="privacyMode" type="checkbox">
             <span class="slider"></span>
           </label>
         </div>
-        <p class="help privacy-help">When enabled, FlashDoc only activates when you click the extension icon or use a keyboard shortcut. No scripts run on pages until you explicitly activate them.</p>
+        <p class="help privacy-help">__MSG_options.privacyHelp__</p>
         <div class="privacy-status" id="privacy-status"></div>
         <div class="section-actions">
-          <button type="button" class="btn primary small" data-save-section="privacy">Anwenden</button>
+          <button type="button" class="btn primary small" data-save-section="privacy">__MSG_options.applyBtn__</button>
         </div>
       </section>
 
       <section class="options-card">
-        <h2>Interface</h2>
+        <h2>__MSG_options.interfaceSection__</h2>
         <div class="toggle">
-          <label for="showFloatingButton">Floating quick-save button</label>
+          <label for="showFloatingButton">__MSG_options.floatingButtonLabel__</label>
           <label class="switch">
             <input id="showFloatingButton" name="showFloatingButton" type="checkbox">
             <span class="slider"></span>
           </label>
         </div>
         <div class="field" id="button-position-row">
-          <label for="buttonPosition">Button position</label>
+          <label for="buttonPosition">__MSG_options.buttonPositionLabel__</label>
           <select id="buttonPosition" name="buttonPosition">
-            <option value="bottom-right">Bottom right</option>
-            <option value="bottom-left">Bottom left</option>
-            <option value="top-right">Top right</option>
-            <option value="top-left">Top left</option>
+            <option value="bottom-right">__MSG_options.positionBottomRight__</option>
+            <option value="bottom-left">__MSG_options.positionBottomLeft__</option>
+            <option value="top-right">__MSG_options.positionTopRight__</option>
+            <option value="top-left">__MSG_options.positionTopLeft__</option>
           </select>
         </div>
         <div class="toggle">
-          <label for="autoHideButton">Auto-hide when idle</label>
+          <label for="autoHideButton">__MSG_options.autoHideLabel__</label>
           <label class="switch">
             <input id="autoHideButton" name="autoHideButton" type="checkbox">
             <span class="slider"></span>
           </label>
         </div>
         <div class="toggle">
-          <label for="enableContextMenu">Context menu integration</label>
+          <label for="enableContextMenu">__MSG_options.contextMenuLabel__</label>
           <label class="switch">
             <input id="enableContextMenu" name="enableContextMenu" type="checkbox">
             <span class="slider"></span>
           </label>
         </div>
         <div class="section-actions">
-          <button type="button" class="btn primary small" data-save-section="interface">Anwenden</button>
+          <button type="button" class="btn primary small" data-save-section="interface">__MSG_options.applyBtn__</button>
         </div>
       </section>
 
       <section class="options-card">
-        <h2>Context menu formats</h2>
-        <p class="help">Choose which formats appear when you right-click selected text.</p>
+        <h2>__MSG_options.contextMenuSection__</h2>
+        <p class="help">__MSG_options.contextMenuHelp__</p>
         <div class="format-grid" id="context-menu-formats"></div>
         <div class="section-actions">
-          <button type="button" class="btn primary small" data-save-section="contextmenu">Anwenden</button>
+          <button type="button" class="btn primary small" data-save-section="contextmenu">__MSG_options.applyBtn__</button>
         </div>
       </section>
 
       <!-- v3.1: Contextual Chip Slots Section -->
       <section class="options-card">
-        <h2>Contextual Chip Slots</h2>
-        <p class="help">Configure the 5 action buttons that appear when you select text.</p>
+        <h2>__MSG_slots.sectionTitle__</h2>
+        <p class="help">__MSG_slots.help__</p>
 
         <!-- Visual Preview of Floating Button -->
         <div class="slot-preview-container">
@@ -183,42 +185,42 @@
 
         <!-- Preset Management -->
         <div class="preset-section">
-          <h3>Slot Presets</h3>
-          <p class="help preset-help">Speichere Slot-Konfigurationen als Presets und wechsle schnell zwischen ihnen.</p>
+          <h3>__MSG_slots.presetSection__</h3>
+          <p class="help preset-help">__MSG_slots.presetHelp__</p>
 
           <!-- Active Preset Indicator -->
           <div class="active-preset-indicator" id="active-preset-indicator">
-            <span class="indicator-label">Aktiv:</span>
-            <span class="indicator-name" id="active-preset-name">Keins</span>
+            <span class="indicator-label">__MSG_slots.activeIndicator__</span>
+            <span class="indicator-name" id="active-preset-name">__MSG_slots.noneActive__</span>
           </div>
 
           <div class="preset-toolbar">
             <select id="preset-selector" class="preset-select">
-              <option value="">— Preset wählen —</option>
+              <option value="">__MSG_slots.selectPreset__</option>
             </select>
-            <button type="button" class="btn primary small" id="preset-apply" title="Ausgewähltes Preset aktivieren">Anwenden</button>
+            <button type="button" class="btn primary small" id="preset-apply" title="__MSG_slots.applyPreset__">__MSG_slots.applyPreset__</button>
           </div>
 
           <div class="preset-actions">
-            <button type="button" class="btn secondary small" id="preset-new" title="Neues Preset aus aktuellen Slots erstellen">+ Neu</button>
-            <button type="button" class="btn secondary small" id="preset-save" title="Aktuelle Slots im ausgewählten Preset speichern">Speichern</button>
-            <button type="button" class="btn danger small" id="preset-delete" title="Ausgewähltes Preset löschen">Löschen</button>
+            <button type="button" class="btn secondary small" id="preset-new" title="__MSG_slots.newPreset__">__MSG_slots.newPreset__</button>
+            <button type="button" class="btn secondary small" id="preset-save" title="__MSG_slots.savePreset__">__MSG_slots.savePreset__</button>
+            <button type="button" class="btn danger small" id="preset-delete" title="__MSG_slots.deletePreset__">__MSG_slots.deletePreset__</button>
           </div>
           
           <div class="preset-import-export">
-            <button type="button" class="btn icon small" id="preset-export" title="Preset als JSON exportieren">📤 Export</button>
-            <button type="button" class="btn icon small" id="preset-import" title="Preset aus JSON importieren">📥 Import</button>
-            <button type="button" class="btn icon small" id="preset-share" title="Preset-String kopieren">🔗 Share</button>
+            <button type="button" class="btn icon small" id="preset-export" title="__MSG_slots.exportPreset__">📤 __MSG_slots.exportPreset__</button>
+            <button type="button" class="btn icon small" id="preset-import" title="__MSG_slots.importPreset__">📥 __MSG_slots.importPreset__</button>
+            <button type="button" class="btn icon small" id="preset-share" title="__MSG_slots.sharePreset__">🔗 __MSG_slots.sharePreset__</button>
           </div>
           
           <!-- Import Modal -->
           <dialog id="import-modal" class="modal">
             <div class="modal-content">
-              <h3>Preset importieren</h3>
-              <textarea id="import-textarea" placeholder="FlashDoc Preset JSON hier einfügen..." rows="6"></textarea>
+              <h3>__MSG_slots.importTitle__</h3>
+              <textarea id="import-textarea" placeholder="__MSG_slots.importPlaceholder__" rows="6"></textarea>
               <div class="modal-actions">
-                <button type="button" class="btn secondary" id="import-cancel">Abbrechen</button>
-                <button type="button" class="btn primary" id="import-confirm">Importieren</button>
+                <button type="button" class="btn secondary" id="import-cancel">__MSG_slots.cancelBtn__</button>
+                <button type="button" class="btn primary" id="import-confirm">__MSG_slots.confirmImport__</button>
               </div>
             </div>
           </dialog>
@@ -226,27 +228,27 @@
           <!-- Export/Share Modal -->
           <dialog id="export-modal" class="modal">
             <div class="modal-content">
-              <h3 id="export-modal-title">Preset exportieren</h3>
+              <h3 id="export-modal-title">__MSG_slots.exportTitle__</h3>
               <textarea id="export-textarea" readonly rows="6"></textarea>
               <div class="modal-actions">
-                <button type="button" class="btn secondary" id="export-close">Schließen</button>
-                <button type="button" class="btn primary" id="export-copy">Kopieren</button>
+                <button type="button" class="btn secondary" id="export-close">__MSG_slots.closeBtn__</button>
+                <button type="button" class="btn primary" id="export-copy">__MSG_slots.copyBtn__</button>
               </div>
             </div>
           </dialog>
 
-          <span class="preset-count" id="preset-count">0/5 Presets</span>
+          <span class="preset-count" id="preset-count">__MSG_slots.presetCount__</span>
         </div>
       </section>
 
       <!-- Category Shortcuts Section -->
       <section class="options-card">
-        <h2>Prefix Shortcuts</h2>
-        <p class="help">Erstelle Schnellspeicher-Kombinationen. Beispiel: "Design" + ".md" = speichert als "Design_save.md"</p>
+        <h2>__MSG_shortcuts.sectionTitle__</h2>
+        <p class="help">__MSG_shortcuts.help__</p>
 
         <!-- Add new shortcut form -->
         <div class="shortcut-add-form">
-          <input type="text" id="new-shortcut-name" placeholder="Prefix eingeben (z.B. Design)" maxlength="20">
+          <input type="text" id="new-shortcut-name" placeholder="__MSG_shortcuts.namePlaceholder__" maxlength="20">
           <select id="new-shortcut-format">
             <option value="md">.md</option>
             <option value="txt">.txt</option>
@@ -259,59 +261,59 @@
             <option value="css">.css</option>
             <option value="yaml">.yaml</option>
           </select>
-          <button type="button" class="btn primary small" id="add-shortcut">Hinzufügen</button>
+          <button type="button" class="btn primary small" id="add-shortcut">__MSG_shortcuts.addBtn__</button>
         </div>
 
         <!-- Existing shortcuts list -->
         <div class="shortcut-list" id="shortcut-list"></div>
         <div class="shortcut-footer">
-          <span class="shortcut-count" id="shortcut-count">0/10 Shortcuts</span>
+          <span class="shortcut-count" id="shortcut-count">__MSG_shortcuts.shortcutCount__</span>
         </div>
       </section>
 
       <!-- F3: Corner Ball Section -->
       <section class="options-card">
-        <h2>Corner Ball</h2>
-        <p class="help">The FlashDoc ball appears in the corner and can be dragged out of the way.</p>
+        <h2>__MSG_options.cornerBallSection__</h2>
+        <p class="help">__MSG_options.cornerBallHelp__</p>
         <div class="toggle">
-          <label for="showCornerBall">Show corner ball</label>
+          <label for="showCornerBall">__MSG_options.cornerBallLabel__</label>
           <label class="switch">
             <input id="showCornerBall" name="showCornerBall" type="checkbox">
             <span class="slider"></span>
           </label>
         </div>
         <div class="section-actions">
-          <button type="button" class="btn primary small" data-save-section="cornerball">Anwenden</button>
+          <button type="button" class="btn primary small" data-save-section="cornerball">__MSG_options.applyBtn__</button>
         </div>
       </section>
 
       <section class="options-card">
-        <h2>Feedback</h2>
+        <h2>__MSG_options.feedbackSection__</h2>
         <div class="toggle">
-          <label for="showNotifications">Show notifications</label>
+          <label for="showNotifications">__MSG_options.notificationsLabel__</label>
           <label class="switch">
             <input id="showNotifications" name="showNotifications" type="checkbox">
             <span class="slider"></span>
           </label>
         </div>
         <div class="toggle">
-          <label for="playSound">Play confirmation sound</label>
+          <label for="playSound">__MSG_options.soundLabel__</label>
           <label class="switch">
             <input id="playSound" name="playSound" type="checkbox">
             <span class="slider"></span>
           </label>
         </div>
         <div class="section-actions">
-          <button type="button" class="btn primary small" data-save-section="feedback">Anwenden</button>
+          <button type="button" class="btn primary small" data-save-section="feedback">__MSG_options.applyBtn__</button>
         </div>
       </section>
 
       <section class="options-card">
-        <h2>Event Tracking & Recommendations</h2>
-        <p class="help">Track key events and get format recommendations based on your usage patterns</p>
+        <h2>__MSG_options.trackingSection__</h2>
+        <p class="help">__MSG_options.trackingHelp__</p>
 
         <div class="toggle">
-          <label for="trackFormatUsage">Track format usage statistics</label>
+          <label for="trackFormatUsage">__MSG_options.trackFormatUsageLabel__</label>
           <label class="switch">
             <input id="trackFormatUsage" name="trackFormatUsage" type="checkbox" checked>
             <span class="slider"></span>
@@ -319,7 +321,7 @@
         </div>
 
         <div class="toggle">
-          <label for="trackDetectionAccuracy">Track auto-detection accuracy</label>
+          <label for="trackDetectionAccuracy">__MSG_options.trackAccuracyLabel__</label>
           <label class="switch">
             <input id="trackDetectionAccuracy" name="trackDetectionAccuracy" type="checkbox" checked>
             <span class="slider"></span>
@@ -327,7 +329,7 @@
         </div>
 
         <div class="toggle">
-          <label for="showFormatRecommendations">Show format recommendations</label>
+          <label for="showFormatRecommendations">__MSG_options.recommendationsLabel__</label>
           <label class="switch">
             <input id="showFormatRecommendations" name="showFormatRecommendations" type="checkbox" checked>
             <span class="slider"></span>
@@ -335,25 +337,25 @@
         </div>
 
         <div class="recommendations-panel" id="recommendations-panel">
-          <h3>Available Recommendations</h3>
+          <h3>__MSG_options.recommendationsTitle__</h3>
           <div class="recommendations-list" id="recommendations-list">
             <div class="recommendation-item">
               <span class="rec-icon">💡</span>
               <div class="rec-content">
-                <strong>Loading recommendations...</strong>
+                <strong>__MSG_options.loadingRecommendations__</strong>
               </div>
             </div>
           </div>
         </div>
         <div class="section-actions">
-          <button type="button" class="btn primary small" data-save-section="tracking">Anwenden</button>
+          <button type="button" class="btn primary small" data-save-section="tracking">__MSG_options.applyBtn__</button>
         </div>
       </section>
 
       <section class="options-actions">
         <div class="status" id="status-message" role="status" aria-live="polite"></div>
         <div class="buttons">
-          <button type="button" class="btn secondary" id="reset-defaults">Alles zurücksetzen</button>
+          <button type="button" class="btn secondary" id="reset-defaults">__MSG_options.resetDefaults__</button>
         </div>
       </section>
     </form>

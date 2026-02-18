@@ -1,0 +1,273 @@
+/**
+ * FlashDoc RTL (Right-to-Left) Support Styles
+ * Applied automatically for Hebrew and Arabic locales
+ */
+
+/* Reset and base RTL styles */
+body.rtl,
+html:has(body.rtl) {
+  direction: rtl;
+  text-align: right;
+}
+
+/* Popup RTL styles */
+.rtl .container {
+  text-align: right;
+}
+
+.rtl .header {
+  flex-direction: row-reverse;
+}
+
+.rtl .logo-container {
+  flex-direction: row-reverse;
+}
+
+.rtl .status-indicator {
+  margin-left: 0;
+  margin-right: auto;
+}
+
+.rtl .stats-dashboard {
+  flex-direction: row-reverse;
+}
+
+.rtl .stat-card {
+  text-align: right;
+}
+
+.rtl .actions-grid {
+  direction: rtl;
+}
+
+.rtl .action-card {
+  text-align: center;
+}
+
+.rtl .recent-files {
+  text-align: right;
+}
+
+.rtl .recent-item {
+  flex-direction: row-reverse;
+}
+
+.rtl .recent-item-badge {
+  margin-left: 0;
+  margin-right: auto;
+}
+
+.rtl .shortcuts {
+  text-align: right;
+}
+
+.rtl .shortcut {
+  flex-direction: row-reverse;
+  justify-content: flex-end;
+}
+
+.rtl .shortcut kbd {
+  margin-left: 8px;
+  margin-right: 0;
+}
+
+.rtl .footer {
+  flex-direction: row-reverse;
+}
+
+.rtl .footer-btn {
+  flex-direction: row-reverse;
+}
+
+/* Options page RTL styles */
+.rtl .options-container {
+  text-align: right;
+}
+
+.rtl .options-header {
+  flex-direction: row-reverse;
+}
+
+.rtl .options-title {
+  flex-direction: row-reverse;
+}
+
+.rtl .field {
+  text-align: right;
+}
+
+.rtl .field label {
+  text-align: right;
+}
+
+.rtl .field input,
+.rtl .field select {
+  text-align: right;
+}
+
+.rtl .toggle {
+  flex-direction: row-reverse;
+  justify-content: flex-end;
+}
+
+.rtl .switch {
+  margin-left: 0;
+  margin-right: 12px;
+}
+
+.rtl .switch:before {
+  left: auto;
+  right: 2px;
+}
+
+.rtl input:checked + .slider:before {
+  transform: translateX(-20px);
+}
+
+.rtl .filename-preview {
+  flex-direction: row-reverse;
+  text-align: right;
+}
+
+.rtl .format-grid {
+  direction: rtl;
+}
+
+.rtl .format-option {
+  flex-direction: row-reverse;
+}
+
+.rtl .format-option input {
+  margin-left: 12px;
+  margin-right: 0;
+}
+
+.rtl .format-icon {
+  margin-left: 12px;
+  margin-right: 0;
+}
+
+.rtl .slot-preview-container {
+  direction: rtl;
+}
+
+.rtl .slot-config-item select {
+  text-align: right;
+}
+
+.rtl .preset-toolbar {
+  flex-direction: row-reverse;
+}
+
+.rtl .preset-actions {
+  flex-direction: row-reverse;
+}
+
+.rtl .preset-import-export {
+  flex-direction: row-reverse;
+}
+
+.rtl .shortcut-add-form {
+  flex-direction: row-reverse;
+}
+
+.rtl .shortcut-item {
+  flex-direction: row-reverse;
+}
+
+.rtl .shortcut-delete {
+  margin-left: 0;
+  margin-right: auto;
+}
+
+.rtl .modal-content {
+  text-align: right;
+}
+
+.rtl .modal-actions {
+  flex-direction: row-reverse;
+}
+
+.rtl textarea {
+  text-align: right;
+  direction: rtl;
+}
+
+/* Recommendations panel RTL */
+.rtl .recommendation-item {
+  flex-direction: row-reverse;
+}
+
+.rtl .rec-content {
+  text-align: right;
+}
+
+/* Context menu preview RTL */
+.rtl .preview-save-bar {
+  flex-direction: row-reverse;
+}
+
+.rtl .preview-dropdown-arrow {
+  margin-left: 0;
+  margin-right: 4px;
+}
+
+.rtl .preview-slot-buttons {
+  direction: rtl;
+}
+
+/* Animations adjustments for RTL */
+.rtl [class*="slide"] {
+  --slide-direction: -1;
+}
+
+/* Fix for range slider in RTL */
+.rtl input[type="range"] {
+  direction: rtl;
+}
+
+/* Privacy banner RTL */
+.rtl .privacy-banner-content {
+  flex-direction: row-reverse;
+}
+
+.rtl .activate-btn {
+  margin-left: 0;
+  margin-right: auto;
+}
+
+/* Empty state RTL */
+.rtl .empty-state {
+  text-align: center;
+}
+
+/* Section titles RTL */
+.rtl .section-title {
+  text-align: right;
+}
+
+.rtl h2,
+.rtl h3 {
+  text-align: right;
+}
+
+/* Help text RTL */
+.rtl .help {
+  text-align: right;
+}
+
+/* Button icons in RTL */
+.rtl .btn .icon {
+  margin-left: 6px;
+  margin-right: 0;
+}
+
+/* Status message RTL */
+.rtl .status {
+  text-align: center;
+}
+
+/* Preset indicator RTL */
+.rtl .active-preset-indicator {
+  flex-direction: row-reverse;
+}

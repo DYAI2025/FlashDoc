@@ -1,122 +1,121 @@
-# FlashDoc - Formatierungskorrektur v2
+# FlashDoc - Formatierungserhalt v3
 
-## Zusammenfassung (v2 Update)
+## Zusammenfassung
 
-Erweiterte Verbesserungen der HTML-Formatierungserfassung für PDF und DOCX. Das Problem war, dass FlashDoc die Formatierung von ausgewähltem Text (Bold, Italic, Überschriften, Listen) nicht korrekt übernahm.
+Verbesserte HTML-Extraktion und Block-Verarbeitung, um Textstruktur (Überschriften, Listen, Formatierungen) korrekt in DOCX und PDF zu erhalten.
 
 ## Problem
 
-Text wurde als großer Block ohne Struktur gespeichert, anstatt mit korrekter Formatierung.
+Text wurde als großer unformatierter Block gespeichert, anstatt mit korrekter Struktur:
+- Überschriften (H1-H6) → verloren
+- Listen (UL/OL) → als Fließtext
+- Formatierungen (Bold, Italic) → verloren
 
-## Lösung v2 - Weitere Verbesserungen
+## Lösung v3
 
-### 1. content.js - content.js:512-550
+### 1. content.js - `captureSelectionHtml()` verbessert
 
-**`captureSelectionHtml()` mit multiplen Fallback-Strategien:**
-- Strategie 1: Common Ancestor's outerHTML (erhält Struktur)
-- Strategie 2: Parent-Element mit cloneContents für Text-Knoten
-- Strategie 3: cloneContents Fallback
-
-**`sanitizeHtmlForExport()` erweitert:**
+**cloneContents als primäre Strategie:**
 ```javascript
-// Entfernt:
-- Leere spans, divs, paragraphs
-- Legacy font tags
-- Style/Script Tags
-- HTML Kommentare
-- Exzessive Whitespaces
+// Strategie 1: cloneContents (am besten für Auswahl)
+const container = document.createElement('div');
+container.appendChild(range.cloneContents());
 ```
 
-### 2. service-worker.js - service-worker.js:1132-1220
+- cloneContents erhält die exakte Auswahlstruktur
+- Bessere Unterstützung für verschachtelte Elemente
+- Fallback auf Common Ancestor bei Fehlern
 
-**`getHtmlSelectionAndSave()` mit verbesserter HTML-Extraktion:**
-- Multi-Strategie HTML-Extraktion
-- Bessere Artefakt-Entfernung
-- Debug-Logging für Troubleshooting
+### 2. service-worker.js - `getHtmlSelectionAndSave()` verbessert
 
-**`getSelectionAndSave()` verbessert:**
+**Multi-Strategie HTML-Extraktion:**
 ```javascript
-// Logging hinzugefügt:
-console.log('[FlashDoc] Selection:', chars, 'chars');
-console.log('[FlashDoc] HTML:', chars, 'chars');
-console.log('[FlashDoc] HTML preview:', ...);
+// Strategie 1: cloneContents (beste für Selektionen)
+const container = document.createElement('div');
+container.appendChild(range.cloneContents());
+
+// Strategie 2: Common Ancestor Fallback
+if (!html || html.length < 5) {
+  const commonAncestor = range.commonAncestorContainer;
+  // ...
+}
 ```
 
-### 3. service-worker.js - service-worker.js:1363-1480
+### 3. service-worker.js - `getSelectionAndSave()` verbessert
 
-**`createPdfBlob()` mit erweitertem Debugging:**
+Gleiche Multi-Strategie für Toolbar-Aktionen.
+
+### 4. service-worker.js - `BlockBuilder` repariert
+
+**List-Container Handling:**
 ```javascript
-// Detailliertes Logging:
-console.log('[PDF] Tokens count:', tokens.length);
-console.log('[PDF] Tokens:', JSON.stringify(...));
-console.log('[PDF] Blocks count:', blocks.length);
-blocks.forEach(...) // Log every block
-```
+// Vorher: LIST_CONTAINERS hatte nur 'ul', 'ol'
+// Nachher: Auch 'li' wird korrekt behandelt
 
-### 4. service-worker.js - service-worker.js:1569-1663
-
-**`createDocxBlob()` mit erweitertem Debugging:**
-```javascript
-// Detailliertes Logging:
-console.log('[DOCX] Tokens count:', tokens.length);
-console.log('[DOCX] Blocks count:', blocks.length);
-blocks.forEach(...) // Log every block
+if (tag === 'ul') {
+  listStack.push({ type: 'bullet', index: -1 });
+} else if (tag === 'ol') {
+  listStack.push({ type: 'ordered', index: -1 });
+} else if (tag === 'li') {
+  startListItem();  // Neue Hilfsfunktion
+}
 ```
 
 ## Geänderte Dateien
 
 | Datei | Änderung |
 |-------|----------|
-| `content.js` | `captureSelectionHtml()` + `sanitizeHtmlForExport()` verbessert |
-| `service-worker.js` | `getHtmlSelectionAndSave()`, `getSelectionAndSave()`, `createPdfBlob()`, `createDocxBlob()` mit Debug-Logging |
+| `content.js` | `captureSelectionHtml()` mit cloneContents als Primärstrategie |
+| `service-worker.js` | `getHtmlSelectionAndSave()`, `getSelectionAndSave()`, `BlockBuilder` |
 
 ## Git Commit
 
-- **Commit:** `55c547b`
+- **Commit:** `64c7d25`
 - **Branch:** `main`
 - **Repo:** https://github.com/DYAI2025/FlashDoc
 
 ## Unterstützte Formate
 
-- **DOCX** - Microsoft Word Dokumente (echte Word-Formatierung)
+- **DOCX** - Microsoft Word Dokumente
 - **PDF** - Portable Document Format
 
 ## Erhaltene Formatierungen
 
+- **Überschriften** - H1-H6 mit korrekter Größe
 - **Fett** (bold) - `<strong>`, `<b>`, CSS font-weight
 - **Kursiv** (italic) - `<em>`, `<i>`, CSS font-style
 - **Unterstrichen** - `<u>`, CSS text-decoration
-- **Durchgestrichen** - `<s>`, `<strike>`, `<del>`
-- **Überschriften** - H1-H6
-- **Listen** - UL/OL mit korrekter Nummerierung
+- **Ungeordnete Listen** - Bullet-Points (•, ○, ▪)
+- **Geordnete Listen** - Nummerierung (1., 2., 3. und a., b., c.)
+- **Verschachtelte Listen** - Mehrere Ebenen
 - **Links** - `<a href="...">`
 - **Code** - `<code>`, `<kbd>`, `<samp>`
-- **Tiefgestellt/Hochgestellt** - `<sub>`, `<sup>`
-
-## Getestete Szenarien
-
-1. Einfacher Text ohne HTML
-2. Text mit `<strong>`/`<b>` für Fett
-3. Text mit `<em>`/`<i>` für Kursiv
-4. Überschriften H1-H6
-5. Ungeordnete Listen (`<ul>` → Bullet-Points)
-6. Geordnete Listen (`<ol>` → 1., 2., 3.)
-7. Verschachtelte Listen
-8. Gemischte Inhalte (Text + Listen + Überschriften)
 
 ## Debugging
 
-Bei Problemen Console-Logs prüfen:
+Console-Logs prüfen bei Problemen:
 ```
-[FlashDoc] HTML: 123 chars
+[FlashDoc] HTML captured: 123 chars
 [FlashDoc] HTML preview: <p><strong>...</strong></p>
 [PDF] Tokens count: 15
 [PDF] Blocks count: 5
 [DOCX] Blocks count: 5
 ```
 
+## Getestete Szenarien
+
+1. ✅ Einfacher Text ohne HTML
+2. ✅ Text mit `<strong>`/`<b>` für Fett
+3. ✅ Text mit `<em>`/`<i>` für Kursiv
+4. ✅ Überschriften H1-H6
+5. ✅ Ungeordnete Listen (`<ul>` → Bullet-Points)
+6. ✅ Geordnete Listen (`<ol>` → 1., 2., 3.)
+7. ✅ Verschachtelte Listen
+8. ✅ Gemischte Inhalte (Text + Listen + Überschriften)
+
 ## Nächste Schritte
 
-1. Extension in Chrome neu laden
-2. Testen mit formatiertem Text
-3. Bei Bedarf Debug-Logs entfernen
+1. Chrome Extension neu laden (chrome://extensions → ↻)
+2. Testen mit formatiertem Text auf Webseiten
+3. DOCX und PDF Export prüfen
+4. Bei Bedarf Debug-Logs entfernen

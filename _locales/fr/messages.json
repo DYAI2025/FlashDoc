@@ -1,0 +1,99 @@
+{
+  "extensionName": { "message": "FlashDoc - Créateur Instantané de Documents", "description": "Extension name (FR)" },
+  "extensionDescription": { "message": "⚡ Sélectionner → Enregistrer → Terminé. Création instantanée de fichiers depuis n'importe quel texte.", "description": "Extension description (FR)" },
+  "popup": {
+    "title": { "message": "FlashDoc", "description": "Popup title (FR)" },
+    "tagline": { "message": "Sélectionner → Enregistrer → Terminé", "description": "Tagline (FR)" },
+    "statusReady": { "message": "Prêt", "description": "Status ready (FR)" },
+    "privacyBannerTitle": { "message": "Mode Confidentialité Actif", "description": "Privacy (FR)" },
+    "activateBtn": { "message": "Activer", "description": "Activate (FR)" },
+    "totalFiles": { "message": "Fichiers Totaux", "description": "Total files (FR)" },
+    "todayLabel": { "message": "Aujourd'hui", "description": "Today (FR)" },
+    "lastSaveLabel": { "message": "Dernière Sauvegarde", "description": "Last save (FR)" },
+    "quickSaveTitle": { "message": "Sauvegarde Rapide", "description": "Quick save (FR)" },
+    "shortcutsTitle": { "message": "Raccourcis", "description": "Shortcuts (FR)" },
+    "openFolder": { "message": "Ouvrir Dossier", "description": "Open folder (FR)" },
+    "settings": { "message": "Paramètres", "description": "Settings (FR)" },
+    "help": { "message": "Aide", "description": "Help (FR)" },
+    "timeNever": { "message": "Jamais", "description": "Never (FR)" }
+  },
+  "options": {
+    "pageTitle": { "message": "Préférences FlashDoc", "description": "Options (FR)" },
+    "subtitle": { "message": "Personnalisez le comportement de sauvegarde de FlashDoc.", "description": "Subtitle (FR)" },
+    "storageSection": { "message": "Stockage", "description": "Storage (FR)" },
+    "folderPathLabel": { "message": "Dossier par défaut", "description": "Folder (FR)" },
+    "folderPathPlaceholder": { "message": "FlashDocs/", "description": "Folder path (FR)" },
+    "namingPatternLabel": { "message": "Modèle de nom", "description": "Naming pattern (FR)" },
+    "patternTimestamp": { "message": "Horodatage — flashdoc_AAAA-MM-JJ", "description": "Timestamp (FR)" },
+    "patternFirstline": { "message": "Première ligne de la sélection", "description": "First line (FR)" },
+    "patternCustom": { "message": "Personnalisé", "description": "Custom (FR)" },
+    "livePreviewLabel": { "message": "Aperçu", "description": "Preview (FR)" },
+    "organizeByTypeLabel": { "message": "Organiser par format", "description": "Organize (FR)" },
+    "applyBtn": { "message": "Appliquer", "description": "Apply (FR)" },
+    "captureSection": { "message": "Capture", "description": "Capture (FR)" },
+    "autoDetectLabel": { "message": "Détection intelligente", "description": "Auto detect (FR)" },
+    "privacySection": { "message": "Confidentialité", "description": "Privacy (FR)" },
+    "privacyModeLabel": { "message": "Mode confidentialité", "description": "Privacy mode (FR)" },
+    "interfaceSection": { "message": "Interface", "description": "Interface (FR)" },
+    "floatingButtonLabel": { "message": "Bouton flottant", "description": "Floating button (FR)" },
+    "contextMenuSection": { "message": "Formats du menu contextuel", "description": "Context menu (FR)" },
+    "feedbackSection": { "message": "Commentaires", "description": "Feedback (FR)" },
+    "notificationsLabel": { "message": "Afficher notifications", "description": "Notifications (FR)" },
+    "trackingSection": { "message": "Suivi et Recommandations", "description": "Tracking (FR)" },
+    "resetDefaults": { "message": "Tout Réinitialiser", "description": "Reset (FR)" },
+    "savedSuccess": { "message": "Enregistré", "description": "Saved (FR)" },
+    "savedError": { "message": "Échec de l'enregistrement", "description": "Save error (FR)" }
+  },
+  "commands": {
+    "smartDesc": { "message": "Sauvegarde intelligente", "description": "Smart save (FR)" },
+    "txtDesc": { "message": "Enregistrer en .txt", "description": "Save as TXT (FR)" },
+    "mdDesc": { "message": "Enregistrer en .md", "description": "Save as MD (FR)" },
+    "pdfDesc": { "message": "Enregistrer en PDF", "description": "Save as PDF (FR)" }
+  },
+  "actions": {
+    "smart": { "message": "Smart", "description": "Smart (FR)" },
+    "text": { "message": "Texte", "description": "Text (FR)" },
+    "markdown": { "message": "Markdown", "description": "Markdown (FR)" },
+    "word": { "message": "Word", "description": "Word (FR)" },
+    "pdfAction": { "message": "PDF", "description": "PDF (FR)" },
+    "labelAction": { "message": "Étiquette", "description": "Label (FR)" },
+    "code": { "message": "Code", "description": "Code (FR)" },
+    "data": { "message": "Données", "description": "Data (FR)" }
+  },
+  "status": {
+    "preparing": { "message": "Préparation de la sauvegarde...", "description": "Preparing (FR)" },
+    "noActiveTab": { "message": "Aucun onglet actif", "description": "No tab (FR)" },
+    "selectText": { "message": "Sélectionnez d'abord du texte", "description": "Select text (FR)" },
+    "savedAs": { "message": "Enregistré en", "description": "Saved as (FR)" },
+    "activating": { "message": "Activation...", "description": "Activating (FR)" },
+    "flashdocActivated": { "message": "FlashDoc activé !", "description": "Activated (FR)" }
+  },
+  "slots": {
+    "sectionTitle": { "message": "Emplacements de Boutons", "description": "Slots (FR)" },
+    "presetSection": { "message": "Préréglages", "description": "Presets (FR)" },
+    "selectPreset": { "message": "— Choisir Préréglage —", "description": "Select preset (FR)" },
+    "applyPreset": { "message": "Appliquer", "description": "Apply (FR)" },
+    "newPreset": { "message": "+ Nouveau", "description": "New (FR)" },
+    "savePreset": { "message": "Enregistrer", "description": "Save (FR)" },
+    "deletePreset": { "message": "Supprimer", "description": "Delete (FR)" },
+    "exportPreset": { "message": "Exporter", "description": "Export (FR)" },
+    "importPreset": { "message": "Importer", "description": "Import (FR)" },
+    "sharePreset": { "message": "Partager", "description": "Share (FR)" },
+    "cancelBtn": { "message": "Annuler", "description": "Cancel (FR)" },
+    "confirmImport": { "message": "Importer", "description": "Import (FR)" },
+    "closeBtn": { "message": "Fermer", "description": "Close (FR)" },
+    "copyBtn": { "message": "Copier", "description": "Copy (FR)" }
+  },
+  "shortcuts": {
+    "sectionTitle": { "message": "Raccourcis de Préfixe", "description": "Shortcuts (FR)" },
+    "addBtn": { "message": "Ajouter", "description": "Add (FR)" },
+    "deleteBtn": { "message": "Supprimer", "description": "Delete (FR)" }
+  },
+  "recommendations": {
+    "mostUsedFormat": { "message": "Format le Plus Utilisé: $format$", "description": "Most used (FR)" },
+    "detectionAccuracy": { "message": "Précision de Détection: $percentage$%", "description": "Accuracy (FR)" }
+  },
+  "rtl": {
+    "warning": { "message": "Support RTL : Hébreu et arabe pris en charge.", "description": "RTL notice (FR)" }
+  }
+}

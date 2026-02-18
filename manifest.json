@@ -1,8 +1,9 @@
 {
   "manifest_version": 3,
-  "name": "FlashDoc - Instant Document Creator",
+  "name": "__MSG_extensionName__",
   "version": "3.0",
-  "description": "⚡ Select → Save → Done. Instant file creation from any text. PDF, Markdown, Code, YAML - all formats, zero friction.",
+  "description": "__MSG_extensionDescription__",
+  "default_locale": "en",
   "permissions": [
     "contextMenus",
     "downloads",
@@ -33,28 +34,28 @@
         "default": "Ctrl+Shift+S",
         "mac": "Command+Shift+S"
       },
-      "description": "Smart save (auto-detect format)"
+      "description": "__MSG_commands.smartDesc__"
     },
     "save-txt": {
       "suggested_key": {
         "default": "Ctrl+Shift+T",
         "mac": "Command+Shift+T"
       },
-      "description": "Save as .txt"
+      "description": "__MSG_commands.txtDesc__"
     },
     "save-md": {
       "suggested_key": {
         "default": "Ctrl+Shift+M",
         "mac": "Command+Shift+M"
       },
-      "description": "Save as .md"
+      "description": "__MSG_commands.mdDesc__"
     },
     "save-pdf": {
       "suggested_key": {
         "default": "Ctrl+Shift+P",
         "mac": "Command+Shift+P"
       },
-      "description": "Save as PDF"
+      "description": "__MSG_commands.pdfDesc__"
     }
   },
   "icons": {

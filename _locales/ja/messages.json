@@ -1,0 +1,99 @@
+{
+  "extensionName": { "message": "FlashDoc - インスタントドキュメント作成", "description": "Extension name (JA)" },
+  "extensionDescription": { "message": "⚡ 選択 → 保存 → 完了。任意テキストから即座にファイルを作成。", "description": "Extension description (JA)" },
+  "popup": {
+    "title": { "message": "FlashDoc", "description": "Popup title (JA)" },
+    "tagline": { "message": "選択 → 保存 → 完了", "description": "Tagline (JA)" },
+    "statusReady": { "message": "準備完了", "description": "Status ready (JA)" },
+    "privacyBannerTitle": { "message": "プライバシーモード有効", "description": "Privacy (JA)" },
+    "activateBtn": { "message": "有効化", "description": "Activate (JA)" },
+    "totalFiles": { "message": "総ファイル数", "description": "Total files (JA)" },
+    "todayLabel": { "message": "今日", "description": "Today (JA)" },
+    "lastSaveLabel": { "message": "最終保存", "description": "Last save (JA)" },
+    "quickSaveTitle": { "message": "クイック保存", "description": "Quick save (JA)" },
+    "shortcutsTitle": { "message": "ショートカット", "description": "Shortcuts (JA)" },
+    "openFolder": { "message": "フォルダを開く", "description": "Open folder (JA)" },
+    "settings": { "message": "設定", "description": "Settings (JA)" },
+    "help": { "message": "ヘルプ", "description": "Help (JA)" },
+    "timeNever": { "message": "なし", "description": "Never (JA)" }
+  },
+  "options": {
+    "pageTitle": { "message": "FlashDoc 設定", "description": "Options (JA)" },
+    "subtitle": { "message": "FlashDocの保存動作をカスタマイズします。", "description": "Subtitle (JA)" },
+    "storageSection": { "message": "ストレージ", "description": "Storage (JA)" },
+    "folderPathLabel": { "message": "デフォルトフォルダ", "description": "Folder (JA)" },
+    "folderPathPlaceholder": { "message": "FlashDocs/", "description": "Folder path (JA)" },
+    "namingPatternLabel": { "message": "命名パターン", "description": "Naming pattern (JA)" },
+    "patternTimestamp": { "message": "タイムスタンプ — flashdoc_YYYY-MM-DD", "description": "Timestamp (JA)" },
+    "patternFirstline": { "message": "選択の1行目", "description": "First line (JA)" },
+    "patternCustom": { "message": "カスタム", "description": "Custom (JA)" },
+    "livePreviewLabel": { "message": "プレビュー", "description": "Preview (JA)" },
+    "organizeByTypeLabel": { "message": "形式で整理", "description": "Organize (JA)" },
+    "applyBtn": { "message": "適用", "description": "Apply (JA)" },
+    "captureSection": { "message": "キャプチャ", "description": "Capture (JA)" },
+    "autoDetectLabel": { "message": "スマート検出", "description": "Auto detect (JA)" },
+    "privacySection": { "message": "プライバシー", "description": "Privacy (JA)" },
+    "privacyModeLabel": { "message": "プライバシーモード", "description": "Privacy mode (JA)" },
+    "interfaceSection": { "message": "インターフェース", "description": "Interface (JA)" },
+    "floatingButtonLabel": { "message": "フローティングボタン", "description": "Floating button (JA)" },
+    "contextMenuSection": { "message": "コンテキストメニュー形式", "description": "Context menu (JA)" },
+    "feedbackSection": { "message": "フィードバック", "description": "Feedback (JA)" },
+    "notificationsLabel": { "message": "通知を表示", "description": "Notifications (JA)" },
+    "trackingSection": { "message": "トラッキングと推奨", "description": "Tracking (JA)" },
+    "resetDefaults": { "message": "すべてリセット", "description": "Reset (JA)" },
+    "savedSuccess": { "message": "保存完了", "description": "Saved (JA)" },
+    "savedError": { "message": "保存失敗", "description": "Save error (JA)" }
+  },
+  "commands": {
+    "smartDesc": { "message": "スマート保存", "description": "Smart save (JA)" },
+    "txtDesc": { "message": ".txtとして保存", "description": "Save as TXT (JA)" },
+    "mdDesc": { "message": ".mdとして保存", "description": "Save as MD (JA)" },
+    "pdfDesc": { "message": "PDFとして保存", "description": "Save as PDF (JA)" }
+  },
+  "actions": {
+    "smart": { "message": "スマート", "description": "Smart (JA)" },
+    "text": { "message": "テキスト", "description": "Text (JA)" },
+    "markdown": { "message": "マークダウン", "description": "Markdown (JA)" },
+    "word": { "message": "Word", "description": "Word (JA)" },
+    "pdfAction": { "message": "PDF", "description": "PDF (JA)" },
+    "labelAction": { "message": "ラベル", "description": "Label (JA)" },
+    "code": { "message": "コード", "description": "Code (JA)" },
+    "data": { "message": "データ", "description": "Data (JA)" }
+  },
+  "status": {
+    "preparing": { "message": "保存準備中...", "description": "Preparing (JA)" },
+    "noActiveTab": { "message": "タブが見つかりません", "description": "No tab (JA)" },
+    "selectText": { "message": "テキストを選択してください", "description": "Select text (JA)" },
+    "savedAs": { "message": "保存形式:", "description": "Saved as (JA)" },
+    "activating": { "message": "有効化中...", "description": "Activating (JA)" },
+    "flashdocActivated": { "message": "FlashDocが有効化されました！", "description": "Activated (JA)" }
+  },
+  "slots": {
+    "sectionTitle": { "message": "ボタンスロット", "description": "Slots (JA)" },
+    "presetSection": { "message": "プリセット", "description": "Presets (JA)" },
+    "selectPreset": { "message": "— プリセットを選択 —", "description": "Select preset (JA)" },
+    "applyPreset": { "message": "適用", "description": "Apply (JA)" },
+    "newPreset": { "message": "+ 新規", "description": "New (JA)" },
+    "savePreset": { "message": "保存", "description": "Save (JA)" },
+    "deletePreset": { "message": "削除", "description": "Delete (JA)" },
+    "exportPreset": { "message": "エクスポート", "description": "Export (JA)" },
+    "importPreset": { "message": "インポート", "description": "Import (JA)" },
+    "sharePreset": { "message": "共有", "description": "Share (JA)" },
+    "cancelBtn": { "message": "キャンセル", "description": "Cancel (JA)" },
+    "confirmImport": { "message": "インポート", "description": "Import (JA)" },
+    "closeBtn": { "message": "閉じる", "description": "Close (JA)" },
+    "copyBtn": { "message": "コピー", "description": "Copy (JA)" }
+  },
+  "shortcuts": {
+    "sectionTitle": { "message": "プレフィックスショートカット", "description": "Shortcuts (JA)" },
+    "addBtn": { "message": "追加", "description": "Add (JA)" },
+    "deleteBtn": { "message": "削除", "description": "Delete (JA)" }
+  },
+  "recommendations": {
+    "mostUsedFormat": { "message": "最も使用される形式: $format$", "description": "Most used (JA)" },
+    "detectionAccuracy": { "message": "検出精度: $percentage$%", "description": "Accuracy (JA)" }
+  },
+  "rtl": {
+    "warning": { "message": "RTLサポート: ヘブライ語とアラビア語に対応。", "description": "RTL notice (JA)" }
+  }
+}
