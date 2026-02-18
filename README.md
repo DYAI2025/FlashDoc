@@ -4,6 +4,24 @@ FlashDoc turns any selected text into instantly downloadable files. Context menu
 
 ## What's New in v3.2
 
+Version 3.2 fixes formatting issues when copying content with lines and special characters to PDF and DOCX, and removes the intrusive corner ball from the default experience.
+
+### Horizontal Rule Support
+Horizontal lines (`<hr>`) copied from web pages are now rendered correctly in PDF and DOCX.
+
+### PDF Special Character Handling
+Box-drawing characters, arrows, Greek letters, check marks, and other Unicode symbols are automatically replaced with readable ASCII alternatives instead of appearing as blank spaces.
+
+### PDF Formatting Fidelity
+Whitespace between formatted text segments is now preserved in PDF output.
+
+### Corner Ball Disabled by Default
+The corner ball no longer appears on every page. The floating save button remains active.
+
+---
+
+## What's New in v3.1
+
 Version 3.2 delivers professional-quality document exports. PDF, DOCX, and Markdown files now preserve formatting, structure, and all selected text reliably.
 
 ### Professional PDF Output
@@ -73,7 +91,7 @@ Run the detection sanity check:
 node scripts/detection-check.js
 ```
 
-Run the v3.0/v3.1 feature tests:
+Run the v3.0/v3.2 feature tests:
 ```bash
 node scripts/v3-features-test.cjs
 ```
@@ -96,13 +114,11 @@ Both scripts exit with code 0 on success, making them suitable for CI pipelines.
 ## Changelog
 
 ### v3.2
-- Professional PDF output with proper margins, H1 underlines, and cross-run word wrapping
-- Professional DOCX output with themed heading styles, Calibri font, and 1.15 line spacing
-- HTML-to-Markdown conversion (headings, bold, italic, code, lists)
-- Smart plain text structuring for unformatted selections
-- Fixed whitespace loss between formatted inline spans
-- Fixed CSS-styled span format stack tracking
-- 140 format quality tests
+- Horizontal rule (`<hr>`) rendering in PDF and DOCX
+- PDF special character fallback (Unicode → ASCII for unsupported glyphs)
+- Preserved whitespace between formatted text segments in PDF
+- Corner ball disabled by default to prevent UI blocking
+- WinAnsi-safe list bullets at all nesting levels
 
 ### v3.1
 - Configurable contextual chip slots (5 buttons, each customizable)
