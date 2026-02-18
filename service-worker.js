@@ -1241,11 +1241,9 @@ class FlashDoc {
       contextMenuFormats: DEFAULT_CONTEXT_MENU_FORMATS,
       // Category Shortcuts: prefix + format combo
       categoryShortcuts: [], // Array of {id, name, format} objects, max 10
-      // Privacy Mode: 'off' | 'on' | 'smart'
-      privacyMode: 'off',
-      // URL patterns for Smart privacy mode
-      privacyPatterns: [],
-      // v3.1: Configurable contextual chip slots
+      // Privacy Mode: on-demand injection only
+      privacyMode: false,
+      // v3.2: Configurable contextual chip slots
       floatingButtonSlots: [
         { type: 'format', format: 'txt' },
         { type: 'format', format: 'md' },

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * FlashDoc v3.0/v3.1 Feature Tests
+ * FlashDoc v3.x Feature Tests
  * Run with: node scripts/v3-features-test.cjs
  *
  * Tests the new features introduced in v3.0:
@@ -13,6 +13,11 @@
  * - Configurable Contextual Chip Slots (5 slots)
  * - Slot Preset Management (up to 5 presets)
  * - Increased MAX_SHORTCUTS (10)
+ *
+ * And v3.2 features:
+ * - Horizontal rule support in PDF/DOCX
+ * - PDF special character fallback (sanitizeTextForPdf)
+ * - Corner ball disabled by default
  */
 
 const fs = require('fs');
@@ -40,7 +45,7 @@ function readFile(filename) {
   return fs.readFileSync(filepath, 'utf-8');
 }
 
-console.log('\n\x1b[1m=== FlashDoc v3.0/v3.1 Feature Tests ===\x1b[0m\n');
+console.log('\n\x1b[1m=== FlashDoc v3.x Feature Tests ===\x1b[0m\n');
 
 // ============================================
 // Test 1: Type Preview & Override (content.js)
