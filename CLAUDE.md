@@ -105,4 +105,4 @@ TypeScript/JavaScript detection explicitly checks `hasHTMLStructure()` first to 
 
 ## Extension Settings (chrome.storage.sync)
 
-Key settings: `folderPath`, `namingPattern`, `organizeByType`, `showFloatingButton`, `showCornerBall`, `contextMenuFormats`, `categoryShortcuts`
+Key settings: `folderPath`, `namingPattern`, `organizeByType`, `showFloatingButton`, `showCornerBall`, `contextMenuFormats`, `categoryShortcuts`, `privacyMode` ('off'|'on'|'smart'), `privacyPatterns` (URL glob array)
