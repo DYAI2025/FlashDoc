@@ -916,8 +916,10 @@ class FlashDoc {
       contextMenuFormats: DEFAULT_CONTEXT_MENU_FORMATS,
       // Category Shortcuts: prefix + format combo
       categoryShortcuts: [], // Array of {id, name, format} objects, max 10
-      // Privacy Mode: on-demand injection only
-      privacyMode: false,
+      // Privacy Mode: 'off' | 'on' | 'smart'
+      privacyMode: 'off',
+      // URL patterns for Smart privacy mode
+      privacyPatterns: [],
       // v3.1: Configurable contextual chip slots
       floatingButtonSlots: [
         { type: 'format', format: 'txt' },
@@ -1040,6 +1042,7 @@ class FlashDoc {
 
   // Update content script registration based on privacy mode
   async updateContentScriptRegistration() {
+    const mode = this.getPrivacyMode();
     try {
       // First, unregister any existing dynamic registration
       try {
@@ -1048,15 +1051,65 @@ class FlashDoc {
         // Ignore if not registered
       }
 
-      // If privacy mode is disabled, register content scripts dynamically
-      // Note: manifest.json still has declarative registration, but we can control behavior
-      if (!this.settings.privacyMode) {
+      if (mode === 'off') {
         console.log('🔓 Privacy mode OFF - content scripts active on all pages');
-      } else {
-        console.log('🔒 Privacy mode ON - on-demand injection only');
+      } else if (mode === 'on') {
+        console.log('🔒 Privacy mode ALWAYS ON - on-demand injection only');
+      } else if (mode === 'smart') {
+        const patterns = this.settings.privacyPatterns || [];
+        console.log(`🧠 Privacy mode SMART - ${patterns.length} URL patterns configured`);
       }
     } catch (error) {
       console.error('Content script registration update failed:', error);
+    }
+  }
+
+  /**
+   * Get normalized privacy mode (handles migration from boolean)
+   * @returns {'off' | 'on' | 'smart'}
+   */
+  getPrivacyMode() {
+    const mode = this.settings.privacyMode;
+    if (mode === true) return 'on';
+    if (mode === false) return 'off';
+    if (['off', 'on', 'smart'].includes(mode)) return mode;
+    return 'off';
+  }
+
+  /**
+   * Check if a URL should have scripts blocked by privacy mode
+   * @param {string} url - The page URL to check
+   * @returns {boolean} - true if scripts should be blocked
+   */
+  isUrlPrivacyBlocked(url) {
+    const mode = this.getPrivacyMode();
+    if (mode === 'off') return false;
+    if (mode === 'on') return true;
+    if (mode === 'smart') {
+      const patterns = this.settings.privacyPatterns || [];
+      return patterns.some(pattern => this.matchUrlPattern(pattern, url));
+    }
+    return false;
+  }
+
+  /**
+   * Match a URL against a wildcard pattern
+   * Supports * as wildcard (matches any sequence of characters)
+   * @param {string} pattern - Glob-style pattern (e.g. *://*.bank.com/*)
+   * @param {string} url - URL to test
+   * @returns {boolean}
+   */
+  matchUrlPattern(pattern, url) {
+    if (!pattern || !url) return false;
+    // Escape regex special chars except *, then convert * to .*
+    const escaped = pattern
+      .replace(/[.+?^${}()|[\]\\]/g, '\\$&')
+      .replace(/\*/g, '.*');
+    try {
+      const regex = new RegExp('^' + escaped + '$', 'i');
+      return regex.test(url);
+    } catch (e) {
+      return false;
     }
   }
 
@@ -1131,7 +1184,14 @@ class FlashDoc {
           });
         return true;
       } else if (message.action === 'getPrivacyMode') {
-        sendResponse({ privacyMode: this.settings.privacyMode });
+        sendResponse({
+          privacyMode: this.getPrivacyMode(),
+          privacyPatterns: this.settings.privacyPatterns || []
+        });
+        return true;
+      } else if (message.action === 'checkPrivacyForUrl') {
+        const blocked = this.isUrlPrivacyBlocked(message.url || '');
+        sendResponse({ blocked, mode: this.getPrivacyMode() });
         return true;
       }
       return true;

@@ -54,8 +54,10 @@ const DEFAULT_SETTINGS = {
   contextMenuFormats: CONTEXT_MENU_OPTIONS.map(option => option.id),
   // Category Shortcuts: prefix + format combo
   categoryShortcuts: [], // Array of {id, name, format} objects, max 10
-  // Privacy Mode: On-demand injection
-  privacyMode: false,
+  // Privacy Mode: 'off' | 'on' | 'smart'
+  privacyMode: 'off',
+  // URL patterns for Smart privacy mode (array of glob strings)
+  privacyPatterns: [],
   // v3.1: Configurable contextual chip slots
   floatingButtonSlots: DEFAULT_SLOTS,
   floatingButtonPresets: [],
@@ -132,6 +134,8 @@ document.addEventListener('DOMContentLoaded', () => {
   loadShortcuts();
   // Live filename preview
   setupFilenamePreview();
+  // Privacy URL pattern manager
+  setupPrivacyPatterns();
   // v3.1: Contextual chip slots and presets
   setupSlotConfiguration();
   setupPresetManagement();
@@ -176,6 +180,14 @@ function setupForm() {
       buttonPositionRow.classList.toggle('hidden', !showFloatingButton.checked);
     };
     showFloatingButton.addEventListener('change', togglePositionVisibility);
+  }
+
+  // Privacy mode selector: show/hide patterns section
+  const privacyModeEl = document.getElementById('privacyMode');
+  if (privacyModeEl) {
+    privacyModeEl.addEventListener('change', () => {
+      updatePrivacyStatus(privacyModeEl.value);
+    });
   }
 
   if (resetButton) {
@@ -238,12 +250,18 @@ async function saveSectionSettings(section) {
       };
       break;
 
-    case 'privacy':
+    case 'privacy': {
+      const modeSelect = document.getElementById('privacyMode');
+      const mode = modeSelect ? modeSelect.value : DEFAULT_SETTINGS.privacyMode;
+      // Read current patterns from storage (they're managed separately via add/delete)
+      const privacyStored = await chrome.storage.sync.get(['privacyPatterns']);
       updates = {
-        privacyMode: form.privacyMode?.checked ?? DEFAULT_SETTINGS.privacyMode
+        privacyMode: mode,
+        privacyPatterns: privacyStored.privacyPatterns || DEFAULT_SETTINGS.privacyPatterns
       };
-      updatePrivacyStatus(updates.privacyMode);
+      updatePrivacyStatus(mode);
       break;
+    }
 
     case 'interface':
       updates = {
@@ -331,7 +349,8 @@ async function readFormSettings(form) {
   settings.trackFormatUsage = form.trackFormatUsage?.checked ?? DEFAULT_SETTINGS.trackFormatUsage;
   settings.trackDetectionAccuracy = form.trackDetectionAccuracy?.checked ?? DEFAULT_SETTINGS.trackDetectionAccuracy;
   settings.showFormatRecommendations = form.showFormatRecommendations?.checked ?? DEFAULT_SETTINGS.showFormatRecommendations;
-  settings.privacyMode = form.privacyMode?.checked ?? DEFAULT_SETTINGS.privacyMode;
+  const privacySelect = document.getElementById('privacyMode');
+  settings.privacyMode = privacySelect ? privacySelect.value : DEFAULT_SETTINGS.privacyMode;
   const selectedFormats = getSelectedContextMenuFormats(form);
   settings.contextMenuFormats = selectedFormats.length ? selectedFormats : DEFAULT_SETTINGS.contextMenuFormats;
 
@@ -362,7 +381,17 @@ function applySettings(settings) {
   if (form.trackFormatUsage) form.trackFormatUsage.checked = merged.trackFormatUsage;
   if (form.trackDetectionAccuracy) form.trackDetectionAccuracy.checked = merged.trackDetectionAccuracy;
   if (form.showFormatRecommendations) form.showFormatRecommendations.checked = merged.showFormatRecommendations;
-  if (form.privacyMode) form.privacyMode.checked = merged.privacyMode;
+  const privacyModeSelect = document.getElementById('privacyMode');
+  if (privacyModeSelect) {
+    // Migration: convert old boolean to new tri-state
+    if (merged.privacyMode === true) {
+      privacyModeSelect.value = 'on';
+    } else if (merged.privacyMode === false) {
+      privacyModeSelect.value = 'off';
+    } else {
+      privacyModeSelect.value = merged.privacyMode || 'off';
+    }
+  }
   setContextMenuFormatSelections(merged.contextMenuFormats);
   updatePrivacyStatus(merged.privacyMode);
 
@@ -722,23 +751,41 @@ async function loadShortcuts() {
 
 // Privacy Mode Status Display
 
-function updatePrivacyStatus(enabled) {
+function updatePrivacyStatus(mode) {
   const statusEl = document.getElementById('privacy-status');
+  const patternsSection = document.getElementById('privacy-patterns-section');
   if (!statusEl) return;
 
-  if (enabled) {
+  // Migration: convert old boolean to new tri-state
+  if (mode === true) mode = 'on';
+  if (mode === false) mode = 'off';
+
+  // Show/hide patterns section
+  if (patternsSection) {
+    patternsSection.classList.toggle('hidden', mode !== 'smart');
+  }
+
+  if (mode === 'on') {
     statusEl.innerHTML = `
       <div class="privacy-badge enabled">
         <span class="badge-icon">🔒</span>
-        <span class="badge-text">Privacy Mode Active</span>
+        <span class="badge-text">Privacy Mode: Always On</span>
       </div>
-      <p class="privacy-note">Content scripts will not run automatically. Use the extension popup or keyboard shortcuts to activate FlashDoc on individual pages.</p>
+      <p class="privacy-note">Content scripts will not run automatically on any page. The extension popup and keyboard shortcuts still work. Click "Activate" in the popup to enable scripts on a specific page.</p>
+    `;
+  } else if (mode === 'smart') {
+    statusEl.innerHTML = `
+      <div class="privacy-badge smart">
+        <span class="badge-icon">🧠</span>
+        <span class="badge-text">Privacy Mode: Smart</span>
+      </div>
+      <p class="privacy-note">Content scripts are blocked on pages matching your URL patterns below. On all other pages, FlashDoc works normally.</p>
     `;
   } else {
     statusEl.innerHTML = `
       <div class="privacy-badge disabled">
         <span class="badge-icon">🌐</span>
-        <span class="badge-text">Standard Mode</span>
+        <span class="badge-text">Privacy Mode: Off</span>
       </div>
       <p class="privacy-note">FlashDoc is active on all pages for instant text selection.</p>
     `;
@@ -1292,6 +1339,156 @@ async function createNewPreset() {
     console.error('[FlashDoc] Create preset error:', error);
     showStatusMessage('Fehler beim Erstellen des Presets.', 'error');
   }
+}
+
+// ============================================
+// Privacy URL Pattern Manager
+// ============================================
+
+const MAX_PATTERNS = 20;
+
+function setupPrivacyPatterns() {
+  const addBtn = document.getElementById('add-pattern-btn');
+  const input = document.getElementById('new-pattern-input');
+
+  if (addBtn) {
+    addBtn.addEventListener('click', addPrivacyPattern);
+  }
+  if (input) {
+    input.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        addPrivacyPattern();
+      }
+    });
+  }
+
+  // Preset buttons
+  document.querySelectorAll('.pattern-preset').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const pattern = btn.dataset.pattern;
+      if (pattern) {
+        addPrivacyPatternValue(pattern);
+      }
+    });
+  });
+
+  // Initial load
+  loadPrivacyPatterns();
+}
+
+async function loadPrivacyPatterns() {
+  const stored = await chrome.storage.sync.get(['privacyPatterns']);
+  const patterns = stored.privacyPatterns || [];
+  renderPatternList(patterns);
+}
+
+function renderPatternList(patterns) {
+  const container = document.getElementById('pattern-list');
+  const countEl = document.getElementById('pattern-count');
+  if (!container) return;
+
+  container.innerHTML = '';
+
+  if (patterns.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <span class="empty-icon">🔒</span>
+        <p>No URL patterns yet. Add patterns above.</p>
+      </div>
+    `;
+    if (countEl) countEl.textContent = `0/${MAX_PATTERNS} Patterns`;
+    updatePatternInputState(0);
+    return;
+  }
+
+  patterns.forEach((pattern, index) => {
+    const item = document.createElement('div');
+    item.className = 'pattern-item';
+    item.innerHTML = `
+      <span class="pattern-icon">🔒</span>
+      <code class="pattern-value">${escapeHtmlForPatterns(pattern)}</code>
+      <button type="button" class="pattern-delete" title="Remove pattern" data-index="${index}">✕</button>
+    `;
+    item.querySelector('.pattern-delete').addEventListener('click', () => {
+      deletePrivacyPattern(index);
+    });
+    container.appendChild(item);
+  });
+
+  if (countEl) {
+    countEl.textContent = `${patterns.length}/${MAX_PATTERNS} Patterns`;
+    countEl.classList.toggle('at-limit', patterns.length >= MAX_PATTERNS);
+  }
+  updatePatternInputState(patterns.length);
+}
+
+function escapeHtmlForPatterns(str) {
+  return str.replace(/[&<>"']/g, (ch) => {
+    const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+    return map[ch] || ch;
+  });
+}
+
+function updatePatternInputState(count) {
+  const input = document.getElementById('new-pattern-input');
+  const addBtn = document.getElementById('add-pattern-btn');
+  const atLimit = count >= MAX_PATTERNS;
+  if (input) input.disabled = atLimit;
+  if (addBtn) addBtn.disabled = atLimit;
+}
+
+async function addPrivacyPattern() {
+  const input = document.getElementById('new-pattern-input');
+  if (!input) return;
+
+  const value = input.value.trim();
+  if (!value) {
+    showStatusMessage('Please enter a URL pattern.', 'error');
+    input.focus();
+    return;
+  }
+
+  await addPrivacyPatternValue(value);
+  input.value = '';
+  input.focus();
+}
+
+async function addPrivacyPatternValue(pattern) {
+  const stored = await chrome.storage.sync.get(['privacyPatterns']);
+  const patterns = stored.privacyPatterns || [];
+
+  if (patterns.length >= MAX_PATTERNS) {
+    showStatusMessage(`Maximum ${MAX_PATTERNS} patterns allowed.`, 'error');
+    return;
+  }
+
+  // Check for duplicates
+  if (patterns.includes(pattern)) {
+    showStatusMessage('This pattern already exists.', 'error');
+    return;
+  }
+
+  patterns.push(pattern);
+  await chrome.storage.sync.set({ privacyPatterns: patterns });
+  renderPatternList(patterns);
+  await refreshBackgroundSettings();
+  notifyContentScripts();
+  showStatusMessage(`Pattern added: ${pattern}`, 'success');
+}
+
+async function deletePrivacyPattern(index) {
+  const stored = await chrome.storage.sync.get(['privacyPatterns']);
+  const patterns = stored.privacyPatterns || [];
+
+  if (index < 0 || index >= patterns.length) return;
+
+  const removed = patterns.splice(index, 1)[0];
+  await chrome.storage.sync.set({ privacyPatterns: patterns });
+  renderPatternList(patterns);
+  await refreshBackgroundSettings();
+  notifyContentScripts();
+  showStatusMessage(`Pattern removed: ${removed}`, 'success');
 }
 
 // Notify all content scripts to update their floating button with new shortcuts
