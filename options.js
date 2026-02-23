@@ -55,7 +55,8 @@ const DEFAULT_SETTINGS = {
   // Category Shortcuts: prefix + format combo
   categoryShortcuts: [], // Array of {id, name, format} objects, max 10
   // Privacy Mode: On-demand injection
-  privacyMode: false,
+  privacyMode: 'off',
+  privacyPatterns: [],
   // v3.2: Configurable contextual chip slots
   floatingButtonSlots: DEFAULT_SLOTS,
   floatingButtonPresets: [],
@@ -1369,6 +1370,21 @@ function setupPrivacyPatterns() {
     });
   });
 
+  // URL test feature
+  const testBtn = document.getElementById('test-url-btn');
+  const testInput = document.getElementById('test-url-input');
+  if (testBtn) {
+    testBtn.addEventListener('click', testUrlAgainstPatterns);
+  }
+  if (testInput) {
+    testInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        testUrlAgainstPatterns();
+      }
+    });
+  }
+
   // Initial load
   loadPrivacyPatterns();
 }
@@ -1434,6 +1450,35 @@ function updatePatternInputState(count) {
   if (addBtn) addBtn.disabled = atLimit;
 }
 
+/**
+ * Validate a URL pattern has correct wildcard syntax
+ * Valid examples: *://*.bank.com/*, *://mail.google.com/*, https://internal.corp/*
+ * @param {string} pattern
+ * @returns {{valid: boolean, reason?: string}}
+ */
+function validateUrlPattern(pattern) {
+  if (!pattern || typeof pattern !== 'string') {
+    return { valid: false, reason: 'Pattern cannot be empty.' };
+  }
+  if (pattern.length > 200) {
+    return { valid: false, reason: 'Pattern too long (max 200 characters).' };
+  }
+  // Must contain at least a protocol-like prefix or wildcard
+  if (!/^(\*|https?):\/\//.test(pattern) && !pattern.startsWith('*://')) {
+    return { valid: false, reason: 'Pattern must start with a protocol (e.g. *://, https://, http://).' };
+  }
+  // Must have a hostname part after ://
+  const afterProtocol = pattern.replace(/^(\*|https?):\/\//, '');
+  if (!afterProtocol || afterProtocol === '*') {
+    return { valid: false, reason: 'Pattern must include a hostname (e.g. *://*.example.com/*).' };
+  }
+  // Reject patterns that would match everything (just *://*/*)
+  if (/^\*:\/\/\*\/\*$/.test(pattern)) {
+    return { valid: false, reason: 'Pattern too broad — would match all URLs. Be more specific.' };
+  }
+  return { valid: true };
+}
+
 async function addPrivacyPattern() {
   const input = document.getElementById('new-pattern-input');
   if (!input) return;
@@ -1441,6 +1486,13 @@ async function addPrivacyPattern() {
   const value = input.value.trim();
   if (!value) {
     showStatusMessage('Please enter a URL pattern.', 'error');
+    input.focus();
+    return;
+  }
+
+  const validation = validateUrlPattern(value);
+  if (!validation.valid) {
+    showStatusMessage(validation.reason, 'error');
     input.focus();
     return;
   }
@@ -1485,6 +1537,50 @@ async function deletePrivacyPattern(index) {
   await refreshBackgroundSettings();
   notifyContentScripts();
   showStatusMessage(`Pattern removed: ${removed}`, 'success');
+}
+
+/**
+ * Match a URL against a wildcard pattern (same logic as service-worker.js)
+ * @param {string} pattern - Glob-style pattern (e.g. *://*.bank.com/*)
+ * @param {string} url - URL to test
+ * @returns {boolean}
+ */
+function matchUrlPattern(pattern, url) {
+  if (!pattern || !url) return false;
+  const escaped = pattern
+    .replace(/[.+?^${}()|[\]\\]/g, '\\$&')
+    .replace(/\*/g, '.*');
+  try {
+    return new RegExp('^' + escaped + '$', 'i').test(url);
+  } catch (e) {
+    return false;
+  }
+}
+
+async function testUrlAgainstPatterns() {
+  const input = document.getElementById('test-url-input');
+  const resultEl = document.getElementById('pattern-test-result');
+  if (!input || !resultEl) return;
+
+  const url = input.value.trim();
+  if (!url) {
+    resultEl.classList.add('hidden');
+    return;
+  }
+
+  const stored = await chrome.storage.sync.get(['privacyPatterns']);
+  const patterns = stored.privacyPatterns || [];
+
+  const matchingPattern = patterns.find(p => matchUrlPattern(p, url));
+
+  resultEl.classList.remove('hidden');
+  if (matchingPattern) {
+    resultEl.className = 'pattern-test-result test-blocked';
+    resultEl.innerHTML = `<span class="test-icon">🔒</span> <strong>Blocked</strong> — matches pattern: <code>${escapeHtmlForPatterns(matchingPattern)}</code>`;
+  } else {
+    resultEl.className = 'pattern-test-result test-allowed';
+    resultEl.innerHTML = `<span class="test-icon">✅</span> <strong>Allowed</strong> — no pattern matches this URL.`;
+  }
 }
 
 // Notify all content scripts to update their floating button with new shortcuts

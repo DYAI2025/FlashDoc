@@ -353,6 +353,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Check privacy mode and show activation banner if needed
+  const privacyReasonEl = document.getElementById('privacy-reason');
   const checkPrivacyMode = async () => {
     try {
       const tab = await queryActiveTab();
@@ -365,6 +366,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (response && response.blocked) {
         privacyBanner.classList.remove('hidden');
+        // Show reason for blocking
+        if (privacyReasonEl) {
+          if (response.mode === 'on') {
+            privacyReasonEl.textContent = 'Always On — scripts paused on all pages';
+          } else if (response.mode === 'smart' && response.matchedPattern) {
+            privacyReasonEl.textContent = `Smart match: ${response.matchedPattern}`;
+          } else {
+            privacyReasonEl.textContent = 'Click to activate FlashDoc on this page';
+          }
+        }
       } else {
         privacyBanner.classList.add('hidden');
       }

@@ -677,6 +677,10 @@ kbd {
 .privacy-text span {
   font-size: 10px;
   color: var(--text-muted);
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .activate-btn {

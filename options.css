@@ -740,6 +740,75 @@ body {
   color: var(--danger);
 }
 
+/* URL Pattern Test */
+.pattern-test-section {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.pattern-test-section h4 {
+  font-size: 13px;
+  font-weight: 600;
+  margin: 0 0 4px;
+  color: var(--text);
+}
+
+.pattern-test-form {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.pattern-test-form input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--input-bg);
+  color: var(--text);
+  font-size: 12px;
+}
+
+.pattern-test-form input:focus {
+  outline: none;
+  border-color: var(--primary-gold);
+}
+
+.pattern-test-result {
+  margin-top: 10px;
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pattern-test-result.test-blocked {
+  background: rgba(255, 107, 107, 0.1);
+  border: 1px solid rgba(255, 107, 107, 0.3);
+  color: var(--danger);
+}
+
+.pattern-test-result.test-allowed {
+  background: rgba(52, 211, 153, 0.1);
+  border: 1px solid rgba(52, 211, 153, 0.3);
+  color: var(--success, #34d399);
+}
+
+.pattern-test-result code {
+  background: rgba(0, 0, 0, 0.15);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 11px;
+}
+
+.test-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
 /* Recommendations Panel */
 .recommendations-panel {
   margin-top: 16px;

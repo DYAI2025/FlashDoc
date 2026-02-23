@@ -134,6 +134,17 @@
           <div class="pattern-footer">
             <span class="pattern-count" id="pattern-count">0/20 Patterns</span>
           </div>
+
+          <!-- URL Test Tool -->
+          <div class="pattern-test-section">
+            <h4>Test a URL</h4>
+            <p class="help">Check if a URL would be blocked by your patterns.</p>
+            <div class="pattern-test-form">
+              <input type="text" id="test-url-input" placeholder="e.g. https://banking.example.com/dashboard" maxlength="500">
+              <button type="button" class="btn secondary small" id="test-url-btn">Test</button>
+            </div>
+            <div class="pattern-test-result hidden" id="pattern-test-result"></div>
+          </div>
         </div>
 
         <div class="section-actions">

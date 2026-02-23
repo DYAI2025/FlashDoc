@@ -1242,7 +1242,8 @@ class FlashDoc {
       // Category Shortcuts: prefix + format combo
       categoryShortcuts: [], // Array of {id, name, format} objects, max 10
       // Privacy Mode: on-demand injection only
-      privacyMode: false,
+      privacyMode: 'off',
+      privacyPatterns: [],
       // v3.2: Configurable contextual chip slots
       floatingButtonSlots: [
         { type: 'format', format: 'txt' },
@@ -1513,8 +1514,15 @@ class FlashDoc {
         });
         return true;
       } else if (message.action === 'checkPrivacyForUrl') {
-        const blocked = this.isUrlPrivacyBlocked(message.url || '');
-        sendResponse({ blocked, mode: this.getPrivacyMode() });
+        const url = message.url || '';
+        const mode = this.getPrivacyMode();
+        const blocked = this.isUrlPrivacyBlocked(url);
+        let matchedPattern = null;
+        if (mode === 'smart' && blocked) {
+          const patterns = this.settings.privacyPatterns || [];
+          matchedPattern = patterns.find(p => this.matchUrlPattern(p, url)) || null;
+        }
+        sendResponse({ blocked, mode, matchedPattern });
         return true;
       }
       return true;
