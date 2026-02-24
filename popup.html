@@ -6,8 +6,9 @@
     <title>FlashDoc - Zero Friction File Creation</title>
     <link rel="stylesheet" href="popup.css">
     <link rel="stylesheet" href="_locales/rtl.css">
+    <script src="sync-manager.js"></script>
     <script src="i18n.js"></script>
-</head>
+    <script src="popup.js"></script>
 <body>
     <div class="container">
         <!-- Animated Header -->
@@ -20,8 +21,12 @@
                 </div>
             </div>
             <div class="status-indicator">
-                <span class="status-dot"></span>
-                <span class="status-text">__MSG_popup.statusReady__</span>
+                <span class="status-dot" id="sync-dot"></span>
+                <span class="status-text" id="sync-status">__MSG_popup.statusReady__</span>
+            </div>
+            <div class="sync-indicator" id="sync-indicator" title="__MSG_popup.syncTooltip__">
+                <span class="sync-icon">🔄</span>
+                <span class="sync-text" id="sync-text">__MSG_popup.syncSynced__</span>
             </div>
         </header>
 

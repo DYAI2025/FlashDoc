@@ -193,6 +193,58 @@ body::after {
   color: var(--success);
 }
 
+/* Sync Indicator */
+.sync-indicator {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: rgba(96, 165, 250, 0.1);
+  border: 1px solid rgba(96, 165, 250, 0.3);
+  border-radius: 12px;
+  font-size: 10px;
+  color: var(--accent);
+  cursor: help;
+  transition: all 0.3s ease;
+}
+
+.sync-indicator.synced {
+  background: rgba(52, 211, 153, 0.1);
+  border-color: rgba(52, 211, 153, 0.3);
+}
+
+.sync-indicator.syncing {
+  background: rgba(251, 191, 36, 0.1);
+  border-color: rgba(251, 191, 36, 0.3);
+}
+
+.sync-indicator.syncing .sync-icon {
+  animation: spin 1s linear infinite;
+}
+
+.sync-indicator.offline {
+  background: rgba(156, 163, 175, 0.1);
+  border-color: rgba(156, 163, 175, 0.3);
+}
+
+.sync-indicator.error {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.sync-icon {
+  font-size: 10px;
+}
+
+.sync-text {
+  font-weight: 500;
+}
+
 /* Stats Dashboard */
 .stats-dashboard {
   display: grid;

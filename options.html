@@ -66,6 +66,43 @@
         </div>
       </section>
 
+      <!-- Sync & Datenschutz Sektion -->
+      <section class="options-card">
+        <h2>__MSG_options.syncSection__</h2>
+        <div class="sync-status-panel">
+          <div class="sync-indicator-display" id="sync-status-display">
+            <span class="sync-badge synced" id="sync-badge">
+              <span class="sync-icon">🔄</span>
+              <span class="sync-label" id="sync-label">__MSG_options.syncSynced__</span>
+            </span>
+            <span class="sync-time" id="sync-time">__MSG_options.syncNever__</span>
+          </div>
+          <div class="sync-actions">
+            <button type="button" class="btn secondary small" id="force-sync-btn">__MSG_options.syncNowBtn__</button>
+            <button type="button" class="btn secondary small" id="export-sync-btn">__MSG_options.exportSyncBtn__</button>
+            <button type="button" class="btn secondary small" id="import-sync-btn">__MSG_options.importSyncBtn__</button>
+          </div>
+        </div>
+        
+        <div class="privacy-info-panel">
+          <h3>__MSG_options.privacyInfoTitle__</h3>
+          <div class="privacy-section">
+            <h4>✅ __MSG_options.privacySyncedTitle__</h4>
+            <p class="privacy-desc">__MSG_options.privacySyncedDesc__</p>
+            <ul class="privacy-keys" id="synced-keys-list">
+              <!-- Wird durch JS gefüllt -->
+            </ul>
+          </div>
+          <div class="privacy-section">
+            <h4>💾 __MSG_options.privacyLocalTitle__</h4>
+            <p class="privacy-desc">__MSG_options.privacyLocalDesc__</p>
+            <ul class="privacy-keys" id="local-keys-list">
+              <!-- Wird durch JS gefüllt -->
+            </ul>
+          </div>
+        </div>
+      </section>
+
       <section class="options-card">
         <h2>__MSG_options.captureSection__</h2>
         <div class="toggle">
@@ -361,6 +398,7 @@
     </form>
   </main>
 
+  <script src="sync-manager.js"></script>
   <script src="options.js"></script>
 </body>
 </html>

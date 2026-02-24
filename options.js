@@ -135,6 +135,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // v3.1: Contextual chip slots and presets
   setupSlotConfiguration();
   setupPresetManagement();
+  // Sync Manager UI
+  setupSyncUI();
 });
 
 function renderVersion() {
@@ -1593,4 +1595,156 @@ async function notifyContentScripts() {
   } catch (error) {
     console.warn('Could not notify content scripts:', error);
   }
+}
+
+// ============================================
+// Sync Manager UI Functions
+// ============================================
+
+function setupSyncUI() {
+  // Initialize Sync Manager
+  const syncStatus = SyncManager.getStatus();
+  
+  // Update sync status display
+  updateSyncStatusDisplay(syncStatus);
+  
+  // Populate privacy keys
+  populatePrivacyKeys();
+  
+  // Setup button handlers
+  const forceSyncBtn = document.getElementById('force-sync-btn');
+  const exportSyncBtn = document.getElementById('export-sync-btn');
+  const importSyncBtn = document.getElementById('import-sync-btn');
+  
+  if (forceSyncBtn) {
+    forceSyncBtn.addEventListener('click', handleForceSync);
+  }
+  
+  if (exportSyncBtn) {
+    exportSyncBtn.addEventListener('click', handleExportSync);
+  }
+  
+  if (importSyncBtn) {
+    importSyncBtn.addEventListener('click', handleImportSync);
+  }
+  
+  // Listen for sync events
+  window.addEventListener('flashdoc-sync', (e) => {
+    const { event, status } = e.detail;
+    if (event === 'status' || event === 'sync') {
+      updateSyncStatusDisplay(SyncManager.getStatus());
+    }
+  });
+}
+
+function updateSyncStatusDisplay(status) {
+  const syncBadge = document.getElementById('sync-badge');
+  const syncLabel = document.getElementById('sync-label');
+  const syncTime = document.getElementById('sync-time');
+  
+  if (!syncBadge || !syncLabel || !syncTime) return;
+  
+  // Determine status class
+  let statusClass = 'synced';
+  let statusText = chrome.i18n.getMessage('syncSynced') || 'Synced';
+  
+  if (status.isSyncing) {
+    statusClass = 'syncing';
+    statusText = chrome.i18n.getMessage('syncSyncing') || 'Syncing...';
+  } else if (status.error) {
+    statusClass = status.error === 'offline' ? 'offline' : 'error';
+    statusText = status.error === 'offline' 
+      ? (chrome.i18n.getMessage('syncOffline') || 'Offline')
+      : (chrome.i18n.getMessage('syncError') || 'Sync Error');
+  }
+  
+  syncBadge.className = 'sync-badge ' + statusClass;
+  syncLabel.textContent = statusText;
+  
+  // Update time
+  if (status.lastSyncFormatted && status.lastSyncFormatted !== 'Nie') {
+    syncTime.textContent = status.lastSyncFormatted;
+  } else {
+    syncTime.textContent = chrome.i18n.getMessage('syncNever') || 'Never synced';
+  }
+}
+
+function populatePrivacyKeys() {
+  const privacyInfo = SyncManager.getPrivacyInfo();
+  
+  const syncedKeysList = document.getElementById('synced-keys-list');
+  const localKeysList = document.getElementById('local-keys-list');
+  
+  if (syncedKeysList) {
+    syncedKeysList.innerHTML = privacyInfo.synced.keys
+      .map(key => `<li>${key}</li>`)
+      .join('');
+  }
+  
+  if (localKeysList) {
+    localKeysList.innerHTML = privacyInfo.localOnly.keys
+      .map(key => `<li>${key}</li>`)
+      .join('');
+  }
+}
+
+async function handleForceSync() {
+  const result = await SyncManager.forceSync();
+  if (result.success) {
+    showStatusMessage('Synchronisierung erfolgreich.', 'success');
+  } else {
+    showStatusMessage('Synchronisierung fehlgeschlagen: ' + result.error, 'error');
+  }
+}
+
+async function handleExportSync() {
+  try {
+    const data = await SyncManager.exportSyncData();
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `flashdoc-sync-backup-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    
+    URL.revokeObjectURL(url);
+    showStatusMessage('Einstellungen exportiert.', 'success');
+  } catch (error) {
+    showStatusMessage('Export fehlgeschlagen: ' + error.message, 'error');
+  }
+}
+
+async function handleImportSync() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json';
+  
+  input.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+      
+      const result = await SyncManager.importSyncData(data);
+      if (result.success) {
+        // Reload settings
+        await loadSettings();
+        await renderSlotDropdowns();
+        await renderPresetSelector();
+        await loadShortcuts();
+        await refreshBackgroundSettings();
+        
+        showStatusMessage(`${result.importedKeys.length} Einstellungen importiert.`, 'success');
+      } else {
+        showStatusMessage('Import fehlgeschlagen: ' + result.error, 'error');
+      }
+    } catch (error) {
+      showStatusMessage('Import fehlgeschlagen: Ungültiges Format.', 'error');
+    }
+  });
+  
+  input.click();
 }

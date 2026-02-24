@@ -1149,3 +1149,122 @@ body {
     flex-wrap: wrap;
   }
 }
+
+/* Sync Status Panel */
+.sync-status-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.sync-indicator-display {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sync-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.sync-badge.synced {
+  background: rgba(52, 211, 153, 0.15);
+  border: 1px solid rgba(52, 211, 153, 0.4);
+  color: var(--success);
+}
+
+.sync-badge.syncing {
+  background: rgba(251, 191, 36, 0.15);
+  border: 1px solid rgba(251, 191, 36, 0.4);
+  color: #f6ad55;
+}
+
+.sync-badge.syncing .sync-icon {
+  animation: spin 1s linear infinite;
+}
+
+.sync-badge.offline {
+  background: rgba(156, 163, 175, 0.15);
+  border: 1px solid rgba(156, 163, 175, 0.4);
+  color: var(--muted);
+}
+
+.sync-badge.error {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #ef4444;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.sync-time {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.sync-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Privacy Info Panel */
+.privacy-info-panel {
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+}
+
+.privacy-info-panel h3 {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: var(--text);
+}
+
+.privacy-section {
+  margin-bottom: 16px;
+}
+
+.privacy-section h4 {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: var(--text);
+}
+
+.privacy-desc {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.privacy-keys {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.privacy-keys li {
+  font-size: 11px;
+  padding: 4px 8px;
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+  color: var(--muted);
+  font-family: monospace;
+}

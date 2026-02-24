@@ -45,6 +45,26 @@
       "message": "Last Save",
       "description": "Last save label"
     },
+    "syncTooltip": {
+      "message": "Sync status: settings are synchronized across devices",
+      "description": "Sync tooltip"
+    },
+    "syncSynced": {
+      "message": "Synced",
+      "description": "Sync status: synced"
+    },
+    "syncSyncing": {
+      "message": "Syncing...",
+      "description": "Sync status: syncing"
+    },
+    "syncOffline": {
+      "message": "Offline",
+      "description": "Sync status: offline"
+    },
+    "syncError": {
+      "message": "Sync Error",
+      "description": "Sync status: error"
+    },
     "quickSaveTitle": {
       "message": "Quick Save",
       "description": "Quick save section title"
@@ -183,6 +203,58 @@
     "applyBtn": {
       "message": "Apply",
       "description": "Apply button"
+    },
+    "syncSection": {
+      "message": "Sync & Device Sharing",
+      "description": "Sync section title"
+    },
+    "syncSynced": {
+      "message": "Synced",
+      "description": "Sync status synced"
+    },
+    "syncSyncing": {
+      "message": "Syncing...",
+      "description": "Sync status syncing"
+    },
+    "syncOffline": {
+      "message": "Offline",
+      "description": "Sync status offline"
+    },
+    "syncNever": {
+      "message": "Never synced",
+      "description": "Sync never happened"
+    },
+    "syncNowBtn": {
+      "message": "Sync Now",
+      "description": "Force sync button"
+    },
+    "exportSyncBtn": {
+      "message": "Export",
+      "description": "Export sync data button"
+    },
+    "importSyncBtn": {
+      "message": "Import",
+      "description": "Import sync data button"
+    },
+    "privacyInfoTitle": {
+      "message": "What gets synced?",
+      "description": "Privacy info title"
+    },
+    "privacySyncedTitle": {
+      "message": "Synced across devices",
+      "description": "Synced items title"
+    },
+    "privacySyncedDesc": {
+      "message": "These settings are synchronized with your other devices:",
+      "description": "Synced items description"
+    },
+    "privacyLocalTitle": {
+      "message": "Stored locally only",
+      "description": "Local items title"
+    },
+    "privacyLocalDesc": {
+      "message": "These data points stay on this device:",
+      "description": "Local items description"
     },
     "captureSection": {
       "message": "Capture intelligence",

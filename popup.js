@@ -43,6 +43,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const statusIndicator = document.querySelector('.status-indicator');
   const statusDot = document.querySelector('.status-dot');
   const statusText = document.querySelector('.status-text');
+  const syncIndicator = document.getElementById('sync-indicator');
+  const syncText = document.getElementById('sync-text');
   const recentList = document.getElementById('recent-list');
   const quickButtons = document.querySelectorAll('.action-card');
   const openFolderBtn = document.getElementById('open-folder');
@@ -52,6 +54,34 @@ document.addEventListener('DOMContentLoaded', () => {
   const activateBtn = document.getElementById('activate-btn');
   const repeatActionBtn = document.getElementById('repeat-action-btn');
   const repeatTypeEl = document.getElementById('repeat-type');
+
+  // Initialize Sync Manager
+  const syncStatus = SyncManager.getStatus();
+  const updateSyncIndicator = (status) => {
+    if (!syncIndicator || !syncText) return;
+    
+    syncIndicator.className = 'sync-indicator ' + status;
+    const messages = {
+      synced: chrome.i18n.getMessage('syncSynced') || 'Synced',
+      syncing: chrome.i18n.getMessage('syncSyncing') || 'Syncing...',
+      offline: chrome.i18n.getMessage('syncOffline') || 'Offline',
+      error: chrome.i18n.getMessage('syncError') || 'Sync Error'
+    };
+    syncText.textContent = messages[status] || messages.synced;
+  };
+  
+  // Set initial sync status
+  updateSyncIndicator(syncStatus.error ? 'offline' : 'synced');
+  
+  // Listen for sync events
+  window.addEventListener('flashdoc-sync', (e) => {
+    const { event, status } = e.detail;
+    if (event === 'status') {
+      updateSyncIndicator(status.status);
+    } else if (event === 'sync') {
+      updateSyncIndicator('synced');
+    }
+  });
 
   // Store last action for repeat functionality
   let lastActionData = null;
