@@ -2,7 +2,7 @@
 
 **Datum:** 2026-02-23  
 **Branch:** `feature/i18n-preparation`  
-**Task:** FlashDoc — Storage-Sync für Multi-Device Support
+**Commit:** `80dba57` (lokal) - Push fehlgeschlagen (GitHub-Auth erforderlich)
 
 ---
 

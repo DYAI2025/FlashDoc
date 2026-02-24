@@ -689,6 +689,51 @@ const CONTEXT_MENU_ITEMS = [
   { id: 'saveas', title: '\uD83D\uDCC1 Save As\u2026', saveAs: true }
 ];
 
+// Standalone MarkdownRenderer at module level
+const MarkdownRenderer = (function() {
+  function formatRun(run) {
+    if (!run || !run.text) return '';
+    let text = run.text;
+    if (run.code) text = '`' + text + '`';
+    if (run.bold && run.italic) text = '***' + text + '***';
+    else if (run.bold) text = '**' + text + '**';
+    else if (run.italic) text = '*' + text + '*';
+    if (run.strikethrough) text = '~~' + text + '~~';
+    return text;
+  }
+
+  function renderToMarkdown(blocks) {
+    if (!blocks || blocks.length === 0) return '';
+    const lines = [];
+    for (const block of blocks) {
+      if (!block.runs || block.runs.length === 0) continue;
+      const blockText = block.runs.map(r => r.text).join('');
+      if (!blockText.trim()) continue;
+      const formattedRuns = block.runs.map(formatRun);
+      const formattedText = formattedRuns.join('');
+      switch (block.type) {
+        case 'heading':
+          const headingLevel = block.level || 1;
+          lines.push('#'.repeat(headingLevel) + ' ' + formattedText);
+          break;
+        case 'list-item':
+          const indent = '  '.repeat(Math.max(0, (block.listLevel || 0) - 1));
+          if (block.listType === 'ordered') lines.push(indent + (block.listIndex || 1) + '. ' + formattedText);
+          else lines.push(indent + '- ' + formattedText);
+          break;
+        case 'blockquote':
+          for (const q of formattedText.split('\n')) lines.push('> ' + q);
+          break;
+        default:
+          lines.push(formattedText);
+      }
+      lines.push('');
+    }
+    return lines.join('\n');
+  }
+  return { renderToMarkdown };
+})();
+
 const DEFAULT_CONTEXT_MENU_FORMATS = CONTEXT_MENU_ITEMS.map(item => item.id);
 
 class FlashDoc {
@@ -1357,14 +1402,34 @@ class FlashDoc {
     }
 
     if (extension === 'md') {
-      // Normalize line endings to Unix-style for Markdown
-      const normalizedContent = content.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-      const blob = new Blob([normalizedContent], { type: 'text/markdown;charset=utf-8' });
+      // Use proper markdown conversion with structure preservation
+      const blob = this.createMdBlob(content, html);
       return { blob, mimeType: 'text/markdown;charset=utf-8' };
+    }
+
+    // Use structure-preserving conversion for txt if HTML available
+    if (extension === 'txt' && html && html.trim()) {
+      const tokens = HtmlTokenizer.tokenize(html);
+      const blocks = BlockBuilder.build(tokens);
+      const text = blocks.map(b => b.runs.map(r => r.text).join('')).join('\n\n');
+      return { blob: new Blob([text], { type: 'text/plain;charset=utf-8' }), mimeType: 'text/plain;charset=utf-8' };
     }
 
     const mimeType = mimeTypes[extension] || 'text/plain;charset=utf-8';
     return { blob: new Blob([content], { type: mimeType }), mimeType };
+  }
+
+  // Create markdown with proper structure preservation
+  createMdBlob(content, html = '') {
+    let markdown;
+    if (html && html.trim()) {
+      const tokens = HtmlTokenizer.tokenize(html);
+      const blocks = BlockBuilder.build(tokens);
+      markdown = MarkdownRenderer.renderToMarkdown(blocks);
+    } else {
+      markdown = content;
+    }
+    return new Blob([markdown.replace(/\r\n/g, '\n').replace(/\r/g, '\n')], { type: 'text/markdown;charset=utf-8' });
   }
 
   async prepareDownloadUrl(blob, mimeType) {
