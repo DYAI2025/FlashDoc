@@ -9,14 +9,14 @@ class FlashDocContent {
     this.cornerBall = null; // F3: Separate corner ball element
     this.settings = {
       showFloatingButton: true,
-      showCornerBall: true, // F3: Corner ball visibility setting
+      showCornerBall: false, // F3: Corner ball visibility setting (disabled by default)
       buttonPosition: 'bottom-right',
       autoHideButton: true,
       selectionThreshold: 10,
       enableContextMenu: true,
       enableSmartDetection: true,
       categoryShortcuts: [], // Category shortcuts: {id, name, format}
-      // v3.1: Configurable contextual chip slots
+      // v3.2: Configurable contextual chip slots
       floatingButtonSlots: [
         { type: 'format', format: 'txt' },
         { type: 'format', format: 'md' },
@@ -25,7 +25,7 @@ class FlashDocContent {
         { type: 'format', format: 'saveas' }
       ]
     };
-    // v3.1: Format icons and labels for dynamic slots
+    // v3.2: Format icons and labels for dynamic slots
     this.FORMAT_ICONS = {
       txt: '📄', md: '📝', docx: '📜', pdf: '📕', json: '🧩',
       js: '🟡', ts: '🔵', py: '🐍', html: '🌐', css: '🎨',
@@ -46,8 +46,25 @@ class FlashDocContent {
 
   async init() {
     await this.loadSettings();
-    this.setupSelectionListener();
+
+    // Privacy mode: check if this page is blocked
+    this.privacyBlocked = false;
+    this.privacyActivated = false;
+    const privacyCheck = await this.checkPrivacyMode();
+
+    // Always set up message listener (needed for activation commands)
     this.setupMessageListener();
+
+    if (privacyCheck.blocked) {
+      this.privacyBlocked = true;
+      // In split-mode: don't attach selection listeners or UI
+      // The extension popup and keyboard shortcuts still work
+      this.injectStyles(); // Styles needed for toast messages
+      console.log('🔒 FlashDoc privacy mode: scripts paused on this page');
+      return;
+    }
+
+    this.setupSelectionListener();
     this.setupKeyboardShortcuts();
     this.injectStyles();
 
@@ -61,6 +78,46 @@ class FlashDocContent {
     }
 
     console.log('⚡ FlashDoc content script initialized');
+  }
+
+  /**
+   * Check with the service worker whether this page is privacy-blocked
+   * @returns {Promise<{blocked: boolean, mode: string}>}
+   */
+  async checkPrivacyMode() {
+    try {
+      const response = await this.safeSendMessage({
+        action: 'checkPrivacyForUrl',
+        url: window.location.href
+      }, { retries: 1, delay: 100 });
+      return response || { blocked: false, mode: 'off' };
+    } catch (e) {
+      // If service worker is unavailable, default to not blocked
+      return { blocked: false, mode: 'off' };
+    }
+  }
+
+  /**
+   * Activate FlashDoc on a privacy-blocked page (split-mode activation)
+   */
+  activateOnPage() {
+    if (this.privacyActivated) return;
+    this.privacyActivated = true;
+    this.privacyBlocked = false;
+
+    // Now initialize all the UI and listeners that were skipped
+    this.setupSelectionListener();
+    this.setupKeyboardShortcuts();
+
+    if (this.settings.showFloatingButton) {
+      this.createFloatingButton();
+    }
+    if (this.settings.showCornerBall) {
+      this.createCornerBall();
+    }
+
+    this.showToast('⚡ FlashDoc activated on this page', 'success');
+    console.log('⚡ FlashDoc activated on privacy-blocked page');
   }
 
   // F3: Corner Ball - Draggable corner icon
@@ -626,7 +683,7 @@ class FlashDocContent {
       });
     });
 
-    // v3.1: Handle slot button clicks (format or shortcut)
+    // v3.2: Handle slot button clicks (format or shortcut)
     button.querySelectorAll('.flashdoc-ctx-options button').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -667,7 +724,7 @@ class FlashDocContent {
     });
   }
 
-  // v3.1: Render dynamic slot buttons for contextual chip
+  // v3.2: Render dynamic slot buttons for contextual chip
   renderSlotButtons() {
     const slots = this.settings.floatingButtonSlots || [];
     const shortcuts = this.settings.categoryShortcuts || [];
@@ -1187,9 +1244,35 @@ class FlashDocContent {
     chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       if (request.action === 'getSelection') {
         sendResponse({ text: window.getSelection().toString() });
+      } else if (request.action === 'activateOnPage') {
+        // Split-mode: explicitly activate scripts on this page
+        this.activateOnPage();
+        sendResponse({ success: true });
       } else if (request.action === 'updateSettings') {
-        this.loadSettings().then(() => {
-          // Rebuild floating button to include new shortcuts and slot config
+        this.loadSettings().then(async () => {
+          // Re-check privacy mode — the mode or patterns might have changed
+          const privacyCheck = await this.checkPrivacyMode();
+          if (privacyCheck.blocked && !this.privacyActivated) {
+            // Became blocked: tear down UI
+            if (this.floatingButton) {
+              this.floatingButton.remove();
+              this.floatingButton = null;
+            }
+            if (this.cornerBall) {
+              this.cornerBall.remove();
+              this.cornerBall = null;
+            }
+            this.privacyBlocked = true;
+            return;
+          }
+
+          if (!privacyCheck.blocked && this.privacyBlocked && !this.privacyActivated) {
+            // Was blocked, now unblocked: activate
+            this.activateOnPage();
+            return;
+          }
+
+          // Normal settings update: rebuild floating button
           this.rebuildFloatingButton();
           // Update corner ball
           if (this.settings.showCornerBall && !this.cornerBall) {
@@ -1203,7 +1286,7 @@ class FlashDocContent {
       return true;
     });
 
-    // v3.1: Listen for storage changes to update slots in real-time
+    // v3.2: Listen for storage changes to update slots in real-time
     chrome.storage.onChanged.addListener((changes) => {
       if (changes.floatingButtonSlots || changes.categoryShortcuts) {
         this.loadSettings().then(() => {

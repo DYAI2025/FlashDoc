@@ -1,3 +1,32 @@
+### v3.2 - Release Notes
+
+- Professional PDF output: proper margins, H1 underlines, segment-based word wrapping for mixed formatting
+- Professional DOCX output: Calibri font, themed heading colors, 1.15 line spacing, Word-native list numbering
+- HTML-to-Markdown conversion: headings, bold/italic/code/strikethrough, ordered and unordered lists
+- Smart plain text structuring: auto-detects titles, ALL CAPS headers, bullet/numbered lists, paragraphs
+- Fixed whitespace loss between formatted inline spans (e.g. bold + space + italic)
+- Fixed CSS-styled span format stack not releasing on close
+- Run merging to reduce text fragmentation
+- 140 format quality tests covering the full pipeline
+
+
+### v3.1 - Release Notes
+
+- Configurable contextual chip slots (5 buttons, each customizable)
+- Slot presets for switching between different button layouts
+- Increased prefix shortcuts from 5 to 10
+- Live slot updates—changes in settings apply immediately
+- Fallback handling for deleted shortcuts in slot configurations
+
+
+### v3.0 - Release Notes
+
+- Added format override dropdown in the floating save UI
+- Added live filename preview in the options page
+- Added privacy mode for on-demand script injection
+- Added repeat last action button in the popup
+- Extended stats tracking with format type and content preview
+- Improved recent file display with format icons and badges
 
 
 

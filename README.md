@@ -1,25 +1,47 @@
-# FlashDoc Chrome Extension v3.1
+# FlashDoc Chrome Extension v3.2
 
 FlashDoc turns any selected text into instantly downloadable files. Context menus, keyboard shortcuts, and a floating action button let you save snippets without leaving the page.
 
-## What's New in v3.1
+## What's New in v3.2
 
-Version 3.1 focuses on customization. You now control exactly which buttons appear when you select text.
+Version 3.2 fixes formatting issues when copying content with lines and special characters to PDF and DOCX, and removes the intrusive corner ball from the default experience.
 
-### Customizable Quick-Save Buttons
-The five buttons that pop up near your selection are now fully configurable. Each slot can be a format (like PDF or Markdown), one of your saved shortcuts, or disabled entirely. Set them up once in the options page—they update everywhere instantly.
+### Horizontal Rule Support
+Horizontal lines (`<hr>`) copied from web pages are now rendered correctly in PDF and DOCX.
 
-### Slot Presets
-Save different button layouts for different workflows. A preset for writing might show Markdown and DOCX, while a coding preset shows JS, Python, and JSON. Switch between up to five presets without reconfiguring anything.
+### PDF Special Character Handling
+Box-drawing characters, arrows, Greek letters, check marks, and other Unicode symbols are automatically replaced with readable ASCII alternatives instead of appearing as blank spaces.
 
-### More Shortcuts
-The prefix shortcut limit increased from 5 to 10. Create more category-based save actions like "Meeting Notes + .md" or "Code Review + .txt" for one-click organized saving.
+### PDF Formatting Fidelity
+Whitespace between formatted text segments is now preserved in PDF output.
+
+### Corner Ball Disabled by Default
+The corner ball no longer appears on every page. The floating save button remains active.
 
 ---
 
-## What's New in v3.0
+## What's New in v3.1
 
-These features shipped in the previous release:
+Version 3.2 delivers professional-quality document exports. PDF, DOCX, and Markdown files now preserve formatting, structure, and all selected text reliably.
+
+### Professional PDF Output
+PDFs now have proper margins, heading hierarchy with H1 underlines, and segment-based word wrapping that handles mixed bold/italic text on the same line without overflow.
+
+### Professional DOCX Output
+Word documents use Calibri font, themed heading colors, 1.15 line spacing, and real Word numbering for lists. Plain text is automatically structured with detected headings and lists.
+
+### HTML-to-Markdown Conversion
+Markdown export now actually converts HTML formatting: headings become `#` syntax, bold/italic become `**`/`*`, lists become `-` and `1.` items. Previously it just saved raw text.
+
+### Smart Plain Text Structuring
+When selected text has no HTML formatting, FlashDoc detects structure automatically: first lines become titles, ALL CAPS lines become section headers, bullet and numbered lists are recognized.
+
+### Formatting Pipeline Fixes
+Spaces between formatted spans (e.g. `<b>Hello</b> <i>World</i>`) are no longer dropped. CSS-styled spans now properly track formatting. Runs are merged to reduce fragmentation.
+
+---
+
+## Previous Releases
 
 ### Format Override Before Saving
 The floating save button now shows a dropdown where you can change the detected format before downloading. If FlashDoc guesses Markdown but you need a PDF, just pick the right format from the menu. No more saving first and converting later.
@@ -69,9 +91,14 @@ Run the detection sanity check:
 node scripts/detection-check.js
 ```
 
-Run the v3.0/v3.1 feature tests:
+Run the v3.0/v3.2 feature tests:
 ```bash
 node scripts/v3-features-test.cjs
+```
+
+Run the v3.2 format quality tests:
+```bash
+node scripts/format-quality-test.cjs
 ```
 
 Both scripts exit with code 0 on success, making them suitable for CI pipelines.
@@ -85,6 +112,13 @@ Both scripts exit with code 0 on success, making them suitable for CI pipelines.
 - `scripts/` – Test scripts for detection and feature verification
 
 ## Changelog
+
+### v3.2
+- Horizontal rule (`<hr>`) rendering in PDF and DOCX
+- PDF special character fallback (Unicode → ASCII for unsupported glyphs)
+- Preserved whitespace between formatted text segments in PDF
+- Corner ball disabled by default to prevent UI blocking
+- WinAnsi-safe list bullets at all nesting levels
 
 ### v3.1
 - Configurable contextual chip slots (5 buttons, each customizable)

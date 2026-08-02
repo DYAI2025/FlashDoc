@@ -19,7 +19,7 @@ const CONTEXT_MENU_OPTIONS = [
   { id: 'saveas', label: 'Save As…', description: 'Pick folder & filename each time', emoji: '📁' }
 ];
 
-// v3.1 Constants (must be defined before DEFAULT_SETTINGS)
+// v3.2 Constants (must be defined before DEFAULT_SETTINGS)
 const MAX_SHORTCUTS = 10;
 const MAX_SLOTS = 5;
 const MAX_PRESETS = 5;
@@ -43,7 +43,7 @@ const DEFAULT_SETTINGS = {
   autoDetectType: true,
   enableContextMenu: true,
   showFloatingButton: true,
-  showCornerBall: true, // F3: Corner ball visibility
+  showCornerBall: false, // F3: Corner ball visibility (disabled by default)
   buttonPosition: 'bottom-right',
   autoHideButton: true,
   selectionThreshold: 10,
@@ -55,8 +55,9 @@ const DEFAULT_SETTINGS = {
   // Category Shortcuts: prefix + format combo
   categoryShortcuts: [], // Array of {id, name, format} objects, max 10
   // Privacy Mode: On-demand injection
-  privacyMode: false,
-  // v3.1: Configurable contextual chip slots
+  privacyMode: 'off',
+  privacyPatterns: [],
+  // v3.2: Configurable contextual chip slots
   floatingButtonSlots: DEFAULT_SLOTS,
   floatingButtonPresets: [],
   activeFloatingButtonPresetId: null
@@ -132,7 +133,7 @@ document.addEventListener('DOMContentLoaded', () => {
   loadShortcuts();
   // Live filename preview
   setupFilenamePreview();
-  // v3.1: Contextual chip slots and presets
+  // v3.2: Contextual chip slots and presets
   setupSlotConfiguration();
   setupPresetManagement();
   // Sync Manager UI
@@ -178,6 +179,14 @@ function setupForm() {
       buttonPositionRow.classList.toggle('hidden', !showFloatingButton.checked);
     };
     showFloatingButton.addEventListener('change', togglePositionVisibility);
+  }
+
+  // Privacy mode selector: show/hide patterns section
+  const privacyModeEl = document.getElementById('privacyMode');
+  if (privacyModeEl) {
+    privacyModeEl.addEventListener('change', () => {
+      updatePrivacyStatus(privacyModeEl.value);
+    });
   }
 
   if (resetButton) {
@@ -240,12 +249,18 @@ async function saveSectionSettings(section) {
       };
       break;
 
-    case 'privacy':
+    case 'privacy': {
+      const modeSelect = document.getElementById('privacyMode');
+      const mode = modeSelect ? modeSelect.value : DEFAULT_SETTINGS.privacyMode;
+      // Read current patterns from storage (they're managed separately via add/delete)
+      const privacyStored = await chrome.storage.sync.get(['privacyPatterns']);
       updates = {
-        privacyMode: form.privacyMode?.checked ?? DEFAULT_SETTINGS.privacyMode
+        privacyMode: mode,
+        privacyPatterns: privacyStored.privacyPatterns || DEFAULT_SETTINGS.privacyPatterns
       };
-      updatePrivacyStatus(updates.privacyMode);
+      updatePrivacyStatus(mode);
       break;
+    }
 
     case 'interface':
       updates = {
@@ -333,7 +348,8 @@ async function readFormSettings(form) {
   settings.trackFormatUsage = form.trackFormatUsage?.checked ?? DEFAULT_SETTINGS.trackFormatUsage;
   settings.trackDetectionAccuracy = form.trackDetectionAccuracy?.checked ?? DEFAULT_SETTINGS.trackDetectionAccuracy;
   settings.showFormatRecommendations = form.showFormatRecommendations?.checked ?? DEFAULT_SETTINGS.showFormatRecommendations;
-  settings.privacyMode = form.privacyMode?.checked ?? DEFAULT_SETTINGS.privacyMode;
+  const privacySelect = document.getElementById('privacyMode');
+  settings.privacyMode = privacySelect ? privacySelect.value : DEFAULT_SETTINGS.privacyMode;
   const selectedFormats = getSelectedContextMenuFormats(form);
   settings.contextMenuFormats = selectedFormats.length ? selectedFormats : DEFAULT_SETTINGS.contextMenuFormats;
 
@@ -364,7 +380,17 @@ function applySettings(settings) {
   if (form.trackFormatUsage) form.trackFormatUsage.checked = merged.trackFormatUsage;
   if (form.trackDetectionAccuracy) form.trackDetectionAccuracy.checked = merged.trackDetectionAccuracy;
   if (form.showFormatRecommendations) form.showFormatRecommendations.checked = merged.showFormatRecommendations;
-  if (form.privacyMode) form.privacyMode.checked = merged.privacyMode;
+  const privacyModeSelect = document.getElementById('privacyMode');
+  if (privacyModeSelect) {
+    // Migration: convert old boolean to new tri-state
+    if (merged.privacyMode === true) {
+      privacyModeSelect.value = 'on';
+    } else if (merged.privacyMode === false) {
+      privacyModeSelect.value = 'off';
+    } else {
+      privacyModeSelect.value = merged.privacyMode || 'off';
+    }
+  }
   setContextMenuFormatSelections(merged.contextMenuFormats);
   updatePrivacyStatus(merged.privacyMode);
 
@@ -724,23 +750,41 @@ async function loadShortcuts() {
 
 // Privacy Mode Status Display
 
-function updatePrivacyStatus(enabled) {
+function updatePrivacyStatus(mode) {
   const statusEl = document.getElementById('privacy-status');
+  const patternsSection = document.getElementById('privacy-patterns-section');
   if (!statusEl) return;
 
-  if (enabled) {
+  // Migration: convert old boolean to new tri-state
+  if (mode === true) mode = 'on';
+  if (mode === false) mode = 'off';
+
+  // Show/hide patterns section
+  if (patternsSection) {
+    patternsSection.classList.toggle('hidden', mode !== 'smart');
+  }
+
+  if (mode === 'on') {
     statusEl.innerHTML = `
       <div class="privacy-badge enabled">
         <span class="badge-icon">🔒</span>
-        <span class="badge-text">Privacy Mode Active</span>
+        <span class="badge-text">Privacy Mode: Always On</span>
       </div>
-      <p class="privacy-note">Content scripts will not run automatically. Use the extension popup or keyboard shortcuts to activate FlashDoc on individual pages.</p>
+      <p class="privacy-note">Content scripts will not run automatically on any page. The extension popup and keyboard shortcuts still work. Click "Activate" in the popup to enable scripts on a specific page.</p>
+    `;
+  } else if (mode === 'smart') {
+    statusEl.innerHTML = `
+      <div class="privacy-badge smart">
+        <span class="badge-icon">🧠</span>
+        <span class="badge-text">Privacy Mode: Smart</span>
+      </div>
+      <p class="privacy-note">Content scripts are blocked on pages matching your URL patterns below. On all other pages, FlashDoc works normally.</p>
     `;
   } else {
     statusEl.innerHTML = `
       <div class="privacy-badge disabled">
         <span class="badge-icon">🌐</span>
-        <span class="badge-text">Standard Mode</span>
+        <span class="badge-text">Privacy Mode: Off</span>
       </div>
       <p class="privacy-note">FlashDoc is active on all pages for instant text selection.</p>
     `;
@@ -842,7 +886,7 @@ function normalizeFolderPath(path) {
 }
 
 // ============================================
-// v3.1: Contextual Chip Slot Configuration
+// v3.2: Contextual Chip Slot Configuration
 // ============================================
 
 const FORMAT_LABELS = {
@@ -1000,7 +1044,7 @@ async function saveSlotConfiguration() {
 }
 
 // ============================================
-// v3.1: Preset Management
+// v3.2: Preset Management
 // ============================================
 
 function setupPresetManagement() {
@@ -1320,262 +1364,247 @@ async function createNewPreset() {
 }
 
 // ============================================
-// v3.2: Preset Import/Export/Share
+// Privacy URL Pattern Manager
 // ============================================
 
-/**
- * Generate a unique preset ID with timestamp and random suffix
- */
-function generatePresetId() {
-  const timestamp = Date.now().toString(36);
-  const random = Math.random().toString(36).substring(2, 6);
-  return `preset_${timestamp}_${random}`;
+const MAX_PATTERNS = 20;
+
+function setupPrivacyPatterns() {
+  const addBtn = document.getElementById('add-pattern-btn');
+  const input = document.getElementById('new-pattern-input');
+
+  if (addBtn) {
+    addBtn.addEventListener('click', addPrivacyPattern);
+  }
+  if (input) {
+    input.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        addPrivacyPattern();
+      }
+    });
+  }
+
+  // Preset buttons
+  document.querySelectorAll('.pattern-preset').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const pattern = btn.dataset.pattern;
+      if (pattern) {
+        addPrivacyPatternValue(pattern);
+      }
+    });
+  });
+
+  // URL test feature
+  const testBtn = document.getElementById('test-url-btn');
+  const testInput = document.getElementById('test-url-input');
+  if (testBtn) {
+    testBtn.addEventListener('click', testUrlAgainstPatterns);
+  }
+  if (testInput) {
+    testInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        testUrlAgainstPatterns();
+      }
+    });
+  }
+
+  // Initial load
+  loadPrivacyPatterns();
 }
 
-/**
- * Export selected preset to JSON
- */
-async function exportSelectedPreset() {
-  const selector = document.getElementById('preset-selector');
-  if (!selector || !selector.value) {
-    showStatusMessage('Wähle zuerst ein Preset zum Exportieren aus.', 'error');
+async function loadPrivacyPatterns() {
+  const stored = await chrome.storage.sync.get(['privacyPatterns']);
+  const patterns = stored.privacyPatterns || [];
+  renderPatternList(patterns);
+}
+
+function renderPatternList(patterns) {
+  const container = document.getElementById('pattern-list');
+  const countEl = document.getElementById('pattern-count');
+  if (!container) return;
+
+  container.innerHTML = '';
+
+  if (patterns.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <span class="empty-icon">🔒</span>
+        <p>No URL patterns yet. Add patterns above.</p>
+      </div>
+    `;
+    if (countEl) countEl.textContent = `0/${MAX_PATTERNS} Patterns`;
+    updatePatternInputState(0);
     return;
   }
 
-  try {
-    const presetId = selector.value;
-    const stored = await chrome.storage.sync.get(['floatingButtonPresets']);
-    const presets = stored.floatingButtonPresets || [];
+  patterns.forEach((pattern, index) => {
+    const item = document.createElement('div');
+    item.className = 'pattern-item';
+    item.innerHTML = `
+      <span class="pattern-icon">🔒</span>
+      <code class="pattern-value">${escapeHtmlForPatterns(pattern)}</code>
+      <button type="button" class="pattern-delete" title="Remove pattern" data-index="${index}">✕</button>
+    `;
+    item.querySelector('.pattern-delete').addEventListener('click', () => {
+      deletePrivacyPattern(index);
+    });
+    container.appendChild(item);
+  });
 
-    const preset = presets.find(p => p && p.id === presetId);
-    if (!preset) {
-      showStatusMessage('Preset nicht gefunden.', 'error');
-      return;
-    }
-
-    // Create exportable preset object
-    const exportData = {
-      version: '3.2',
-      exportedAt: new Date().toISOString(),
-      name: preset.name,
-      slots: preset.slots
-    };
-
-    const jsonString = JSON.stringify(exportData, null, 2);
-    showExportModal('Preset exportieren', jsonString);
-
-    console.log('[FlashDoc] Preset exported:', preset.name);
-  } catch (error) {
-    console.error('[FlashDoc] Export preset error:', error);
-    showStatusMessage('Fehler beim Exportieren des Presets.', 'error');
+  if (countEl) {
+    countEl.textContent = `${patterns.length}/${MAX_PATTERNS} Patterns`;
+    countEl.classList.toggle('at-limit', patterns.length >= MAX_PATTERNS);
   }
+  updatePatternInputState(patterns.length);
+}
+
+function escapeHtmlForPatterns(str) {
+  return str.replace(/[&<>"']/g, (ch) => {
+    const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+    return map[ch] || ch;
+  });
+}
+
+function updatePatternInputState(count) {
+  const input = document.getElementById('new-pattern-input');
+  const addBtn = document.getElementById('add-pattern-btn');
+  const atLimit = count >= MAX_PATTERNS;
+  if (input) input.disabled = atLimit;
+  if (addBtn) addBtn.disabled = atLimit;
 }
 
 /**
- * Share preset - copy preset string to clipboard
+ * Validate a URL pattern has correct wildcard syntax
+ * Valid examples: *://*.bank.com/*, *://mail.google.com/*, https://internal.corp/*
+ * @param {string} pattern
+ * @returns {{valid: boolean, reason?: string}}
  */
-async function shareSelectedPreset() {
-  const selector = document.getElementById('preset-selector');
-  if (!selector || !selector.value) {
-    showStatusMessage('Wähle zuerst ein Preset zum Teilen aus.', 'error');
+function validateUrlPattern(pattern) {
+  if (!pattern || typeof pattern !== 'string') {
+    return { valid: false, reason: 'Pattern cannot be empty.' };
+  }
+  if (pattern.length > 200) {
+    return { valid: false, reason: 'Pattern too long (max 200 characters).' };
+  }
+  // Must contain at least a protocol-like prefix or wildcard
+  if (!/^(\*|https?):\/\//.test(pattern) && !pattern.startsWith('*://')) {
+    return { valid: false, reason: 'Pattern must start with a protocol (e.g. *://, https://, http://).' };
+  }
+  // Must have a hostname part after ://
+  const afterProtocol = pattern.replace(/^(\*|https?):\/\//, '');
+  if (!afterProtocol || afterProtocol === '*') {
+    return { valid: false, reason: 'Pattern must include a hostname (e.g. *://*.example.com/*).' };
+  }
+  // Reject patterns that would match everything (just *://*/*)
+  if (/^\*:\/\/\*\/\*$/.test(pattern)) {
+    return { valid: false, reason: 'Pattern too broad — would match all URLs. Be more specific.' };
+  }
+  return { valid: true };
+}
+
+async function addPrivacyPattern() {
+  const input = document.getElementById('new-pattern-input');
+  if (!input) return;
+
+  const value = input.value.trim();
+  if (!value) {
+    showStatusMessage('Please enter a URL pattern.', 'error');
+    input.focus();
     return;
   }
 
+  const validation = validateUrlPattern(value);
+  if (!validation.valid) {
+    showStatusMessage(validation.reason, 'error');
+    input.focus();
+    return;
+  }
+
+  await addPrivacyPatternValue(value);
+  input.value = '';
+  input.focus();
+}
+
+async function addPrivacyPatternValue(pattern) {
+  const stored = await chrome.storage.sync.get(['privacyPatterns']);
+  const patterns = stored.privacyPatterns || [];
+
+  if (patterns.length >= MAX_PATTERNS) {
+    showStatusMessage(`Maximum ${MAX_PATTERNS} patterns allowed.`, 'error');
+    return;
+  }
+
+  // Check for duplicates
+  if (patterns.includes(pattern)) {
+    showStatusMessage('This pattern already exists.', 'error');
+    return;
+  }
+
+  patterns.push(pattern);
+  await chrome.storage.sync.set({ privacyPatterns: patterns });
+  renderPatternList(patterns);
+  await refreshBackgroundSettings();
+  notifyContentScripts();
+  showStatusMessage(`Pattern added: ${pattern}`, 'success');
+}
+
+async function deletePrivacyPattern(index) {
+  const stored = await chrome.storage.sync.get(['privacyPatterns']);
+  const patterns = stored.privacyPatterns || [];
+
+  if (index < 0 || index >= patterns.length) return;
+
+  const removed = patterns.splice(index, 1)[0];
+  await chrome.storage.sync.set({ privacyPatterns: patterns });
+  renderPatternList(patterns);
+  await refreshBackgroundSettings();
+  notifyContentScripts();
+  showStatusMessage(`Pattern removed: ${removed}`, 'success');
+}
+
+/**
+ * Match a URL against a wildcard pattern (same logic as service-worker.js)
+ * @param {string} pattern - Glob-style pattern (e.g. *://*.bank.com/*)
+ * @param {string} url - URL to test
+ * @returns {boolean}
+ */
+function matchUrlPattern(pattern, url) {
+  if (!pattern || !url) return false;
+  const escaped = pattern
+    .replace(/[.+?^${}()|[\]\\]/g, '\\$&')
+    .replace(/\*/g, '.*');
   try {
-    const presetId = selector.value;
-    const stored = await chrome.storage.sync.get(['floatingButtonPresets']);
-    const presets = stored.floatingButtonPresets || [];
-
-    const preset = presets.find(p => p && p.id === presetId);
-    if (!preset) {
-      showStatusMessage('Preset nicht gefunden.', 'error');
-      return;
-    }
-
-    // Create compact shareable string (base64 encoded JSON)
-    const exportData = {
-      v: '3.2', // version (compact)
-      n: preset.name, // name
-      s: preset.slots // slots
-    };
-
-    const jsonString = JSON.stringify(exportData);
-    const base64String = btoa(encodeURIComponent(jsonString).replace(/%([0-9A-F]{2})/g,
-      function toSolidBytes(match, p1) {
-        return String.fromCharCode('0x' + p1);
-    }));
-
-    const shareString = `FlashDocPreset:${base64String}`;
-
-    try {
-      await navigator.clipboard.writeText(shareString);
-      showStatusMessage('Preset-String in Zwischenablage kopiert!', 'success');
-    } catch (clipboardError) {
-      // Fallback: show in modal
-      showExportModal('Preset-String kopieren', shareString);
-    }
-
-    console.log('[FlashDoc] Preset shared:', preset.name);
-  } catch (error) {
-    console.error('[FlashDoc] Share preset error:', error);
-    showStatusMessage('Fehler beim Teilen des Presets.', 'error');
+    return new RegExp('^' + escaped + '$', 'i').test(url);
+  } catch (e) {
+    return false;
   }
 }
 
-/**
- * Show import modal
- */
-function showImportModal() {
-  const modal = document.getElementById('import-modal');
-  const textarea = document.getElementById('import-textarea');
-  if (modal && textarea) {
-    textarea.value = '';
-    modal.showModal();
-    textarea.focus();
-  }
-}
+async function testUrlAgainstPatterns() {
+  const input = document.getElementById('test-url-input');
+  const resultEl = document.getElementById('pattern-test-result');
+  if (!input || !resultEl) return;
 
-/**
- * Show export/share modal
- */
-function showExportModal(title, content) {
-  const modal = document.getElementById('export-modal');
-  const titleEl = document.getElementById('export-modal-title');
-  const textarea = document.getElementById('export-textarea');
-  if (modal && titleEl && textarea) {
-    titleEl.textContent = title;
-    textarea.value = content;
-    modal.showModal();
-  }
-}
-
-/**
- * Setup modal event listeners
- */
-function setupModalEventListeners() {
-  // Import modal
-  const importModal = document.getElementById('import-modal');
-  const importCancel = document.getElementById('import-cancel');
-  const importConfirm = document.getElementById('import-confirm');
-  const importTextarea = document.getElementById('import-textarea');
-
-  if (importCancel && importModal) {
-    importCancel.addEventListener('click', () => importModal.close());
+  const url = input.value.trim();
+  if (!url) {
+    resultEl.classList.add('hidden');
+    return;
   }
 
-  if (importConfirm && importModal && importTextarea) {
-    importConfirm.addEventListener('click', async () => {
-      const jsonString = importTextarea.value.trim();
-      if (jsonString) {
-        await importPreset(jsonString);
-        importModal.close();
-      }
-    });
-  }
+  const stored = await chrome.storage.sync.get(['privacyPatterns']);
+  const patterns = stored.privacyPatterns || [];
 
-  // Export modal
-  const exportModal = document.getElementById('export-modal');
-  const exportClose = document.getElementById('export-close');
-  const exportCopy = document.getElementById('export-copy');
-  const exportTextarea = document.getElementById('export-textarea');
+  const matchingPattern = patterns.find(p => matchUrlPattern(p, url));
 
-  if (exportClose && exportModal) {
-    exportClose.addEventListener('click', () => exportModal.close());
-  }
-
-  if (exportCopy && exportTextarea) {
-    exportCopy.addEventListener('click', async () => {
-      try {
-        await navigator.clipboard.writeText(exportTextarea.value);
-        showStatusMessage('In Zwischenablage kopiert!', 'success');
-      } catch (error) {
-        showStatusMessage('Kopieren fehlgeschlagen.', 'error');
-      }
-    });
-  }
-
-  // Close modals on backdrop click
-  if (importModal) {
-    importModal.addEventListener('click', (e) => {
-      if (e.target === importModal) importModal.close();
-    });
-  }
-  if (exportModal) {
-    exportModal.addEventListener('click', (e) => {
-      if (e.target === exportModal) exportModal.close();
-    });
-  }
-}
-
-/**
- * Import preset from JSON string
- */
-async function importPreset(jsonString) {
-  try {
-    let presetData;
-
-    // Try to parse as direct JSON first
-    try {
-      presetData = JSON.parse(jsonString);
-    } catch {
-      // Try to parse as share string (base64)
-      const sharePrefix = 'FlashDocPreset:';
-      if (jsonString.startsWith(sharePrefix)) {
-        const base64 = jsonString.substring(sharePrefix.length);
-        const decoded = decodeURIComponent(atob(base64).split('').map(function(c) {
-          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-        }).join(''));
-        presetData = JSON.parse(decoded);
-      } else {
-        throw new Error('Ungültiges Format');
-      }
-    }
-
-    // Validate preset data
-    if (!presetData.name) {
-      showStatusMessage('Preset muss einen Namen haben.', 'error');
-      return;
-    }
-
-    if (!presetData.slots || !Array.isArray(presetData.slots)) {
-      showStatusMessage('Preset muss Slots enthalten.', 'error');
-      return;
-    }
-
-    // Get existing presets
-    const stored = await chrome.storage.sync.get(['floatingButtonPresets', 'categoryShortcuts']);
-    const shortcuts = stored.categoryShortcuts || [];
-    const existingPresets = stored.floatingButtonPresets || [];
-
-    if (existingPresets.length >= MAX_PRESETS) {
-      showStatusMessage(`Maximal ${MAX_PRESETS} Presets erlaubt. Bitte erst löschen.`, 'error');
-      return;
-    }
-
-    // Create new preset with new ID
-    const newPreset = {
-      id: generatePresetId(),
-      name: presetData.name,
-      slots: normalizeSlots(presetData.slots, shortcuts),
-      importedAt: Date.now(),
-      originalName: presetData.name // Keep original name in case of import
-    };
-
-    // Add to existing presets
-    const updatedPresets = [...existingPresets, newPreset];
-
-    await chrome.storage.sync.set({
-      floatingButtonPresets: updatedPresets,
-      activeFloatingButtonPresetId: newPreset.id
-    });
-
-    await renderPresetSelector();
-    showStatusMessage(`Preset "${newPreset.name}" importiert und aktiviert.`, 'success');
-
-    console.log('[FlashDoc] Preset imported:', newPreset.name, 'from:', presetData.name);
-  } catch (error) {
-    console.error('[FlashDoc] Import preset error:', error);
-    showStatusMessage('Fehler beim Importieren: Ungültiges Preset-Format.', 'error');
+  resultEl.classList.remove('hidden');
+  if (matchingPattern) {
+    resultEl.className = 'pattern-test-result test-blocked';
+    resultEl.innerHTML = `<span class="test-icon">🔒</span> <strong>Blocked</strong> — matches pattern: <code>${escapeHtmlForPatterns(matchingPattern)}</code>`;
+  } else {
+    resultEl.className = 'pattern-test-result test-allowed';
+    resultEl.innerHTML = `<span class="test-icon">✅</span> <strong>Allowed</strong> — no pattern matches this URL.`;
   }
 }
 

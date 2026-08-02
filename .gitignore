@@ -11,6 +11,17 @@ dist/
 # Archives
 *.zip
 
+# Accidental venv / non-extension files
+path/
+love-languages-quiz.jsx
+*.jsx
+
+# Claude agent configs (not part of extension)
+.claude/
+
+# Docs (not part of extension)
+docs/
+
 # Legacy/Drafts
 brainstorm_ergebnis*.md
 artifacts_.md
