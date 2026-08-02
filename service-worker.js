@@ -202,7 +202,7 @@ const HtmlTokenizer = (function() {
  */
 const BlockBuilder = (function() {
   // Block-level tags that create new blocks
-  const BLOCK_TAGS = new Set(['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'li', 'div', 'blockquote', 'pre', 'tr']);
+  const BLOCK_TAGS = new Set(['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'li', 'div', 'blockquote', 'pre', 'tr', 'td', 'th']);
   
   // Inline formatting tags → property name
   const INLINE_FORMAT_MAP = {
@@ -215,7 +215,7 @@ const BlockBuilder = (function() {
   };
 
   // List container tags
-  const LIST_CONTAINERS = new Set(['ul', 'ol']);
+  const LIST_CONTAINERS = new Set(['ul', 'ol', 'li']);
 
   /**
    * Parse CSS style attribute for formatting
@@ -346,6 +346,31 @@ const BlockBuilder = (function() {
       currentBlock = null;
     }
 
+    /**
+     * Start a new list item
+     */
+    function startListItem() {
+      finalizeBlock();
+      const listCtx = listStack[listStack.length - 1] || { type: 'bullet', index: -1 };
+      
+      // Increment counter for ordered lists
+      if (listCtx.type === 'ordered') {
+        listCtx.index++;
+      } else {
+        // For bullet lists, increment but don't use the number
+        listCtx.index++;
+      }
+      
+      currentBlock = {
+        type: 'list-item',
+        listType: listCtx.type,
+        listLevel: Math.max(0, listStack.length - 1),
+        listIndex: listCtx.index,
+        runs: []
+      };
+      blocks.push(currentBlock);
+    }
+
     // Process each token in order (preserving document order!)
     for (const token of tokens) {
       if (token.type === 'open') {
@@ -363,18 +388,7 @@ const BlockBuilder = (function() {
         }
         // List items - create new block
         else if (tag === 'li') {
-          finalizeBlock();
-          const listCtx = listStack[listStack.length - 1] || { type: 'bullet', index: -1 };
-          listCtx.index++;
-          
-          currentBlock = {
-            type: 'list-item',
-            listType: listCtx.type,
-            listLevel: listStack.length - 1,
-            listIndex: listCtx.index,
-            runs: []
-          };
-          blocks.push(currentBlock);
+          startListItem();
         }
         // Headings
         else if (/^h([1-6])$/.test(tag)) {
@@ -425,11 +439,13 @@ const BlockBuilder = (function() {
         const tag = token.tag;
 
         // List container closes
-        if (LIST_CONTAINERS.has(tag)) {
-          listStack.pop();
-          if (listStack.length === 0) {
-            finalizeBlock(); // Exit list context
+        if (tag === 'ul' || tag === 'ol') {
+          // Pop the list container
+          if (listStack.length > 0) {
+            listStack.pop();
           }
+          // Exit list context
+          finalizeBlock();
         }
         // Block element closes
         else if (tag === 'li' || /^h[1-6]$/.test(tag) || BLOCK_TAGS.has(tag)) {
@@ -1186,6 +1202,51 @@ const CONTEXT_MENU_ITEMS = [
   { id: 'saveas', title: '\uD83D\uDCC1 Save As\u2026', saveAs: true }
 ];
 
+// Standalone MarkdownRenderer at module level
+const MarkdownRenderer = (function() {
+  function formatRun(run) {
+    if (!run || !run.text) return '';
+    let text = run.text;
+    if (run.code) text = '`' + text + '`';
+    if (run.bold && run.italic) text = '***' + text + '***';
+    else if (run.bold) text = '**' + text + '**';
+    else if (run.italic) text = '*' + text + '*';
+    if (run.strikethrough) text = '~~' + text + '~~';
+    return text;
+  }
+
+  function renderToMarkdown(blocks) {
+    if (!blocks || blocks.length === 0) return '';
+    const lines = [];
+    for (const block of blocks) {
+      if (!block.runs || block.runs.length === 0) continue;
+      const blockText = block.runs.map(r => r.text).join('');
+      if (!blockText.trim()) continue;
+      const formattedRuns = block.runs.map(formatRun);
+      const formattedText = formattedRuns.join('');
+      switch (block.type) {
+        case 'heading':
+          const headingLevel = block.level || 1;
+          lines.push('#'.repeat(headingLevel) + ' ' + formattedText);
+          break;
+        case 'list-item':
+          const indent = '  '.repeat(Math.max(0, (block.listLevel || 0) - 1));
+          if (block.listType === 'ordered') lines.push(indent + (block.listIndex || 1) + '. ' + formattedText);
+          else lines.push(indent + '- ' + formattedText);
+          break;
+        case 'blockquote':
+          for (const q of formattedText.split('\n')) lines.push('> ' + q);
+          break;
+        default:
+          lines.push(formattedText);
+      }
+      lines.push('');
+    }
+    return lines.join('\n');
+  }
+  return { renderToMarkdown };
+})();
+
 const DEFAULT_CONTEXT_MENU_FORMATS = CONTEXT_MENU_ITEMS.map(item => item.id);
 
 class FlashDoc {
@@ -1556,12 +1617,13 @@ class FlashDoc {
 
   /**
    * Get HTML selection from tab and save
+   * IMPROVED: Better HTML extraction with multiple strategies for structure preservation
    */
   async getHtmlSelectionAndSave(fallbackText, type, tab) {
     let html = '';
     let text = fallbackText;
-    
-    // Try to get HTML from the tab
+
+    // Try to get HTML from the tab with improved extraction
     if (tab && tab.id) {
       try {
         const [result] = await chrome.scripting.executeScript({
@@ -1569,12 +1631,85 @@ class FlashDoc {
           func: () => {
             const sel = window.getSelection();
             if (!sel || sel.rangeCount === 0) return { html: '' };
+
             try {
               const range = sel.getRangeAt(0);
+              
+              // Strategy 1: cloneContents (most reliable for selections)
               const container = document.createElement('div');
               container.appendChild(range.cloneContents());
-              return { html: container.innerHTML };
+              
+              if (container.innerHTML.trim() && container.innerHTML !== '&nbsp;') {
+                let html = container.innerHTML;
+                
+                // Clean up but preserve structure
+                html = html
+                  // Remove empty elements
+                  .replace(/<span[^>]*>\s*<\/span>/gi, '')
+                  .replace(/<font[^>]*>[\s\S]*?<\/font>/gi, '')
+                  // Remove non-content elements
+                  .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+                  .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+                  // Remove comments
+                  .replace(/<!--[\s\S]*?-->/g, '')
+                  // Clean whitespace between tags
+                  .replace(/>\s+</g, '><')
+                  // Normalize
+                  .replace(/\n+/g, '\n')
+                  .trim();
+                
+                if (html.length > 0) {
+                  console.log('[FlashDoc] HTML captured:', html.length, 'chars');
+                  console.log('[FlashDoc] HTML preview:', html.substring(0, 300));
+                  return { html };
+                }
+              }
+              
+              // Strategy 2: Get common ancestor
+              const commonAncestor = range.commonAncestorContainer;
+              
+              if (commonAncestor.nodeType === Node.ELEMENT_NODE) {
+                const clone = commonAncestor.cloneNode(true);
+                let html = clone.innerHTML
+                  .replace(/<span[^>]*>\s*<\/span>/gi, '')
+                  .replace(/<font[^>]*>[\s\S]*?<\/font>/gi, '')
+                  .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+                  .replace(/<!--[\s\S]*?-->/g, '')
+                  .replace(/>\s+</g, '><')
+                  .trim();
+                  
+                if (html.length > 0) {
+                  console.log('[FlashDoc] HTML via ancestor:', html.length, 'chars');
+                  return { html };
+                }
+              }
+              
+              // Strategy 3: Parent element with selection
+              if (commonAncestor.parentNode) {
+                try {
+                  const parent = commonAncestor.parentNode.cloneNode(false);
+                  const fragment = range.cloneContents();
+                  parent.appendChild(fragment);
+                  let html = parent.innerHTML
+                    .replace(/<span[^>]*>\s*<\/span>/gi, '')
+                    .replace(/<font[^>]*>[\s\S]*?<\/font>/gi, '')
+                    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+                    .replace(/<!--[\s\S]*?-->/g, '')
+                    .replace(/>\s+</g, '><')
+                    .trim();
+                    
+                  if (html.length > 0) {
+                    console.log('[FlashDoc] HTML via parent:', html.length, 'chars');
+                    return { html };
+                  }
+                } catch (e) {
+                  console.log('[FlashDoc] Parent strategy failed:', e);
+                }
+              }
+              
+              return { html: '' };
             } catch (e) {
+              console.log('[FlashDoc] HTML extraction error:', e);
               return { html: '' };
             }
           }
@@ -1586,7 +1721,7 @@ class FlashDoc {
         console.log('[FlashDoc] Could not get HTML selection:', e);
       }
     }
-    
+
     await this.handleSave(text, type, tab, { html });
   }
 
@@ -1605,25 +1740,59 @@ class FlashDoc {
         func: () => {
           const sel = window.getSelection();
           if (!sel || sel.rangeCount === 0) return { text: '', html: '' };
-          
+
           const text = sel.toString();
-          
-          // Extract HTML from selection
+
+          // Extract HTML from selection with multiple strategies for best structure preservation
           let html = '';
           try {
             const range = sel.getRangeAt(0);
+            
+            // Strategy 1: cloneContents (best for selections)
             const container = document.createElement('div');
             container.appendChild(range.cloneContents());
-            html = container.innerHTML;
+            
+            if (container.innerHTML.trim() && container.innerHTML !== '&nbsp;') {
+              html = container.innerHTML
+                .replace(/<span[^>]*>\s*<\/span>/gi, '')
+                .replace(/<font[^>]*>[\s\S]*?<\/font>/gi, '')
+                .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+                .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+                .replace(/<!--[\s\S]*?-->/g, '')
+                .replace(/>\s+</g, '><')
+                .replace(/\n+/g, '\n')
+                .trim();
+            }
+            
+            // Strategy 2: Fallback to common ancestor if no meaningful HTML
+            if (!html || html.length < 5) {
+              const commonAncestor = range.commonAncestorContainer;
+              
+              if (commonAncestor.nodeType === Node.ELEMENT_NODE) {
+                const clone = commonAncestor.cloneNode(true);
+                html = clone.innerHTML
+                  .replace(/<span[^>]*>\s*<\/span>/gi, '')
+                  .replace(/<font[^>]*>[\s\S]*?<\/font>/gi, '')
+                  .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+                  .replace(/<!--[\s\S]*?-->/g, '')
+                  .replace(/>\s+</g, '><')
+                  .trim();
+              }
+            }
           } catch (e) {
             html = '';
           }
-          
+
           return { text, html };
         }
       });
 
       if (selection && selection.result && selection.result.text && selection.result.text.trim()) {
+        console.log('[FlashDoc] Selection:', selection.result.text.length, 'chars');
+        console.log('[FlashDoc] HTML:', selection.result.html?.length || 0, 'chars');
+        if (selection.result.html && selection.result.html.length > 0) {
+          console.log('[FlashDoc] HTML preview:', selection.result.html.substring(0, 500));
+        }
         await this.handleSave(selection.result.text, type, tab, { html: selection.result.html });
       } else {
         const error = new Error('No text selected');
@@ -1818,8 +1987,29 @@ class FlashDoc {
       return { blob, mimeType: 'text/markdown;charset=utf-8' };
     }
 
+    // Use structure-preserving conversion for txt if HTML available
+    if (extension === 'txt' && html && html.trim()) {
+      const tokens = HtmlTokenizer.tokenize(html);
+      const blocks = BlockBuilder.build(tokens);
+      const text = blocks.map(b => b.runs.map(r => r.text).join('')).join('\n\n');
+      return { blob: new Blob([text], { type: 'text/plain;charset=utf-8' }), mimeType: 'text/plain;charset=utf-8' };
+    }
+
     const mimeType = mimeTypes[extension] || 'text/plain;charset=utf-8';
     return { blob: new Blob([content], { type: mimeType }), mimeType };
+  }
+
+  // Create markdown with proper structure preservation
+  createMdBlob(content, html = '') {
+    let markdown;
+    if (html && html.trim()) {
+      const tokens = HtmlTokenizer.tokenize(html);
+      const blocks = BlockBuilder.build(tokens);
+      markdown = MarkdownRenderer.renderToMarkdown(blocks);
+    } else {
+      markdown = content;
+    }
+    return new Blob([markdown.replace(/\r\n/g, '\n').replace(/\r/g, '\n')], { type: 'text/markdown;charset=utf-8' });
   }
 
   async prepareDownloadUrl(blob, mimeType) {
@@ -2009,6 +2199,7 @@ class FlashDoc {
       }
     }
 
+    console.log('[PDF] Generation complete, y position:', y);
     return doc.output('blob');
   }
 
@@ -2098,6 +2289,8 @@ class FlashDoc {
     let blocks;
     if (html && html.trim()) {
       const tokens = HtmlTokenizer.tokenize(html);
+      console.log('[DOCX] Tokens count:', tokens.length);
+      console.log('[DOCX] Tokens:', JSON.stringify(tokens.slice(0, 10), null, 2));
       blocks = BlockBuilder.build(tokens);
     }
     if (!blocks || blocks.length === 0) {
