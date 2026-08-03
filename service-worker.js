@@ -1262,7 +1262,7 @@ class FlashDoc {
     };
     this.contextMenuListenerRegistered = false;
     this.onContextMenuClicked = this.onContextMenuClicked.bind(this);
-    this.init();
+    this.ready = this.init();
   }
 
   async init() {
@@ -1273,7 +1273,12 @@ class FlashDoc {
     this.setupContextMenus();
     this.setupCommandListeners();
     this.setupMessageListeners();
-    
+    this.setupSmartInjection();
+
+    // FLAS-5: content scripts run ONLY via this registration (no static
+    // manifest injection) — must be applied on every service worker start.
+    await this.updateContentScriptRegistration();
+
     // Load stats
     await this.loadStats();
     
@@ -1425,7 +1430,14 @@ class FlashDoc {
     });
   }
 
-  // Update content script registration based on privacy mode
+  // Update content script registration based on privacy mode (FLAS-5).
+  // There is NO static content_scripts entry in the manifest anymore — this
+  // is the single source of truth for when FlashDoc code runs on pages:
+  //   off   → dynamic registration on <all_urls> (classic behavior)
+  //   smart → no registration; per-navigation injection via tabs.onUpdated,
+  //           skipping URLs matched by privacyPatterns
+  //   on    → no registration; injection ONLY via explicit user action
+  //           (popup activate button / context menu / keyboard command)
   async updateContentScriptRegistration() {
     const mode = this.getPrivacyMode();
     try {
@@ -1437,16 +1449,45 @@ class FlashDoc {
       }
 
       if (mode === 'off') {
-        console.log('🔓 Privacy mode OFF - content scripts active on all pages');
+        await chrome.scripting.registerContentScripts([{
+          id: 'flashdoc-content',
+          matches: ['<all_urls>'],
+          js: ['detection-utils.js', 'content.js'],
+          runAt: 'document_idle',
+          allFrames: true,
+          persistAcrossSessions: true
+        }]);
+        console.log('🔓 Privacy mode OFF - content scripts registered for all pages');
       } else if (mode === 'on') {
-        console.log('🔒 Privacy mode ALWAYS ON - on-demand injection only');
+        console.log('🔒 Privacy mode ALWAYS ON - no registration, on-demand injection only');
       } else if (mode === 'smart') {
         const patterns = this.settings.privacyPatterns || [];
-        console.log(`🧠 Privacy mode SMART - ${patterns.length} URL patterns configured`);
+        console.log(`🧠 Privacy mode SMART - per-navigation injection, ${patterns.length} URL patterns blocked`);
       }
     } catch (error) {
       console.error('Content script registration update failed:', error);
     }
+  }
+
+  // Smart mode: inject per navigation unless the URL is privacy-blocked.
+  setupSmartInjection() {
+    chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+      if (changeInfo.status !== 'complete') return;
+      if (this.getPrivacyMode() !== 'smart') return;
+      const url = tab && tab.url ? tab.url : '';
+      if (!/^(https?|file):/.test(url)) return;
+      if (this.isUrlPrivacyBlocked(url)) return;
+      this.injectContentScript(tabId).catch(() => {});
+    });
+  }
+
+  // Decide whether a tab may receive FlashDoc scripts without an explicit
+  // user action, given the current privacy mode.
+  isAutoInjectAllowed(url) {
+    const mode = this.getPrivacyMode();
+    if (mode === 'on') return false;
+    if (mode === 'smart') return !this.isUrlPrivacyBlocked(url);
+    return true;
   }
 
   /**
@@ -2476,31 +2517,29 @@ class FlashDoc {
 }
 
 // Initialize
-new FlashDoc();
+const flashDoc = new FlashDoc();
 
 // Handle installation and extension reload
 chrome.runtime.onInstalled.addListener(async (details) => {
-  console.log(`âš¡ FlashDoc ${details.reason}: re-injecting content scripts...`);
+  console.log(`\u26A1 FlashDoc ${details.reason}`);
 
-  // Re-inject content scripts into all existing tabs to fix "Extension not available" error
-  // This is necessary because old content scripts become orphaned after extension reload
+  // Re-inject content scripts into existing tabs so they aren't orphaned
+  // after an extension reload — but ONLY where the privacy mode allows
+  // automatic injection (FLAS-5). Privacy-blocked pages stay untouched.
   try {
+    await flashDoc.ready;
     const tabs = await chrome.tabs.query({});
     for (const tab of tabs) {
-      // Skip chrome:// pages, extension pages, and tabs without URLs
       if (tab.id && tab.url &&
-          !tab.url.startsWith('chrome://') &&
-          !tab.url.startsWith('chrome-extension://') &&
-          !tab.url.startsWith('about:')) {
+          /^(https?|file):/.test(tab.url) &&
+          flashDoc.isAutoInjectAllowed(tab.url)) {
         try {
           await chrome.scripting.executeScript({
             target: { tabId: tab.id, allFrames: true },
-            files: ['content.js']
+            files: ['detection-utils.js', 'content.js']
           });
-          console.log(`âœ… Injected into tab ${tab.id}: ${tab.url.substring(0, 50)}...`);
         } catch (e) {
           // Tab might not support scripting - this is normal
-          console.log(`â­ï¸ Skipped tab ${tab.id}: ${e.message}`);
         }
       }
     }
@@ -2509,7 +2548,6 @@ chrome.runtime.onInstalled.addListener(async (details) => {
   }
 
   if (details.reason === 'install') {
-    console.log('ðŸŽ‰ FlashDoc installed!');
     chrome.tabs.create({ url: 'options.html' });
   }
 });

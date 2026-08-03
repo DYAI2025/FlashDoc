@@ -1,6 +1,15 @@
 // FlashDoc Content Script - Enhanced Selection Detection & Floating UI
 // Zero-friction file creation with intelligent format detection
 
+(() => {
+// Idempotency guard (FLAS-5): repeat injection (privacy activation, smart-mode
+// re-navigation, SW reload) must never create a second instance or listeners.
+if (window.__flashdocContentLoaded) {
+  console.log('⚡ FlashDoc content script already loaded — skipping re-init');
+  return;
+}
+window.__flashdocContentLoaded = true;
+
 class FlashDocContent {
   constructor() {
     this.selectedText = '';
@@ -1808,3 +1817,4 @@ if (typeof document !== 'undefined' && typeof document.addEventListener === 'fun
   // Log initialization
   console.log('⚡ FlashDoc content script loaded - Zero-friction file creation ready');
 }
+})();
