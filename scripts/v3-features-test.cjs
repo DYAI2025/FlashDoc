@@ -127,7 +127,7 @@ try {
 
   // Service Worker
   test('privacyMode in defaults',
-    serviceWorker.includes('privacyMode: false'));
+    serviceWorker.includes("privacyMode: 'off'"));
 
   test('updateContentScriptRegistration method',
     serviceWorker.includes('async updateContentScriptRegistration()'));
@@ -242,8 +242,13 @@ try {
     manifest.permissions.includes('scripting') &&
     manifest.permissions.includes('storage'));
 
-  test('Content scripts configured',
-    manifest.content_scripts && manifest.content_scripts.length > 0);
+  // FLAS-5: content scripts must NOT be statically injected — the service
+  // worker registers them dynamically according to the privacy mode.
+  test('No static content_scripts (privacy: on-demand injection)',
+    !manifest.content_scripts);
+
+  test('Dynamic content script registration in service worker',
+    readFile('service-worker.js').includes('registerContentScripts'));
 
   test('Service worker configured',
     manifest.background && manifest.background.service_worker === 'service-worker.js');
@@ -371,8 +376,8 @@ try {
   test('MAX_SHORTCUTS is 10 in options.js',
     optionsJs.includes('const MAX_SHORTCUTS = 10'));
 
-  test('Shortcut count shows /10 in HTML',
-    optionsHtml.includes('0/10 Shortcuts'));
+  test('Shortcut count element localized in HTML',
+    optionsHtml.includes('__MSG_shortcuts_shortcutCount__'));
 
   // Service worker defaults
   test('floatingButtonSlots in service worker defaults',
