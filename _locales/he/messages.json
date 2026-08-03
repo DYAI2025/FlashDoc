@@ -7,215 +7,822 @@
     "message": "⚡ בחר → שמור → סיום. יצירת קבצים מיידית מכל טקסט.",
     "description": "Extension description (HE)"
   },
-  "popup": {
-    "title": { "message": "FlashDoc", "description": "Popup title (HE)" },
-    "tagline": { "message": "בחר → שמור → סיום", "description": "Tagline (HE)" },
-    "statusReady": { "message": "מוכן", "description": "Status ready (HE)" },
-    "privacyBannerTitle": { "message": "מצב פרטיות פעיל", "description": "Privacy (HE)" },
-    "privacyBannerSubtitle": { "message": "לחץ כאן כדי להפעיל את FlashDoc בדף זה", "description": "Privacy banner subtitle (HE)" },
-    "activateBtn": { "message": "הפעל", "description": "Activate (HE)" },
-    "totalFiles": { "message": "סה״כ קבצים", "description": "Total files (HE)" },
-    "todayLabel": { "message": "היום", "description": "Today (HE)" },
-    "lastSaveLabel": { "message": "שמירה אחרונה", "description": "Last save (HE)" },
-    "quickSaveTitle": { "message": "שמירה מהירה", "description": "Quick save (HE)" },
-    "lastActionTitle": { "message": "פעולה אחרונה", "description": "Last action (HE)" },
-    "noRecentFiles": { "message": "אין קבצים אחרונים", "description": "No recent files (HE)" },
-    "repeatAction": { "message": "חזור", "description": "Repeat (HE)" },
-    "shortcutsTitle": { "message": "קיצורי דרך", "description": "Shortcuts (HE)" },
-    "openFolder": { "message": "פתח תיקייה", "description": "Open folder (HE)" },
-    "settings": { "message": "הגדרות", "description": "Settings (HE)" },
-    "help": { "message": "עזרה", "description": "Help (HE)" },
-    "timeNever": { "message": "אף פעם", "description": "Never (HE)" },
-    "timeJustNow": { "message": "עכשיו", "description": "Just now (HE)" },
-    "timeMinuteAgo": { "message": "לפני דקה", "description": "1 minute ago (HE)" },
-    "timeMinutesAgo": { "message": "לפני $minutes$ דקות", "description": "Minutes ago (HE)" },
-    "timeHourAgo": { "message": "לפני שעה", "description": "1 hour ago (HE)" },
-    "timeHoursAgo": { "message": "לפני $hours$ שעות", "description": "Hours ago (HE)" }
+  "popup_title": {
+    "message": "FlashDoc",
+    "description": "Popup title (HE)"
   },
-  "options": {
-    "pageTitle": { "message": "הגדרות FlashDoc", "description": "Options (HE)" },
-    "subtitle": { "message": "התאם איך FlashDoc שומר בכל מקום.", "description": "Subtitle (HE)" },
-    "storageSection": { "message": "אחסון", "description": "Storage (HE)" },
-    "folderPathLabel": { "message": "תיקייה ברירת מחדל", "description": "Folder (HE)" },
-    "folderPathPlaceholder": { "message": "FlashDocs/", "description": "Folder path (HE)" },
-    "folderPathHelp": { "message": "ביחס לתיקיית ההורדות שלך.", "description": "Folder path help (HE)" },
-    "namingPatternLabel": { "message": "תבנית שמות", "description": "Naming pattern (HE)" },
-    "patternTimestamp": { "message": "חותמת זמן — flashdoc_YYYY-MM-DD", "description": "Timestamp (HE)" },
-    "patternFirstline": { "message": "שורה ראשונה של הבחירה", "description": "First line (HE)" },
-    "patternCustom": { "message": "מותאם אישית", "description": "Custom (HE)" },
-    "customPatternLabel": { "message": "תבנית שם קובץ מותאמת", "description": "Custom pattern (HE)" },
-    "customPatternPlaceholder": { "message": "file_{date}_{type}", "description": "Custom pattern placeholder (HE)" },
-    "livePreviewLabel": { "message": "תצוגה מקדימה", "description": "Preview (HE)" },
-    "previewHelp": { "message": "כך הקובץ הבא שלך ייקרא.", "description": "Preview help (HE)" },
-    "organizeByTypeLabel": { "message": "ארגן לפי סוג", "description": "Organize (HE)" },
-    "applyBtn": { "message": "החל", "description": "Apply (HE)" },
-    "captureSection": { "message": "זיהוי", "description": "Capture (HE)" },
-    "autoDetectLabel": { "message": "זיהוי חכם", "description": "Auto detect (HE)" },
-    "highlightLabel": { "message": "סמן את הסוג שזוהה בדף", "description": "Highlight (HE)" },
-    "selectionThresholdLabel": { "message": "אורך בחירה מינימלי", "description": "Selection threshold (HE)" },
-    "charactersLabel": { "message": "תווים", "description": "Characters (HE)" },
-    "privacySection": { "message": "פרטיות", "description": "Privacy (HE)" },
-    "privacyModeLabel": { "message": "מצב פרטיות (הזרקה לפי דרישה)", "description": "Privacy mode (HE)" },
-    "privacyHelp": { "message": "כשמופעל, FlashDoc יופעל רק בלחיצה על האייקון או קיצור הדרך.", "description": "Privacy help (HE)" },
-    "privacyActive": { "message": "מצב פרטיות פעיל", "description": "Privacy active (HE)" },
-    "privacyStandard": { "message": "מצב רגיל", "description": "Privacy standard (HE)" },
-    "interfaceSection": { "message": "ממשק", "description": "Interface (HE)" },
-    "floatingButtonLabel": { "message": "כפתור צף לשמירה מהירה", "description": "Floating button (HE)" },
-    "buttonPositionLabel": { "message": "מיקום הכפתור", "description": "Button position (HE)" },
-    "positionBottomRight": { "message": "למטה מימין", "description": "Bottom right (HE)" },
-    "positionBottomLeft": { "message": "למטה משמאל", "description": "Bottom left (HE)" },
-    "positionTopRight": { "message": "למעלה מימין", "description": "Top right (HE)" },
-    "positionTopLeft": { "message": "למעלה משמאל", "description": "Top left (HE)" },
-    "autoHideLabel": { "message": "הסתר בחוסר פעילות", "description": "Auto hide (HE)" },
-    "contextMenuLabel": { "message": "אינטגרציה בתפריט הקשר", "description": "Context menu (HE)" },
-    "contextMenuSection": { "message": "פורמטים בתפריט הקשר", "description": "Context menu (HE)" },
-    "contextMenuHelp": { "message": "בחר אילו פורמטים יופיעו בתפריט ההקשר.", "description": "Context menu help (HE)" },
-    "cornerBallSection": { "message": "כדור פינה", "description": "Corner ball (HE)" },
-    "cornerBallLabel": { "message": "הצג כדור פינה", "description": "Corner ball (HE)" },
-    "feedbackSection": { "message": "משוב", "description": "Feedback (HE)" },
-    "notificationsLabel": { "message": "הצג התראות", "description": "Notifications (HE)" },
-    "soundLabel": { "message": "השמע צליל אישור", "description": "Sound (HE)" },
-    "trackingSection": { "message": "מעקב והמלצות", "description": "Tracking (HE)" },
-    "trackFormatUsageLabel": { "message": "עקוב אחר שימוש בפורמט", "description": "Track format (HE)" },
-    "trackAccuracyLabel": { "message": "עקוב אחר דיוק הזיהוי", "description": "Track accuracy (HE)" },
-    "recommendationsLabel": { "message": "הצג המלצות לפורמט", "description": "Recommendations (HE)" },
-    "recommendationsTitle": { "message": "המלצות זמינות", "description": "Recommendations title (HE)" },
-    "loadingRecommendations": { "message": "טוען המלצות...", "description": "Loading (HE)" },
-    "resetDefaults": { "message": "אפס הכל", "description": "Reset (HE)" },
-    "resetConfirm": { "message": "לאפס את כל ההגדרות?", "description": "Reset confirm (HE)" },
-    "savedSuccess": { "message": "נשמר", "description": "Saved (HE)" },
-    "savedError": { "message": "שמירה נכשלה", "description": "Save error (HE)" },
-    "loadError": { "message": "לא ניתן לטעון את ההגדרות.", "description": "Load error (HE)" }
+  "popup_tagline": {
+    "message": "בחר → שמור → סיום",
+    "description": "Tagline (HE)"
   },
-  "commands": {
-    "smartDesc": { "message": "שמירה חכמה (זיהוי פורמט אוטומטי)", "description": "Smart save (HE)" },
-    "txtDesc": { "message": "שמור כ-.txt", "description": "Save as TXT (HE)" },
-    "mdDesc": { "message": "שמור כ-.md", "description": "Save as MD (HE)" },
-    "pdfDesc": { "message": "שמור כ-PDF", "description": "Save as PDF (HE)" }
+  "popup_statusReady": {
+    "message": "מוכן",
+    "description": "Status ready (HE)"
   },
-  "actions": {
-    "smart": { "message": "חכם", "description": "Smart (HE)" },
-    "smartDesc": { "message": "אוטומטי", "description": "Auto-detect (HE)" },
-    "text": { "message": "טקסט", "description": "Text (HE)" },
-    "textDesc": { "message": "קובץ .txt", "description": "TXT file (HE)" },
-    "markdown": { "message": "Markdown", "description": "Markdown (HE)" },
-    "markdownDesc": { "message": "קובץ .md", "description": "MD file (HE)" },
-    "word": { "message": "Word", "description": "Word (HE)" },
-    "wordDesc": { "message": "קובץ .docx", "description": "DOCX file (HE)" },
-    "pdfAction": { "message": "PDF", "description": "PDF (HE)" },
-    "pdfActionDesc": { "message": "מסמך", "description": "Document (HE)" },
-    "labelAction": { "message": "תווית", "description": "Label (HE)" },
-    "labelDesc": { "message": "89×28 מ״מ", "description": "Label size (HE)" },
-    "code": { "message": "קוד", "description": "Code (HE)" },
-    "codeDesc": { "message": "אוטומטי", "description": "Auto-detect (HE)" },
-    "data": { "message": "נתונים", "description": "Data (HE)" },
-    "dataDesc": { "message": "CSV/JSON", "description": "CSV/JSON (HE)" }
+  "popup_privacyBannerTitle": {
+    "message": "מצב פרטיות פעיל",
+    "description": "Privacy (HE)"
   },
-  "status": {
-    "preparing": { "message": "מכין לשמירה...", "description": "Preparing (HE)" },
-    "noActiveTab": { "message": "אין לשונית פעילה", "description": "No active tab (HE)" },
-    "cannotAccess": { "message": "לא ניתן לגשת לדף זה.", "description": "Cannot access (HE)" },
-    "selectText": { "message": "בחר טקסט קודם", "description": "Select text (HE)" },
-    "savingPageSource": { "message": "שומר קוד מקור של הדף...", "description": "Saving page (HE)" },
-    "pageSourceSaved": { "message": "קוד המקור של הדף נשמר", "description": "Page saved (HE)" },
-    "savedAs": { "message": "נשמר כ", "description": "Saved as (HE)" },
-    "activating": { "message": "מפעיל...", "description": "Activating (HE)" },
-    "flashdocActivated": { "message": "FlashDoc הופעל!", "description": "Activated (HE)" },
-    "activeStatus": { "message": "פעיל", "description": "Active (HE)" },
-    "retryStatus": { "message": "נסה שוב", "description": "Retry (HE)" },
-    "noActionToRepeat": { "message": "אין פעולה לחזור עליה", "description": "No repeat (HE)" },
-    "repeating": { "message": "חוזר על", "description": "Repeating (HE)" },
-    "repeatFailed": { "message": "חזרה נכשלה", "description": "Repeat failed (HE)" },
-    "serviceWorkerUnavailable": { "message": "Service Worker לא זמין.", "description": "Service worker (HE)" }
+  "popup_privacyBannerSubtitle": {
+    "message": "לחץ כאן כדי להפעיל את FlashDoc בדף זה",
+    "description": "Privacy banner subtitle (HE)"
   },
-  "slots": {
-    "sectionTitle": { "message": "חריצי כפתור הקשריים", "description": "Slots (HE)" },
-    "help": { "message": "הגדר את 5 כפתורי הפעולה שיופיעו בבחירת טקסט.", "description": "Slots help (HE)" },
-    "presetSection": { "message": "הגדרות מוגדרות מראש", "description": "Presets (HE)" },
-    "presetHelp": { "message": "שמור תצורות חריצים כהגדרות מוגדרות מראש.", "description": "Presets help (HE)" },
-    "activeIndicator": { "message": "פעיל:", "description": "Active (HE)" },
-    "noneActive": { "message": "אף אחד", "description": "None (HE)" },
-    "selectPreset": { "message": "— בחר הגדרה מוגדרת —", "description": "Select preset (HE)" },
-    "applyPreset": { "message": "החל", "description": "Apply (HE)" },
-    "newPreset": { "message": "+ חדש", "description": "New (HE)" },
-    "savePreset": { "message": "שמור", "description": "Save (HE)" },
-    "deletePreset": { "message": "מחק", "description": "Delete (HE)" },
-    "exportPreset": { "message": "ייצא", "description": "Export (HE)" },
-    "importPreset": { "message": "ייבא", "description": "Import (HE)" },
-    "sharePreset": { "message": "שתף", "description": "Share (HE)" },
-    "presetCount": { "message": "$used$/$max$ הגדרות", "description": "Preset count (HE)" },
-    "importTitle": { "message": "ייבא הגדרה", "description": "Import title (HE)" },
-    "importPlaceholder": { "message": "הדבק JSON של הגדרת FlashDoc כאן...", "description": "Import placeholder (HE)" },
-    "cancelBtn": { "message": "ביטול", "description": "Cancel (HE)" },
-    "confirmImport": { "message": "ייבא", "description": "Import (HE)" },
-    "exportTitle": { "message": "ייצא הגדרה", "description": "Export title (HE)" },
-    "closeBtn": { "message": "סגור", "description": "Close (HE)" },
-    "copyBtn": { "message": "העתק", "description": "Copy (HE)" }
+  "popup_activateBtn": {
+    "message": "הפעל",
+    "description": "Activate (HE)"
   },
-  "shortcuts": {
-    "sectionTitle": { "message": "קיצורי דרך עם קידומת", "description": "Shortcuts (HE)" },
-    "help": { "message": "צור קומבינציות שמירה מהירה.", "description": "Shortcuts help (HE)" },
-    "namePlaceholder": { "message": "הזן קידומת (למשל Design)", "description": "Name placeholder (HE)" },
-    "addBtn": { "message": "הוסף", "description": "Add (HE)" },
-    "emptyState": { "message": "עדיין לא נוצרו קיצורי דרך", "description": "No shortcuts (HE)" },
-    "shortcutCount": { "message": "$used$/$max$ קיצורי דרך", "description": "Shortcut count (HE)" },
-    "deleteBtn": { "message": "מחק", "description": "Delete (HE)" },
-    "errorNoName": { "message": "אנא הזן שם קידומת.", "description": "Error no name (HE)" },
-    "errorMaxReached": { "message": "מקסימום $max$ קיצורי דרך מותר.", "description": "Error max (HE)" },
-    "errorDuplicate": { "message": "קיצור דרך זה כבר קיים.", "description": "Error duplicate (HE)" },
-    "addedSuccess": { "message": "\"$name$_save.$format$\" נוסף", "description": "Added (HE)" },
-    "deletedSuccess": { "message": "קיצור דרך נמחק.", "description": "Deleted (HE)" }
+  "popup_totalFiles": {
+    "message": "סה״כ קבצים",
+    "description": "Total files (HE)"
   },
-  "recommendations": {
-    "loading": { "message": "טוען המלצות...", "description": "Loading (HE)" },
-    "mostUsedFormat": { "message": "הפורמט הנפוץ ביותר: $format$", "description": "Most used (HE)" },
-    "smartDetectionEnabled": { "message": "זיהוי חכם מופעל", "description": "Smart detection (HE)" },
-    "detectionAccuracy": { "message": "דיוק זיהוי: $percentage$%", "description": "Accuracy (HE)" },
-    "newFeatures": { "message": "תכונות חדשות לזיהוי פורמט", "description": "New features (HE)" },
-    "newFeaturesDesc": { "message": "עכשיו תומך ב-TypeScript, XML, SQL, סקריפטי Shell ועוד!", "description": "New features desc (HE)" },
-    "tryNewFormats": { "message": "נסה פורמטים חדשים", "description": "Try new (HE)" },
-    "filesSaved": { "message": "$count$ קבצים נשמרו", "description": "Files saved (HE)" },
-    "keepSaving": { "message": "המשך לשמור להמלצות טובות יותר!", "description": "Keep saving (HE)" }
+  "popup_todayLabel": {
+    "message": "היום",
+    "description": "Today (HE)"
   },
-  "rtl": {
-    "warning": { "message": "תמיכת RTL: עברית וערבית נתמכים. הפריסה תתאים אוטומטית.", "description": "RTL notice (HE)" }
+  "popup_lastSaveLabel": {
+    "message": "שמירה אחרונה",
+    "description": "Last save (HE)"
   },
-  "contextMenu": {
-    "autoLabel": { "message": "זיהוי חכם אוטומטי", "description": "Auto detect context menu (HE)" },
-    "autoDesc": { "message": "FlashDoc בוחר את הפורמט הטוב ביותר", "description": "Auto detect description (HE)" },
-    "txtLabel": { "message": "טקסט פשוט (.txt)", "description": "TXT label (HE)" },
-    "txtDesc": { "message": "הערות וטקסט פשוט", "description": "TXT description (HE)" },
-    "mdLabel": { "message": "Markdown (.md)", "description": "MD label (HE)" },
-    "mdDesc": { "message": "מסמכים מעוצבים קלים", "description": "MD description (HE)" },
-    "docxLabel": { "message": "Word (.docx)", "description": "DOCX label (HE)" },
-    "docxDesc": { "message": "מסמכי Microsoft Word", "description": "DOCX description (HE)" },
-    "jsonLabel": { "message": "JSON (.json)", "description": "JSON label (HE)" },
-    "jsonDesc": { "message": "APIs ונתונים מובנים", "description": "JSON description (HE)" },
-    "jsLabel": { "message": "JavaScript (.js)", "description": "JS label (HE)" },
-    "jsDesc": { "message": "קטעי קוד לדפדפן ו-Node", "description": "JS description (HE)" },
-    "tsLabel": { "message": "TypeScript (.ts)", "description": "TS label (HE)" },
-    "tsDesc": { "message": "בלוקי קוד עם טיפוס", "description": "TS description (HE)" },
-    "pyLabel": { "message": "Python (.py)", "description": "PY label (HE)" },
-    "pyDesc": { "message": "סקריפטים ומחשבות", "description": "PY description (HE)" },
-    "htmlLabel": { "message": "HTML (.html)", "description": "HTML label (HE)" },
-    "htmlDesc": { "message": "תבניות וקטעי קוד", "description": "HTML description (HE)" },
-    "cssLabel": { "message": "CSS (.css)", "description": "CSS label (HE)" },
-    "cssDesc": { "message": "גיליונות סגנון", "description": "CSS description (HE)" },
-    "xmlLabel": { "message": "XML (.xml)", "description": "XML label (HE)" },
-    "xmlDesc": { "message": "הגדרות והזנות", "description": "XML description (HE)" },
-    "sqlLabel": { "message": "SQL (.sql)", "description": "SQL label (HE)" },
-    "sqlDesc": { "message": "שאילתות מסד נתונים", "description": "SQL description (HE)" },
-    "shLabel": { "message": "Shell (.sh)", "description": "SH label (HE)" },
-    "shDesc": { "message": "סקריפטי Bash ו-shell", "description": "SH description (HE)" },
-    "yamlLabel": { "message": "YAML (.yaml)", "description": "YAML label (HE)" },
-    "yamlDesc": { "message": "הגדרות ותהליכי עבודה", "description": "YAML description (HE)" },
-    "csvLabel": { "message": "CSV (.csv)", "description": "CSV label (HE)" },
-    "csvDesc": { "message": "גיליונות נתונים וטבלאות", "description": "CSV description (HE)" },
-    "pdfLabel": { "message": "PDF (.pdf)", "description": "PDF label (HE)" },
-    "pdfDesc": { "message": "מסמכים ניידים", "description": "PDF description (HE)" },
-    "labelLabel": { "message": "תווית (PDF 89×28 מ״מ)", "description": "Label format (HE)" },
-    "labelDesc": { "message": "תוויות מוכנות להדפסה", "description": "Label description (HE)" },
-    "saveasLabel": { "message": "שמור בשם…", "description": "Save as option (HE)" },
-    "saveasDesc": { "message": "בחר תיקייה ושם קובץ בכל פעם", "description": "Save as description (HE)" }
+  "popup_quickSaveTitle": {
+    "message": "שמירה מהירה",
+    "description": "Quick save (HE)"
+  },
+  "popup_lastActionTitle": {
+    "message": "פעולה אחרונה",
+    "description": "Last action (HE)"
+  },
+  "popup_noRecentFiles": {
+    "message": "אין קבצים אחרונים",
+    "description": "No recent files (HE)"
+  },
+  "popup_repeatAction": {
+    "message": "חזור",
+    "description": "Repeat (HE)"
+  },
+  "popup_shortcutsTitle": {
+    "message": "קיצורי דרך",
+    "description": "Shortcuts (HE)"
+  },
+  "popup_openFolder": {
+    "message": "פתח תיקייה",
+    "description": "Open folder (HE)"
+  },
+  "popup_settings": {
+    "message": "הגדרות",
+    "description": "Settings (HE)"
+  },
+  "popup_help": {
+    "message": "עזרה",
+    "description": "Help (HE)"
+  },
+  "popup_timeNever": {
+    "message": "אף פעם",
+    "description": "Never (HE)"
+  },
+  "popup_timeJustNow": {
+    "message": "עכשיו",
+    "description": "Just now (HE)"
+  },
+  "popup_timeMinuteAgo": {
+    "message": "לפני דקה",
+    "description": "1 minute ago (HE)"
+  },
+  "popup_timeMinutesAgo": {
+    "message": "לפני $minutes$ דקות",
+    "description": "Minutes ago (HE)",
+    "placeholders": {
+      "minutes": {
+        "content": "$1"
+      }
+    }
+  },
+  "popup_timeHourAgo": {
+    "message": "לפני שעה",
+    "description": "1 hour ago (HE)"
+  },
+  "popup_timeHoursAgo": {
+    "message": "לפני $hours$ שעות",
+    "description": "Hours ago (HE)",
+    "placeholders": {
+      "hours": {
+        "content": "$1"
+      }
+    }
+  },
+  "options_pageTitle": {
+    "message": "הגדרות FlashDoc",
+    "description": "Options (HE)"
+  },
+  "options_subtitle": {
+    "message": "התאם איך FlashDoc שומר בכל מקום.",
+    "description": "Subtitle (HE)"
+  },
+  "options_storageSection": {
+    "message": "אחסון",
+    "description": "Storage (HE)"
+  },
+  "options_folderPathLabel": {
+    "message": "תיקייה ברירת מחדל",
+    "description": "Folder (HE)"
+  },
+  "options_folderPathPlaceholder": {
+    "message": "FlashDocs/",
+    "description": "Folder path (HE)"
+  },
+  "options_folderPathHelp": {
+    "message": "ביחס לתיקיית ההורדות שלך.",
+    "description": "Folder path help (HE)"
+  },
+  "options_namingPatternLabel": {
+    "message": "תבנית שמות",
+    "description": "Naming pattern (HE)"
+  },
+  "options_patternTimestamp": {
+    "message": "חותמת זמן — flashdoc_YYYY-MM-DD",
+    "description": "Timestamp (HE)"
+  },
+  "options_patternFirstline": {
+    "message": "שורה ראשונה של הבחירה",
+    "description": "First line (HE)"
+  },
+  "options_patternCustom": {
+    "message": "מותאם אישית",
+    "description": "Custom (HE)"
+  },
+  "options_customPatternLabel": {
+    "message": "תבנית שם קובץ מותאמת",
+    "description": "Custom pattern (HE)"
+  },
+  "options_customPatternPlaceholder": {
+    "message": "file_{date}_{type}",
+    "description": "Custom pattern placeholder (HE)"
+  },
+  "options_livePreviewLabel": {
+    "message": "תצוגה מקדימה",
+    "description": "Preview (HE)"
+  },
+  "options_previewHelp": {
+    "message": "כך הקובץ הבא שלך ייקרא.",
+    "description": "Preview help (HE)"
+  },
+  "options_organizeByTypeLabel": {
+    "message": "ארגן לפי סוג",
+    "description": "Organize (HE)"
+  },
+  "options_applyBtn": {
+    "message": "החל",
+    "description": "Apply (HE)"
+  },
+  "options_captureSection": {
+    "message": "זיהוי",
+    "description": "Capture (HE)"
+  },
+  "options_autoDetectLabel": {
+    "message": "זיהוי חכם",
+    "description": "Auto detect (HE)"
+  },
+  "options_highlightLabel": {
+    "message": "סמן את הסוג שזוהה בדף",
+    "description": "Highlight (HE)"
+  },
+  "options_selectionThresholdLabel": {
+    "message": "אורך בחירה מינימלי",
+    "description": "Selection threshold (HE)"
+  },
+  "options_charactersLabel": {
+    "message": "תווים",
+    "description": "Characters (HE)"
+  },
+  "options_privacySection": {
+    "message": "פרטיות",
+    "description": "Privacy (HE)"
+  },
+  "options_privacyModeLabel": {
+    "message": "מצב פרטיות (הזרקה לפי דרישה)",
+    "description": "Privacy mode (HE)"
+  },
+  "options_privacyHelp": {
+    "message": "כשמופעל, FlashDoc יופעל רק בלחיצה על האייקון או קיצור הדרך.",
+    "description": "Privacy help (HE)"
+  },
+  "options_privacyActive": {
+    "message": "מצב פרטיות פעיל",
+    "description": "Privacy active (HE)"
+  },
+  "options_privacyStandard": {
+    "message": "מצב רגיל",
+    "description": "Privacy standard (HE)"
+  },
+  "options_interfaceSection": {
+    "message": "ממשק",
+    "description": "Interface (HE)"
+  },
+  "options_floatingButtonLabel": {
+    "message": "כפתור צף לשמירה מהירה",
+    "description": "Floating button (HE)"
+  },
+  "options_buttonPositionLabel": {
+    "message": "מיקום הכפתור",
+    "description": "Button position (HE)"
+  },
+  "options_positionBottomRight": {
+    "message": "למטה מימין",
+    "description": "Bottom right (HE)"
+  },
+  "options_positionBottomLeft": {
+    "message": "למטה משמאל",
+    "description": "Bottom left (HE)"
+  },
+  "options_positionTopRight": {
+    "message": "למעלה מימין",
+    "description": "Top right (HE)"
+  },
+  "options_positionTopLeft": {
+    "message": "למעלה משמאל",
+    "description": "Top left (HE)"
+  },
+  "options_autoHideLabel": {
+    "message": "הסתר בחוסר פעילות",
+    "description": "Auto hide (HE)"
+  },
+  "options_contextMenuLabel": {
+    "message": "אינטגרציה בתפריט הקשר",
+    "description": "Context menu (HE)"
+  },
+  "options_contextMenuSection": {
+    "message": "פורמטים בתפריט הקשר",
+    "description": "Context menu (HE)"
+  },
+  "options_contextMenuHelp": {
+    "message": "בחר אילו פורמטים יופיעו בתפריט ההקשר.",
+    "description": "Context menu help (HE)"
+  },
+  "options_cornerBallSection": {
+    "message": "כדור פינה",
+    "description": "Corner ball (HE)"
+  },
+  "options_cornerBallLabel": {
+    "message": "הצג כדור פינה",
+    "description": "Corner ball (HE)"
+  },
+  "options_feedbackSection": {
+    "message": "משוב",
+    "description": "Feedback (HE)"
+  },
+  "options_notificationsLabel": {
+    "message": "הצג התראות",
+    "description": "Notifications (HE)"
+  },
+  "options_soundLabel": {
+    "message": "השמע צליל אישור",
+    "description": "Sound (HE)"
+  },
+  "options_trackingSection": {
+    "message": "מעקב והמלצות",
+    "description": "Tracking (HE)"
+  },
+  "options_trackFormatUsageLabel": {
+    "message": "עקוב אחר שימוש בפורמט",
+    "description": "Track format (HE)"
+  },
+  "options_trackAccuracyLabel": {
+    "message": "עקוב אחר דיוק הזיהוי",
+    "description": "Track accuracy (HE)"
+  },
+  "options_recommendationsLabel": {
+    "message": "הצג המלצות לפורמט",
+    "description": "Recommendations (HE)"
+  },
+  "options_recommendationsTitle": {
+    "message": "המלצות זמינות",
+    "description": "Recommendations title (HE)"
+  },
+  "options_loadingRecommendations": {
+    "message": "טוען המלצות...",
+    "description": "Loading (HE)"
+  },
+  "options_resetDefaults": {
+    "message": "אפס הכל",
+    "description": "Reset (HE)"
+  },
+  "options_resetConfirm": {
+    "message": "לאפס את כל ההגדרות?",
+    "description": "Reset confirm (HE)"
+  },
+  "options_savedSuccess": {
+    "message": "נשמר",
+    "description": "Saved (HE)"
+  },
+  "options_savedError": {
+    "message": "שמירה נכשלה",
+    "description": "Save error (HE)"
+  },
+  "options_loadError": {
+    "message": "לא ניתן לטעון את ההגדרות.",
+    "description": "Load error (HE)"
+  },
+  "commands_smartDesc": {
+    "message": "שמירה חכמה (זיהוי פורמט אוטומטי)",
+    "description": "Smart save (HE)"
+  },
+  "commands_txtDesc": {
+    "message": "שמור כ-.txt",
+    "description": "Save as TXT (HE)"
+  },
+  "commands_mdDesc": {
+    "message": "שמור כ-.md",
+    "description": "Save as MD (HE)"
+  },
+  "commands_pdfDesc": {
+    "message": "שמור כ-PDF",
+    "description": "Save as PDF (HE)"
+  },
+  "actions_smart": {
+    "message": "חכם",
+    "description": "Smart (HE)"
+  },
+  "actions_smartDesc": {
+    "message": "אוטומטי",
+    "description": "Auto-detect (HE)"
+  },
+  "actions_text": {
+    "message": "טקסט",
+    "description": "Text (HE)"
+  },
+  "actions_textDesc": {
+    "message": "קובץ .txt",
+    "description": "TXT file (HE)"
+  },
+  "actions_markdown": {
+    "message": "Markdown",
+    "description": "Markdown (HE)"
+  },
+  "actions_markdownDesc": {
+    "message": "קובץ .md",
+    "description": "MD file (HE)"
+  },
+  "actions_word": {
+    "message": "Word",
+    "description": "Word (HE)"
+  },
+  "actions_wordDesc": {
+    "message": "קובץ .docx",
+    "description": "DOCX file (HE)"
+  },
+  "actions_pdfAction": {
+    "message": "PDF",
+    "description": "PDF (HE)"
+  },
+  "actions_pdfActionDesc": {
+    "message": "מסמך",
+    "description": "Document (HE)"
+  },
+  "actions_labelAction": {
+    "message": "תווית",
+    "description": "Label (HE)"
+  },
+  "actions_labelDesc": {
+    "message": "89×28 מ״מ",
+    "description": "Label size (HE)"
+  },
+  "actions_code": {
+    "message": "קוד",
+    "description": "Code (HE)"
+  },
+  "actions_codeDesc": {
+    "message": "אוטומטי",
+    "description": "Auto-detect (HE)"
+  },
+  "actions_data": {
+    "message": "נתונים",
+    "description": "Data (HE)"
+  },
+  "actions_dataDesc": {
+    "message": "CSV/JSON",
+    "description": "CSV/JSON (HE)"
+  },
+  "status_preparing": {
+    "message": "מכין לשמירה...",
+    "description": "Preparing (HE)"
+  },
+  "status_noActiveTab": {
+    "message": "אין לשונית פעילה",
+    "description": "No active tab (HE)"
+  },
+  "status_cannotAccess": {
+    "message": "לא ניתן לגשת לדף זה.",
+    "description": "Cannot access (HE)"
+  },
+  "status_selectText": {
+    "message": "בחר טקסט קודם",
+    "description": "Select text (HE)"
+  },
+  "status_savingPageSource": {
+    "message": "שומר קוד מקור של הדף...",
+    "description": "Saving page (HE)"
+  },
+  "status_pageSourceSaved": {
+    "message": "קוד המקור של הדף נשמר",
+    "description": "Page saved (HE)"
+  },
+  "status_savedAs": {
+    "message": "נשמר כ",
+    "description": "Saved as (HE)"
+  },
+  "status_activating": {
+    "message": "מפעיל...",
+    "description": "Activating (HE)"
+  },
+  "status_flashdocActivated": {
+    "message": "FlashDoc הופעל!",
+    "description": "Activated (HE)"
+  },
+  "status_activeStatus": {
+    "message": "פעיל",
+    "description": "Active (HE)"
+  },
+  "status_retryStatus": {
+    "message": "נסה שוב",
+    "description": "Retry (HE)"
+  },
+  "status_noActionToRepeat": {
+    "message": "אין פעולה לחזור עליה",
+    "description": "No repeat (HE)"
+  },
+  "status_repeating": {
+    "message": "חוזר על",
+    "description": "Repeating (HE)"
+  },
+  "status_repeatFailed": {
+    "message": "חזרה נכשלה",
+    "description": "Repeat failed (HE)"
+  },
+  "status_serviceWorkerUnavailable": {
+    "message": "Service Worker לא זמין.",
+    "description": "Service worker (HE)"
+  },
+  "slots_sectionTitle": {
+    "message": "חריצי כפתור הקשריים",
+    "description": "Slots (HE)"
+  },
+  "slots_help": {
+    "message": "הגדר את 5 כפתורי הפעולה שיופיעו בבחירת טקסט.",
+    "description": "Slots help (HE)"
+  },
+  "slots_presetSection": {
+    "message": "הגדרות מוגדרות מראש",
+    "description": "Presets (HE)"
+  },
+  "slots_presetHelp": {
+    "message": "שמור תצורות חריצים כהגדרות מוגדרות מראש.",
+    "description": "Presets help (HE)"
+  },
+  "slots_activeIndicator": {
+    "message": "פעיל:",
+    "description": "Active (HE)"
+  },
+  "slots_noneActive": {
+    "message": "אף אחד",
+    "description": "None (HE)"
+  },
+  "slots_selectPreset": {
+    "message": "— בחר הגדרה מוגדרת —",
+    "description": "Select preset (HE)"
+  },
+  "slots_applyPreset": {
+    "message": "החל",
+    "description": "Apply (HE)"
+  },
+  "slots_newPreset": {
+    "message": "+ חדש",
+    "description": "New (HE)"
+  },
+  "slots_savePreset": {
+    "message": "שמור",
+    "description": "Save (HE)"
+  },
+  "slots_deletePreset": {
+    "message": "מחק",
+    "description": "Delete (HE)"
+  },
+  "slots_exportPreset": {
+    "message": "ייצא",
+    "description": "Export (HE)"
+  },
+  "slots_importPreset": {
+    "message": "ייבא",
+    "description": "Import (HE)"
+  },
+  "slots_sharePreset": {
+    "message": "שתף",
+    "description": "Share (HE)"
+  },
+  "slots_presetCount": {
+    "message": "$used$/$max$ הגדרות",
+    "description": "Preset count (HE)",
+    "placeholders": {
+      "used": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
+  },
+  "slots_importTitle": {
+    "message": "ייבא הגדרה",
+    "description": "Import title (HE)"
+  },
+  "slots_importPlaceholder": {
+    "message": "הדבק JSON של הגדרת FlashDoc כאן...",
+    "description": "Import placeholder (HE)"
+  },
+  "slots_cancelBtn": {
+    "message": "ביטול",
+    "description": "Cancel (HE)"
+  },
+  "slots_confirmImport": {
+    "message": "ייבא",
+    "description": "Import (HE)"
+  },
+  "slots_exportTitle": {
+    "message": "ייצא הגדרה",
+    "description": "Export title (HE)"
+  },
+  "slots_closeBtn": {
+    "message": "סגור",
+    "description": "Close (HE)"
+  },
+  "slots_copyBtn": {
+    "message": "העתק",
+    "description": "Copy (HE)"
+  },
+  "shortcuts_sectionTitle": {
+    "message": "קיצורי דרך עם קידומת",
+    "description": "Shortcuts (HE)"
+  },
+  "shortcuts_help": {
+    "message": "צור קומבינציות שמירה מהירה.",
+    "description": "Shortcuts help (HE)"
+  },
+  "shortcuts_namePlaceholder": {
+    "message": "הזן קידומת (למשל Design)",
+    "description": "Name placeholder (HE)"
+  },
+  "shortcuts_addBtn": {
+    "message": "הוסף",
+    "description": "Add (HE)"
+  },
+  "shortcuts_emptyState": {
+    "message": "עדיין לא נוצרו קיצורי דרך",
+    "description": "No shortcuts (HE)"
+  },
+  "shortcuts_shortcutCount": {
+    "message": "$used$/$max$ קיצורי דרך",
+    "description": "Shortcut count (HE)",
+    "placeholders": {
+      "used": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
+  },
+  "shortcuts_deleteBtn": {
+    "message": "מחק",
+    "description": "Delete (HE)"
+  },
+  "shortcuts_errorNoName": {
+    "message": "אנא הזן שם קידומת.",
+    "description": "Error no name (HE)"
+  },
+  "shortcuts_errorMaxReached": {
+    "message": "מקסימום $max$ קיצורי דרך מותר.",
+    "description": "Error max (HE)",
+    "placeholders": {
+      "max": {
+        "content": "$1"
+      }
+    }
+  },
+  "shortcuts_errorDuplicate": {
+    "message": "קיצור דרך זה כבר קיים.",
+    "description": "Error duplicate (HE)"
+  },
+  "shortcuts_addedSuccess": {
+    "message": "\"$name$_save.$format$\" נוסף",
+    "description": "Added (HE)",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      },
+      "format": {
+        "content": "$2"
+      }
+    }
+  },
+  "shortcuts_deletedSuccess": {
+    "message": "קיצור דרך נמחק.",
+    "description": "Deleted (HE)"
+  },
+  "recommendations_loading": {
+    "message": "טוען המלצות...",
+    "description": "Loading (HE)"
+  },
+  "recommendations_mostUsedFormat": {
+    "message": "הפורמט הנפוץ ביותר: $format$",
+    "description": "Most used (HE)",
+    "placeholders": {
+      "format": {
+        "content": "$1"
+      }
+    }
+  },
+  "recommendations_smartDetectionEnabled": {
+    "message": "זיהוי חכם מופעל",
+    "description": "Smart detection (HE)"
+  },
+  "recommendations_detectionAccuracy": {
+    "message": "דיוק זיהוי: $percentage$%",
+    "description": "Accuracy (HE)",
+    "placeholders": {
+      "percentage": {
+        "content": "$1"
+      }
+    }
+  },
+  "recommendations_newFeatures": {
+    "message": "תכונות חדשות לזיהוי פורמט",
+    "description": "New features (HE)"
+  },
+  "recommendations_newFeaturesDesc": {
+    "message": "עכשיו תומך ב-TypeScript, XML, SQL, סקריפטי Shell ועוד!",
+    "description": "New features desc (HE)"
+  },
+  "recommendations_tryNewFormats": {
+    "message": "נסה פורמטים חדשים",
+    "description": "Try new (HE)"
+  },
+  "recommendations_filesSaved": {
+    "message": "$count$ קבצים נשמרו",
+    "description": "Files saved (HE)",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "recommendations_keepSaving": {
+    "message": "המשך לשמור להמלצות טובות יותר!",
+    "description": "Keep saving (HE)"
+  },
+  "rtl_warning": {
+    "message": "תמיכת RTL: עברית וערבית נתמכים. הפריסה תתאים אוטומטית.",
+    "description": "RTL notice (HE)"
+  },
+  "contextMenu_autoLabel": {
+    "message": "זיהוי חכם אוטומטי",
+    "description": "Auto detect context menu (HE)"
+  },
+  "contextMenu_autoDesc": {
+    "message": "FlashDoc בוחר את הפורמט הטוב ביותר",
+    "description": "Auto detect description (HE)"
+  },
+  "contextMenu_txtLabel": {
+    "message": "טקסט פשוט (.txt)",
+    "description": "TXT label (HE)"
+  },
+  "contextMenu_txtDesc": {
+    "message": "הערות וטקסט פשוט",
+    "description": "TXT description (HE)"
+  },
+  "contextMenu_mdLabel": {
+    "message": "Markdown (.md)",
+    "description": "MD label (HE)"
+  },
+  "contextMenu_mdDesc": {
+    "message": "מסמכים מעוצבים קלים",
+    "description": "MD description (HE)"
+  },
+  "contextMenu_docxLabel": {
+    "message": "Word (.docx)",
+    "description": "DOCX label (HE)"
+  },
+  "contextMenu_docxDesc": {
+    "message": "מסמכי Microsoft Word",
+    "description": "DOCX description (HE)"
+  },
+  "contextMenu_jsonLabel": {
+    "message": "JSON (.json)",
+    "description": "JSON label (HE)"
+  },
+  "contextMenu_jsonDesc": {
+    "message": "APIs ונתונים מובנים",
+    "description": "JSON description (HE)"
+  },
+  "contextMenu_jsLabel": {
+    "message": "JavaScript (.js)",
+    "description": "JS label (HE)"
+  },
+  "contextMenu_jsDesc": {
+    "message": "קטעי קוד לדפדפן ו-Node",
+    "description": "JS description (HE)"
+  },
+  "contextMenu_tsLabel": {
+    "message": "TypeScript (.ts)",
+    "description": "TS label (HE)"
+  },
+  "contextMenu_tsDesc": {
+    "message": "בלוקי קוד עם טיפוס",
+    "description": "TS description (HE)"
+  },
+  "contextMenu_pyLabel": {
+    "message": "Python (.py)",
+    "description": "PY label (HE)"
+  },
+  "contextMenu_pyDesc": {
+    "message": "סקריפטים ומחשבות",
+    "description": "PY description (HE)"
+  },
+  "contextMenu_htmlLabel": {
+    "message": "HTML (.html)",
+    "description": "HTML label (HE)"
+  },
+  "contextMenu_htmlDesc": {
+    "message": "תבניות וקטעי קוד",
+    "description": "HTML description (HE)"
+  },
+  "contextMenu_cssLabel": {
+    "message": "CSS (.css)",
+    "description": "CSS label (HE)"
+  },
+  "contextMenu_cssDesc": {
+    "message": "גיליונות סגנון",
+    "description": "CSS description (HE)"
+  },
+  "contextMenu_xmlLabel": {
+    "message": "XML (.xml)",
+    "description": "XML label (HE)"
+  },
+  "contextMenu_xmlDesc": {
+    "message": "הגדרות והזנות",
+    "description": "XML description (HE)"
+  },
+  "contextMenu_sqlLabel": {
+    "message": "SQL (.sql)",
+    "description": "SQL label (HE)"
+  },
+  "contextMenu_sqlDesc": {
+    "message": "שאילתות מסד נתונים",
+    "description": "SQL description (HE)"
+  },
+  "contextMenu_shLabel": {
+    "message": "Shell (.sh)",
+    "description": "SH label (HE)"
+  },
+  "contextMenu_shDesc": {
+    "message": "סקריפטי Bash ו-shell",
+    "description": "SH description (HE)"
+  },
+  "contextMenu_yamlLabel": {
+    "message": "YAML (.yaml)",
+    "description": "YAML label (HE)"
+  },
+  "contextMenu_yamlDesc": {
+    "message": "הגדרות ותהליכי עבודה",
+    "description": "YAML description (HE)"
+  },
+  "contextMenu_csvLabel": {
+    "message": "CSV (.csv)",
+    "description": "CSV label (HE)"
+  },
+  "contextMenu_csvDesc": {
+    "message": "גיליונות נתונים וטבלאות",
+    "description": "CSV description (HE)"
+  },
+  "contextMenu_pdfLabel": {
+    "message": "PDF (.pdf)",
+    "description": "PDF label (HE)"
+  },
+  "contextMenu_pdfDesc": {
+    "message": "מסמכים ניידים",
+    "description": "PDF description (HE)"
+  },
+  "contextMenu_labelLabel": {
+    "message": "תווית (PDF 89×28 מ״מ)",
+    "description": "Label format (HE)"
+  },
+  "contextMenu_labelDesc": {
+    "message": "תוויות מוכנות להדפסה",
+    "description": "Label description (HE)"
+  },
+  "contextMenu_saveasLabel": {
+    "message": "שמור בשם…",
+    "description": "Save as option (HE)"
+  },
+  "contextMenu_saveasDesc": {
+    "message": "בחר תיקייה ושם קובץ בכל פעם",
+    "description": "Save as description (HE)"
   }
 }

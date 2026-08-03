@@ -62,10 +62,10 @@ document.addEventListener('DOMContentLoaded', () => {
     
     syncIndicator.className = 'sync-indicator ' + status;
     const messages = {
-      synced: chrome.i18n.getMessage('syncSynced') || 'Synced',
-      syncing: chrome.i18n.getMessage('syncSyncing') || 'Syncing...',
-      offline: chrome.i18n.getMessage('syncOffline') || 'Offline',
-      error: chrome.i18n.getMessage('syncError') || 'Sync Error'
+      synced: chrome.i18n.getMessage('popup_syncSynced') || 'Synced',
+      syncing: chrome.i18n.getMessage('popup_syncSyncing') || 'Syncing...',
+      offline: chrome.i18n.getMessage('popup_syncOffline') || 'Offline',
+      error: chrome.i18n.getMessage('popup_syncError') || 'Sync Error'
     };
     syncText.textContent = messages[status] || messages.synced;
   };

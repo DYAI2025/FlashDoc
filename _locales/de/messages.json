@@ -7,229 +7,868 @@
     "message": "⚡ Select → Save → Done. Instant file creation from any text. PDF, Markdown, Code, YAML - all formats, zero friction.",
     "description": "Extension description (DE)"
   },
-  "popup": {
-    "title": { "message": "FlashDoc", "description": "Popup title (DE)" },
-    "tagline": { "message": "Select → Save → Done", "description": "Tagline (DE)" },
-    "statusReady": { "message": "Bereit", "description": "Status ready (DE)" },
-    "privacyBannerTitle": { "message": "Datenschutzmodus aktiv", "description": "Privacy banner title (DE)" },
-    "privacyBannerSubtitle": { "message": "Klicken Sie hier, um FlashDoc auf dieser Seite zu aktivieren", "description": "Privacy banner subtitle (DE)" },
-    "activateBtn": { "message": "Aktivieren", "description": "Activate button (DE)" },
-    "totalFiles": { "message": "Dateien gesamt", "description": "Total files label (DE)" },
-    "todayLabel": { "message": "Heute", "description": "Today label (DE)" },
-    "lastSaveLabel": { "message": "Letztes Speichern", "description": "Last save label (DE)" },
-    "syncTooltip": { "message": "Sync-Status: Einstellungen werden geräteübergreifend synchronisiert", "description": "Sync tooltip (DE)" },
-    "syncSynced": { "message": "Synchronisiert", "description": "Sync status: synced (DE)" },
-    "syncSyncing": { "message": "Synchronisiere...", "description": "Sync status: syncing (DE)" },
-    "syncOffline": { "message": "Offline", "description": "Sync status: offline (DE)" },
-    "syncError": { "message": "Sync-Fehler", "description": "Sync status: error (DE)" },
-    "quickSaveTitle": { "message": "Schnellspeichern", "description": "Quick save section title (DE)" },
-    "lastActionTitle": { "message": "Letzte Aktion", "description": "Last action section title (DE)" },
-    "noRecentFiles": { "message": "Noch keine Dateien", "description": "No recent files (DE)" },
-    "repeatAction": { "message": "Wiederholen", "description": "Repeat action (DE)" },
-    "shortcutsTitle": { "message": "Tastenkürzel", "description": "Shortcuts section title (DE)" },
-    "openFolder": { "message": "Ordner öffnen", "description": "Open folder (DE)" },
-    "settings": { "message": "Einstellungen", "description": "Settings (DE)" },
-    "help": { "message": "Hilfe", "description": "Help (DE)" },
-    "timeNever": { "message": "Nie", "description": "Never (DE)" },
-    "timeJustNow": { "message": "Gerade eben", "description": "Just now (DE)" }
+  "popup_title": {
+    "message": "FlashDoc",
+    "description": "Popup title (DE)"
   },
-  "options": {
-    "pageTitle": { "message": "FlashDoc Einstellungen", "description": "Options page title (DE)" },
-    "subtitle": { "message": "Passen Sie an, wie FlashDoc überall speichert.", "description": "Options subtitle (DE)" },
-    "storageSection": { "message": "Speicher", "description": "Storage section (DE)" },
-    "folderPathLabel": { "message": "Standardordner", "description": "Folder path (DE)" },
-    "folderPathPlaceholder": { "message": "FlashDocs/", "description": "Folder path placeholder (DE)" },
-    "folderPathHelp": { "message": "Relativ zu Ihrem Download-Verzeichnis.", "description": "Folder path help (DE)" },
-    "namingPatternLabel": { "message": "Namensmuster", "description": "Naming pattern (DE)" },
-    "patternTimestamp": { "message": "Zeitstempel — flashdoc_JJJJ-MM-TT", "description": "Timestamp pattern (DE)" },
-    "patternFirstline": { "message": "Erste Zeile der Auswahl", "description": "First line (DE)" },
-    "patternCustom": { "message": "Benutzerdefiniert", "description": "Custom pattern (DE)" },
-    "customPatternLabel": { "message": "Benutzerdefiniertes Dateinamen-Muster", "description": "Custom pattern (DE)" },
-    "customPatternPlaceholder": { "message": "datei_{datum}_{typ}", "description": "Custom pattern placeholder (DE)" },
-    "livePreviewLabel": { "message": "Vorschau", "description": "Live preview (DE)" },
-    "previewHelp": { "message": "So wird Ihre nächste Datei benannt.", "description": "Preview help (DE)" },
-    "organizeByTypeLabel": { "message": "Nach Format organisieren", "description": "Organize by type (DE)" },
-    "applyBtn": { "message": "Anwenden", "description": "Apply (DE)" },
-    "syncSection": { "message": "Synchronisation & Geräte", "description": "Sync section title (DE)" },
-    "syncSynced": { "message": "Synchronisiert", "description": "Sync status synced (DE)" },
-    "syncSyncing": { "message": "Synchronisiere...", "description": "Sync status syncing (DE)" },
-    "syncOffline": { "message": "Offline", "description": "Sync status offline (DE)" },
-    "syncNever": { "message": "Noch nie synchronisiert", "description": "Sync never happened (DE)" },
-    "syncNowBtn": { "message": "Jetzt synchronisieren", "description": "Force sync button (DE)" },
-    "exportSyncBtn": { "message": "Exportieren", "description": "Export sync data button (DE)" },
-    "importSyncBtn": { "message": "Importieren", "description": "Import sync data button (DE)" },
-    "privacyInfoTitle": { "message": "Was wird synchronisiert?", "description": "Privacy info title (DE)" },
-    "privacySyncedTitle": { "message": "Geräteübergreifend synchronisiert", "description": "Synced items title (DE)" },
-    "privacySyncedDesc": { "message": "Diese Einstellungen werden mit anderen Geräten synchronisiert:", "description": "Synced items description (DE)" },
-    "privacyLocalTitle": { "message": "Nur lokal gespeichert", "description": "Local items title (DE)" },
-    "privacyLocalDesc": { "message": "Diese Daten bleiben nur auf diesem Gerät:", "description": "Local items description (DE)" },
-    "captureSection": { "message": "Erkennung", "description": "Capture section (DE)" },
-    "autoDetectLabel": { "message": "Intelligente Formaterkennung", "description": "Auto detect (DE)" },
-    "highlightLabel": { "message": "Erkannten Typ auf Seite markieren", "description": "Highlight (DE)" },
-    "selectionThresholdLabel": { "message": "Mindestauswahllänge", "description": "Selection threshold (DE)" },
-    "charactersLabel": { "message": "Zeichen", "description": "Characters (DE)" },
-    "privacySection": { "message": "Datenschutz", "description": "Privacy section (DE)" },
-    "privacyModeLabel": { "message": "Datenschutzmodus (Bedarfs-Injektion)", "description": "Privacy mode (DE)" },
-    "privacyHelp": { "message": "Wenn aktiviert, wird FlashDoc nur bei Klick auf das Symbol oder Tastenkürzel aktiviert.", "description": "Privacy help (DE)" },
-    "privacyActive": { "message": "Datenschutzmodus aktiv", "description": "Privacy active (DE)" },
-    "privacyStandard": { "message": "Standardmodus", "description": "Privacy standard (DE)" },
-    "interfaceSection": { "message": "Oberfläche", "description": "Interface section (DE)" },
-    "floatingButtonLabel": { "message": "Schwebender Schnellspeichern-Button", "description": "Floating button (DE)" },
-    "buttonPositionLabel": { "message": "Button-Position", "description": "Button position (DE)" },
-    "positionBottomRight": { "message": "Unten rechts", "description": "Bottom right (DE)" },
-    "positionBottomLeft": { "message": "Unten links", "description": "Bottom left (DE)" },
-    "positionTopRight": { "message": "Oben rechts", "description": "Top right (DE)" },
-    "positionTopLeft": { "message": "Oben links", "description": "Top left (DE)" },
-    "autoHideLabel": { "message": "Bei Inaktivität ausblenden", "description": "Auto hide (DE)" },
-    "contextMenuLabel": { "message": "Kontextmenü-Integration", "description": "Context menu (DE)" },
-    "contextMenuSection": { "message": "Kontextmenü-Formate", "description": "Context menu formats (DE)" },
-    "contextMenuHelp": { "message": "Wählen Sie, welche Formate im Kontextmenü erscheinen.", "description": "Context menu help (DE)" },
-    "cornerBallSection": { "message": "Eckball", "description": "Corner ball (DE)" },
-    "cornerBallLabel": { "message": "Eckball anzeigen", "description": "Corner ball (DE)" },
-    "feedbackSection": { "message": "Feedback", "description": "Feedback section (DE)" },
-    "notificationsLabel": { "message": "Benachrichtigungen anzeigen", "description": "Notifications (DE)" },
-    "soundLabel": { "message": "Bestätigungston abspielen", "description": "Sound (DE)" },
-    "trackingSection": { "message": "Verfolgung & Empfehlungen", "description": "Tracking section (DE)" },
-    "trackFormatUsageLabel": { "message": "Formatnutzung verfolgen", "description": "Track format (DE)" },
-    "trackAccuracyLabel": { "message": "Erkennungsgenauigkeit verfolgen", "description": "Track accuracy (DE)" },
-    "recommendationsLabel": { "message": "Formatempfehlungen anzeigen", "description": "Recommendations (DE)" },
-    "recommendationsTitle": { "message": "Verfügbare Empfehlungen", "description": "Recommendations title (DE)" },
-    "loadingRecommendations": { "message": "Empfehlungen werden geladen...", "description": "Loading (DE)" },
-    "resetDefaults": { "message": "Alle zurücksetzen", "description": "Reset (DE)" },
-    "resetConfirm": { "message": "Alle Einstellungen zurücksetzen?", "description": "Reset confirm (DE)" },
-    "savedSuccess": { "message": "Gespeichert", "description": "Saved (DE)" },
-    "savedError": { "message": "Speichern fehlgeschlagen", "description": "Save error (DE)" },
-    "loadError": { "message": "Einstellungen konnten nicht geladen werden.", "description": "Load error (DE)" }
+  "popup_tagline": {
+    "message": "Select → Save → Done",
+    "description": "Tagline (DE)"
   },
-  "commands": {
-    "smartDesc": { "message": "Intelligentes Speichern (automatische Formaterkennung)", "description": "Smart save (DE)" },
-    "txtDesc": { "message": "Als .txt speichern", "description": "Save as TXT (DE)" },
-    "mdDesc": { "message": "Als .md speichern", "description": "Save as MD (DE)" },
-    "pdfDesc": { "message": "Als PDF speichern", "description": "Save as PDF (DE)" }
+  "popup_statusReady": {
+    "message": "Bereit",
+    "description": "Status ready (DE)"
   },
-  "actions": {
-    "smart": { "message": "Smart", "description": "Smart (DE)" },
-    "smartDesc": { "message": "Automatisch", "description": "Auto-detect (DE)" },
-    "text": { "message": "Text", "description": "Text (DE)" },
-    "textDesc": { "message": ".txt Datei", "description": "TXT file (DE)" },
-    "markdown": { "message": "Markdown", "description": "Markdown (DE)" },
-    "markdownDesc": { "message": ".md Datei", "description": "MD file (DE)" },
-    "word": { "message": "Word", "description": "Word (DE)" },
-    "wordDesc": { "message": ".docx Datei", "description": "DOCX file (DE)" },
-    "pdfAction": { "message": "PDF", "description": "PDF (DE)" },
-    "pdfActionDesc": { "message": "Dokument", "description": "Document (DE)" },
-    "labelAction": { "message": "Label", "description": "Label (DE)" },
-    "labelDesc": { "message": "89×28 mm", "description": "Label size (DE)" },
-    "code": { "message": "Code", "description": "Code (DE)" },
-    "codeDesc": { "message": "Automatisch", "description": "Auto-detect (DE)" },
-    "data": { "message": "Daten", "description": "Data (DE)" },
-    "dataDesc": { "message": "CSV/JSON", "description": "CSV/JSON (DE)" }
+  "popup_privacyBannerTitle": {
+    "message": "Datenschutzmodus aktiv",
+    "description": "Privacy banner title (DE)"
   },
-  "status": {
-    "preparing": { "message": "Speichern vorbereiten...", "description": "Preparing (DE)" },
-    "noActiveTab": { "message": "Kein aktiver Tab", "description": "No active tab (DE)" },
-    "cannotAccess": { "message": "Kann auf diese Seite nicht zugreifen.", "description": "Cannot access (DE)" },
-    "selectText": { "message": "Text zuerst auswählen", "description": "Select text (DE)" },
-    "savingPageSource": { "message": "Seitenquellcode speichern...", "description": "Saving page (DE)" },
-    "pageSourceSaved": { "message": "Seitenquellcode gespeichert", "description": "Page saved (DE)" },
-    "savedAs": { "message": "Gespeichert als", "description": "Saved as (DE)" },
-    "activating": { "message": "Aktivieren...", "description": "Activating (DE)" },
-    "flashdocActivated": { "message": "FlashDoc aktiviert!", "description": "Activated (DE)" },
-    "activeStatus": { "message": "Aktiv", "description": "Active (DE)" },
-    "retryStatus": { "message": "Wiederholen", "description": "Retry (DE)" },
-    "noActionToRepeat": { "message": "Keine Aktion zu wiederholen", "description": "No repeat (DE)" },
-    "repeating": { "message": "Wiederhole", "description": "Repeating (DE)" },
-    "repeatFailed": { "message": "Wiederholen fehlgeschlagen", "description": "Repeat failed (DE)" },
-    "serviceWorkerUnavailable": { "message": "Service-Worker nicht verfügbar.", "description": "Service worker (DE)" }
+  "popup_privacyBannerSubtitle": {
+    "message": "Klicken Sie hier, um FlashDoc auf dieser Seite zu aktivieren",
+    "description": "Privacy banner subtitle (DE)"
   },
-  "slots": {
-    "sectionTitle": { "message": "Kontextuelle Chip-Slots", "description": "Slots (DE)" },
-    "help": { "message": "Konfigurieren Sie die 5 Aktions-Buttons, die bei Textauswahl erscheinen.", "description": "Slots help (DE)" },
-    "presetSection": { "message": "Slot-Presets", "description": "Presets (DE)" },
-    "presetHelp": { "message": "Speichern Sie Slot-Konfigurationen als Presets.", "description": "Presets help (DE)" },
-    "activeIndicator": { "message": "Aktiv:", "description": "Active (DE)" },
-    "noneActive": { "message": "Keins", "description": "None (DE)" },
-    "selectPreset": { "message": "— Preset wählen —", "description": "Select preset (DE)" },
-    "applyPreset": { "message": "Anwenden", "description": "Apply (DE)" },
-    "newPreset": { "message": "+ Neu", "description": "New (DE)" },
-    "savePreset": { "message": "Speichern", "description": "Save (DE)" },
-    "deletePreset": { "message": "Löschen", "description": "Delete (DE)" },
-    "exportPreset": { "message": "Export", "description": "Export (DE)" },
-    "importPreset": { "message": "Import", "description": "Import (DE)" },
-    "sharePreset": { "message": "Teilen", "description": "Share (DE)" },
-    "presetCount": { "message": "$used$/$max$ Presets", "description": "Preset count (DE)" },
-    "importTitle": { "message": "Preset importieren", "description": "Import title (DE)" },
-    "importPlaceholder": { "message": "FlashDoc Preset JSON hier einfügen...", "description": "Import placeholder (DE)" },
-    "cancelBtn": { "message": "Abbrechen", "description": "Cancel (DE)" },
-    "confirmImport": { "message": "Importieren", "description": "Import (DE)" },
-    "exportTitle": { "message": "Preset exportieren", "description": "Export title (DE)" },
-    "closeBtn": { "message": "Schließen", "description": "Close (DE)" },
-    "copyBtn": { "message": "Kopieren", "description": "Copy (DE)" }
+  "popup_activateBtn": {
+    "message": "Aktivieren",
+    "description": "Activate button (DE)"
   },
-  "shortcuts": {
-    "sectionTitle": { "message": "Prefix-Shortcuts", "description": "Shortcuts (DE)" },
-    "help": { "message": "Erstellen Sie Schnellspeicher-Kombinationen.", "description": "Shortcuts help (DE)" },
-    "namePlaceholder": { "message": "Prefix eingeben (z.B. Design)", "description": "Name placeholder (DE)" },
-    "addBtn": { "message": "Hinzufügen", "description": "Add (DE)" },
-    "emptyState": { "message": "Noch keine Shortcuts erstellt", "description": "No shortcuts (DE)" },
-    "shortcutCount": { "message": "$used$/$max$ Shortcuts", "description": "Shortcut count (DE)" },
-    "deleteBtn": { "message": "Löschen", "description": "Delete (DE)" },
-    "errorNoName": { "message": "Bitte einen Prefix-Namen eingeben.", "description": "Error no name (DE)" },
-    "errorMaxReached": { "message": "Maximal $max$ Shortcuts erlaubt.", "description": "Error max (DE)" },
-    "errorDuplicate": { "message": "Dieser Shortcut existiert bereits.", "description": "Error duplicate (DE)" },
-    "addedSuccess": { "message": "\"$name$_save.$format$\" hinzugefügt", "description": "Added (DE)" },
-    "deletedSuccess": { "message": "Shortcut gelöscht.", "description": "Deleted (DE)" }
+  "popup_totalFiles": {
+    "message": "Dateien gesamt",
+    "description": "Total files label (DE)"
   },
-  "recommendations": {
-    "loading": { "message": "Empfehlungen werden geladen...", "description": "Loading (DE)" },
-    "mostUsedFormat": { "message": "Meistgenutztes Format: $format$", "description": "Most used (DE)" },
-    "smartDetectionEnabled": { "message": "Intelligente Auto-Erkennung aktiviert", "description": "Smart detection (DE)" },
-    "detectionAccuracy": { "message": "Erkennungsgenauigkeit: $percentage$%", "description": "Accuracy (DE)" },
-    "newFeatures": { "message": "Neue Formaterkennungs-Features", "description": "New features (DE)" },
-    "newFeaturesDesc": { "message": "Unterstützt jetzt TypeScript, XML, SQL, Shell-Skripte und mehr!", "description": "New features desc (DE)" },
-    "tryNewFormats": { "message": "Neue Formate ausprobieren", "description": "Try new (DE)" },
-    "filesSaved": { "message": "$count$ Dateien gespeichert", "description": "Files saved (DE)" },
-    "keepSaving": { "message": "Weiter speichern für bessere Empfehlungen!", "description": "Keep saving (DE)" }
+  "popup_todayLabel": {
+    "message": "Heute",
+    "description": "Today label (DE)"
   },
-  "rtl": {
-    "warning": { "message": "RTL-Support: Hebräisch und Arabisch werden unterstützt.", "description": "RTL notice (DE)" }
+  "popup_lastSaveLabel": {
+    "message": "Letztes Speichern",
+    "description": "Last save label (DE)"
   },
-  "contextMenu": {
-    "autoLabel": { "message": "Smart Auto-Erkennung", "description": "Auto detect context menu (DE)" },
-    "autoDesc": { "message": "FlashDoc wählt das beste Format", "description": "Auto detect description (DE)" },
-    "txtLabel": { "message": "Klartext (.txt)", "description": "TXT label (DE)" },
-    "txtDesc": { "message": "Einfache Notizen und Prosa", "description": "TXT description (DE)" },
-    "mdLabel": { "message": "Markdown (.md)", "description": "MD label (DE)" },
-    "mdDesc": { "message": "Leicht formatierte Dokumente", "description": "MD description (DE)" },
-    "docxLabel": { "message": "Word (.docx)", "description": "DOCX label (DE)" },
-    "docxDesc": { "message": "Microsoft Word-Dokumente", "description": "DOCX description (DE)" },
-    "jsonLabel": { "message": "JSON (.json)", "description": "JSON label (DE)" },
-    "jsonDesc": { "message": "APIs und strukturierte Daten", "description": "JSON description (DE)" },
-    "jsLabel": { "message": "JavaScript (.js)", "description": "JS label (DE)" },
-    "jsDesc": { "message": "Browser- und Node-Snippets", "description": "JS description (DE)" },
-    "tsLabel": { "message": "TypeScript (.ts)", "description": "TS label (DE)" },
-    "tsDesc": { "message": "Typisierte Code-Blöcke", "description": "TS description (DE)" },
-    "pyLabel": { "message": "Python (.py)", "description": "PY label (DE)" },
-    "pyDesc": { "message": "Skripte & Notebooks", "description": "PY description (DE)" },
-    "htmlLabel": { "message": "HTML (.html)", "description": "HTML label (DE)" },
-    "htmlDesc": { "message": "Vorlagen und Snippets", "description": "HTML description (DE)" },
-    "cssLabel": { "message": "CSS (.css)", "description": "CSS label (DE)" },
-    "cssDesc": { "message": "Stylesheets", "description": "CSS description (DE)" },
-    "xmlLabel": { "message": "XML (.xml)", "description": "XML label (DE)" },
-    "xmlDesc": { "message": "Konfigurationen und Feeds", "description": "XML description (DE)" },
-    "sqlLabel": { "message": "SQL (.sql)", "description": "SQL label (DE)" },
-    "sqlDesc": { "message": "Datenbankabfragen", "description": "SQL description (DE)" },
-    "shLabel": { "message": "Shell (.sh)", "description": "SH label (DE)" },
-    "shDesc": { "message": "Bash- & Shell-Skripte", "description": "SH description (DE)" },
-    "yamlLabel": { "message": "YAML (.yaml)", "description": "YAML label (DE)" },
-    "yamlDesc": { "message": "Konfigurationen & Workflows", "description": "YAML description (DE)" },
-    "csvLabel": { "message": "CSV (.csv)", "description": "CSV label (DE)" },
-    "csvDesc": { "message": "Tabellen und Daten", "description": "CSV description (DE)" },
-    "pdfLabel": { "message": "PDF (.pdf)", "description": "PDF label (DE)" },
-    "pdfDesc": { "message": "Portierbare Dokumente", "description": "PDF description (DE)" },
-    "labelLabel": { "message": "Etikett (89×28mm PDF)", "description": "Label format (DE)" },
-    "labelDesc": { "message": "Druckfertige Etiketten", "description": "Label description (DE)" },
-    "saveasLabel": { "message": "Speichern unter…", "description": "Save as option (DE)" },
-    "saveasDesc": { "message": "Ordner & Dateiname jedes Mal auswählen", "description": "Save as description (DE)" }
+  "popup_syncTooltip": {
+    "message": "Sync-Status: Einstellungen werden geräteübergreifend synchronisiert",
+    "description": "Sync tooltip (DE)"
+  },
+  "popup_syncSynced": {
+    "message": "Synchronisiert",
+    "description": "Sync status: synced (DE)"
+  },
+  "popup_syncSyncing": {
+    "message": "Synchronisiere...",
+    "description": "Sync status: syncing (DE)"
+  },
+  "popup_syncOffline": {
+    "message": "Offline",
+    "description": "Sync status: offline (DE)"
+  },
+  "popup_syncError": {
+    "message": "Sync-Fehler",
+    "description": "Sync status: error (DE)"
+  },
+  "popup_quickSaveTitle": {
+    "message": "Schnellspeichern",
+    "description": "Quick save section title (DE)"
+  },
+  "popup_lastActionTitle": {
+    "message": "Letzte Aktion",
+    "description": "Last action section title (DE)"
+  },
+  "popup_noRecentFiles": {
+    "message": "Noch keine Dateien",
+    "description": "No recent files (DE)"
+  },
+  "popup_repeatAction": {
+    "message": "Wiederholen",
+    "description": "Repeat action (DE)"
+  },
+  "popup_shortcutsTitle": {
+    "message": "Tastenkürzel",
+    "description": "Shortcuts section title (DE)"
+  },
+  "popup_openFolder": {
+    "message": "Ordner öffnen",
+    "description": "Open folder (DE)"
+  },
+  "popup_settings": {
+    "message": "Einstellungen",
+    "description": "Settings (DE)"
+  },
+  "popup_help": {
+    "message": "Hilfe",
+    "description": "Help (DE)"
+  },
+  "popup_timeNever": {
+    "message": "Nie",
+    "description": "Never (DE)"
+  },
+  "popup_timeJustNow": {
+    "message": "Gerade eben",
+    "description": "Just now (DE)"
+  },
+  "options_pageTitle": {
+    "message": "FlashDoc Einstellungen",
+    "description": "Options page title (DE)"
+  },
+  "options_subtitle": {
+    "message": "Passen Sie an, wie FlashDoc überall speichert.",
+    "description": "Options subtitle (DE)"
+  },
+  "options_storageSection": {
+    "message": "Speicher",
+    "description": "Storage section (DE)"
+  },
+  "options_folderPathLabel": {
+    "message": "Standardordner",
+    "description": "Folder path (DE)"
+  },
+  "options_folderPathPlaceholder": {
+    "message": "FlashDocs/",
+    "description": "Folder path placeholder (DE)"
+  },
+  "options_folderPathHelp": {
+    "message": "Relativ zu Ihrem Download-Verzeichnis.",
+    "description": "Folder path help (DE)"
+  },
+  "options_namingPatternLabel": {
+    "message": "Namensmuster",
+    "description": "Naming pattern (DE)"
+  },
+  "options_patternTimestamp": {
+    "message": "Zeitstempel — flashdoc_JJJJ-MM-TT",
+    "description": "Timestamp pattern (DE)"
+  },
+  "options_patternFirstline": {
+    "message": "Erste Zeile der Auswahl",
+    "description": "First line (DE)"
+  },
+  "options_patternCustom": {
+    "message": "Benutzerdefiniert",
+    "description": "Custom pattern (DE)"
+  },
+  "options_customPatternLabel": {
+    "message": "Benutzerdefiniertes Dateinamen-Muster",
+    "description": "Custom pattern (DE)"
+  },
+  "options_customPatternPlaceholder": {
+    "message": "datei_{datum}_{typ}",
+    "description": "Custom pattern placeholder (DE)"
+  },
+  "options_livePreviewLabel": {
+    "message": "Vorschau",
+    "description": "Live preview (DE)"
+  },
+  "options_previewHelp": {
+    "message": "So wird Ihre nächste Datei benannt.",
+    "description": "Preview help (DE)"
+  },
+  "options_organizeByTypeLabel": {
+    "message": "Nach Format organisieren",
+    "description": "Organize by type (DE)"
+  },
+  "options_applyBtn": {
+    "message": "Anwenden",
+    "description": "Apply (DE)"
+  },
+  "options_syncSection": {
+    "message": "Synchronisation & Geräte",
+    "description": "Sync section title (DE)"
+  },
+  "options_syncSynced": {
+    "message": "Synchronisiert",
+    "description": "Sync status synced (DE)"
+  },
+  "options_syncSyncing": {
+    "message": "Synchronisiere...",
+    "description": "Sync status syncing (DE)"
+  },
+  "options_syncOffline": {
+    "message": "Offline",
+    "description": "Sync status offline (DE)"
+  },
+  "options_syncNever": {
+    "message": "Noch nie synchronisiert",
+    "description": "Sync never happened (DE)"
+  },
+  "options_syncNowBtn": {
+    "message": "Jetzt synchronisieren",
+    "description": "Force sync button (DE)"
+  },
+  "options_exportSyncBtn": {
+    "message": "Exportieren",
+    "description": "Export sync data button (DE)"
+  },
+  "options_importSyncBtn": {
+    "message": "Importieren",
+    "description": "Import sync data button (DE)"
+  },
+  "options_privacyInfoTitle": {
+    "message": "Was wird synchronisiert?",
+    "description": "Privacy info title (DE)"
+  },
+  "options_privacySyncedTitle": {
+    "message": "Geräteübergreifend synchronisiert",
+    "description": "Synced items title (DE)"
+  },
+  "options_privacySyncedDesc": {
+    "message": "Diese Einstellungen werden mit anderen Geräten synchronisiert:",
+    "description": "Synced items description (DE)"
+  },
+  "options_privacyLocalTitle": {
+    "message": "Nur lokal gespeichert",
+    "description": "Local items title (DE)"
+  },
+  "options_privacyLocalDesc": {
+    "message": "Diese Daten bleiben nur auf diesem Gerät:",
+    "description": "Local items description (DE)"
+  },
+  "options_captureSection": {
+    "message": "Erkennung",
+    "description": "Capture section (DE)"
+  },
+  "options_autoDetectLabel": {
+    "message": "Intelligente Formaterkennung",
+    "description": "Auto detect (DE)"
+  },
+  "options_highlightLabel": {
+    "message": "Erkannten Typ auf Seite markieren",
+    "description": "Highlight (DE)"
+  },
+  "options_selectionThresholdLabel": {
+    "message": "Mindestauswahllänge",
+    "description": "Selection threshold (DE)"
+  },
+  "options_charactersLabel": {
+    "message": "Zeichen",
+    "description": "Characters (DE)"
+  },
+  "options_privacySection": {
+    "message": "Datenschutz",
+    "description": "Privacy section (DE)"
+  },
+  "options_privacyModeLabel": {
+    "message": "Datenschutzmodus (Bedarfs-Injektion)",
+    "description": "Privacy mode (DE)"
+  },
+  "options_privacyHelp": {
+    "message": "Wenn aktiviert, wird FlashDoc nur bei Klick auf das Symbol oder Tastenkürzel aktiviert.",
+    "description": "Privacy help (DE)"
+  },
+  "options_privacyActive": {
+    "message": "Datenschutzmodus aktiv",
+    "description": "Privacy active (DE)"
+  },
+  "options_privacyStandard": {
+    "message": "Standardmodus",
+    "description": "Privacy standard (DE)"
+  },
+  "options_interfaceSection": {
+    "message": "Oberfläche",
+    "description": "Interface section (DE)"
+  },
+  "options_floatingButtonLabel": {
+    "message": "Schwebender Schnellspeichern-Button",
+    "description": "Floating button (DE)"
+  },
+  "options_buttonPositionLabel": {
+    "message": "Button-Position",
+    "description": "Button position (DE)"
+  },
+  "options_positionBottomRight": {
+    "message": "Unten rechts",
+    "description": "Bottom right (DE)"
+  },
+  "options_positionBottomLeft": {
+    "message": "Unten links",
+    "description": "Bottom left (DE)"
+  },
+  "options_positionTopRight": {
+    "message": "Oben rechts",
+    "description": "Top right (DE)"
+  },
+  "options_positionTopLeft": {
+    "message": "Oben links",
+    "description": "Top left (DE)"
+  },
+  "options_autoHideLabel": {
+    "message": "Bei Inaktivität ausblenden",
+    "description": "Auto hide (DE)"
+  },
+  "options_contextMenuLabel": {
+    "message": "Kontextmenü-Integration",
+    "description": "Context menu (DE)"
+  },
+  "options_contextMenuSection": {
+    "message": "Kontextmenü-Formate",
+    "description": "Context menu formats (DE)"
+  },
+  "options_contextMenuHelp": {
+    "message": "Wählen Sie, welche Formate im Kontextmenü erscheinen.",
+    "description": "Context menu help (DE)"
+  },
+  "options_cornerBallSection": {
+    "message": "Eckball",
+    "description": "Corner ball (DE)"
+  },
+  "options_cornerBallLabel": {
+    "message": "Eckball anzeigen",
+    "description": "Corner ball (DE)"
+  },
+  "options_feedbackSection": {
+    "message": "Feedback",
+    "description": "Feedback section (DE)"
+  },
+  "options_notificationsLabel": {
+    "message": "Benachrichtigungen anzeigen",
+    "description": "Notifications (DE)"
+  },
+  "options_soundLabel": {
+    "message": "Bestätigungston abspielen",
+    "description": "Sound (DE)"
+  },
+  "options_trackingSection": {
+    "message": "Verfolgung & Empfehlungen",
+    "description": "Tracking section (DE)"
+  },
+  "options_trackFormatUsageLabel": {
+    "message": "Formatnutzung verfolgen",
+    "description": "Track format (DE)"
+  },
+  "options_trackAccuracyLabel": {
+    "message": "Erkennungsgenauigkeit verfolgen",
+    "description": "Track accuracy (DE)"
+  },
+  "options_recommendationsLabel": {
+    "message": "Formatempfehlungen anzeigen",
+    "description": "Recommendations (DE)"
+  },
+  "options_recommendationsTitle": {
+    "message": "Verfügbare Empfehlungen",
+    "description": "Recommendations title (DE)"
+  },
+  "options_loadingRecommendations": {
+    "message": "Empfehlungen werden geladen...",
+    "description": "Loading (DE)"
+  },
+  "options_resetDefaults": {
+    "message": "Alle zurücksetzen",
+    "description": "Reset (DE)"
+  },
+  "options_resetConfirm": {
+    "message": "Alle Einstellungen zurücksetzen?",
+    "description": "Reset confirm (DE)"
+  },
+  "options_savedSuccess": {
+    "message": "Gespeichert",
+    "description": "Saved (DE)"
+  },
+  "options_savedError": {
+    "message": "Speichern fehlgeschlagen",
+    "description": "Save error (DE)"
+  },
+  "options_loadError": {
+    "message": "Einstellungen konnten nicht geladen werden.",
+    "description": "Load error (DE)"
+  },
+  "commands_smartDesc": {
+    "message": "Intelligentes Speichern (automatische Formaterkennung)",
+    "description": "Smart save (DE)"
+  },
+  "commands_txtDesc": {
+    "message": "Als .txt speichern",
+    "description": "Save as TXT (DE)"
+  },
+  "commands_mdDesc": {
+    "message": "Als .md speichern",
+    "description": "Save as MD (DE)"
+  },
+  "commands_pdfDesc": {
+    "message": "Als PDF speichern",
+    "description": "Save as PDF (DE)"
+  },
+  "actions_smart": {
+    "message": "Smart",
+    "description": "Smart (DE)"
+  },
+  "actions_smartDesc": {
+    "message": "Automatisch",
+    "description": "Auto-detect (DE)"
+  },
+  "actions_text": {
+    "message": "Text",
+    "description": "Text (DE)"
+  },
+  "actions_textDesc": {
+    "message": ".txt Datei",
+    "description": "TXT file (DE)"
+  },
+  "actions_markdown": {
+    "message": "Markdown",
+    "description": "Markdown (DE)"
+  },
+  "actions_markdownDesc": {
+    "message": ".md Datei",
+    "description": "MD file (DE)"
+  },
+  "actions_word": {
+    "message": "Word",
+    "description": "Word (DE)"
+  },
+  "actions_wordDesc": {
+    "message": ".docx Datei",
+    "description": "DOCX file (DE)"
+  },
+  "actions_pdfAction": {
+    "message": "PDF",
+    "description": "PDF (DE)"
+  },
+  "actions_pdfActionDesc": {
+    "message": "Dokument",
+    "description": "Document (DE)"
+  },
+  "actions_labelAction": {
+    "message": "Label",
+    "description": "Label (DE)"
+  },
+  "actions_labelDesc": {
+    "message": "89×28 mm",
+    "description": "Label size (DE)"
+  },
+  "actions_code": {
+    "message": "Code",
+    "description": "Code (DE)"
+  },
+  "actions_codeDesc": {
+    "message": "Automatisch",
+    "description": "Auto-detect (DE)"
+  },
+  "actions_data": {
+    "message": "Daten",
+    "description": "Data (DE)"
+  },
+  "actions_dataDesc": {
+    "message": "CSV/JSON",
+    "description": "CSV/JSON (DE)"
+  },
+  "status_preparing": {
+    "message": "Speichern vorbereiten...",
+    "description": "Preparing (DE)"
+  },
+  "status_noActiveTab": {
+    "message": "Kein aktiver Tab",
+    "description": "No active tab (DE)"
+  },
+  "status_cannotAccess": {
+    "message": "Kann auf diese Seite nicht zugreifen.",
+    "description": "Cannot access (DE)"
+  },
+  "status_selectText": {
+    "message": "Text zuerst auswählen",
+    "description": "Select text (DE)"
+  },
+  "status_savingPageSource": {
+    "message": "Seitenquellcode speichern...",
+    "description": "Saving page (DE)"
+  },
+  "status_pageSourceSaved": {
+    "message": "Seitenquellcode gespeichert",
+    "description": "Page saved (DE)"
+  },
+  "status_savedAs": {
+    "message": "Gespeichert als",
+    "description": "Saved as (DE)"
+  },
+  "status_activating": {
+    "message": "Aktivieren...",
+    "description": "Activating (DE)"
+  },
+  "status_flashdocActivated": {
+    "message": "FlashDoc aktiviert!",
+    "description": "Activated (DE)"
+  },
+  "status_activeStatus": {
+    "message": "Aktiv",
+    "description": "Active (DE)"
+  },
+  "status_retryStatus": {
+    "message": "Wiederholen",
+    "description": "Retry (DE)"
+  },
+  "status_noActionToRepeat": {
+    "message": "Keine Aktion zu wiederholen",
+    "description": "No repeat (DE)"
+  },
+  "status_repeating": {
+    "message": "Wiederhole",
+    "description": "Repeating (DE)"
+  },
+  "status_repeatFailed": {
+    "message": "Wiederholen fehlgeschlagen",
+    "description": "Repeat failed (DE)"
+  },
+  "status_serviceWorkerUnavailable": {
+    "message": "Service-Worker nicht verfügbar.",
+    "description": "Service worker (DE)"
+  },
+  "slots_sectionTitle": {
+    "message": "Kontextuelle Chip-Slots",
+    "description": "Slots (DE)"
+  },
+  "slots_help": {
+    "message": "Konfigurieren Sie die 5 Aktions-Buttons, die bei Textauswahl erscheinen.",
+    "description": "Slots help (DE)"
+  },
+  "slots_presetSection": {
+    "message": "Slot-Presets",
+    "description": "Presets (DE)"
+  },
+  "slots_presetHelp": {
+    "message": "Speichern Sie Slot-Konfigurationen als Presets.",
+    "description": "Presets help (DE)"
+  },
+  "slots_activeIndicator": {
+    "message": "Aktiv:",
+    "description": "Active (DE)"
+  },
+  "slots_noneActive": {
+    "message": "Keins",
+    "description": "None (DE)"
+  },
+  "slots_selectPreset": {
+    "message": "— Preset wählen —",
+    "description": "Select preset (DE)"
+  },
+  "slots_applyPreset": {
+    "message": "Anwenden",
+    "description": "Apply (DE)"
+  },
+  "slots_newPreset": {
+    "message": "+ Neu",
+    "description": "New (DE)"
+  },
+  "slots_savePreset": {
+    "message": "Speichern",
+    "description": "Save (DE)"
+  },
+  "slots_deletePreset": {
+    "message": "Löschen",
+    "description": "Delete (DE)"
+  },
+  "slots_exportPreset": {
+    "message": "Export",
+    "description": "Export (DE)"
+  },
+  "slots_importPreset": {
+    "message": "Import",
+    "description": "Import (DE)"
+  },
+  "slots_sharePreset": {
+    "message": "Teilen",
+    "description": "Share (DE)"
+  },
+  "slots_presetCount": {
+    "message": "$used$/$max$ Presets",
+    "description": "Preset count (DE)",
+    "placeholders": {
+      "used": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
+  },
+  "slots_importTitle": {
+    "message": "Preset importieren",
+    "description": "Import title (DE)"
+  },
+  "slots_importPlaceholder": {
+    "message": "FlashDoc Preset JSON hier einfügen...",
+    "description": "Import placeholder (DE)"
+  },
+  "slots_cancelBtn": {
+    "message": "Abbrechen",
+    "description": "Cancel (DE)"
+  },
+  "slots_confirmImport": {
+    "message": "Importieren",
+    "description": "Import (DE)"
+  },
+  "slots_exportTitle": {
+    "message": "Preset exportieren",
+    "description": "Export title (DE)"
+  },
+  "slots_closeBtn": {
+    "message": "Schließen",
+    "description": "Close (DE)"
+  },
+  "slots_copyBtn": {
+    "message": "Kopieren",
+    "description": "Copy (DE)"
+  },
+  "shortcuts_sectionTitle": {
+    "message": "Prefix-Shortcuts",
+    "description": "Shortcuts (DE)"
+  },
+  "shortcuts_help": {
+    "message": "Erstellen Sie Schnellspeicher-Kombinationen.",
+    "description": "Shortcuts help (DE)"
+  },
+  "shortcuts_namePlaceholder": {
+    "message": "Prefix eingeben (z.B. Design)",
+    "description": "Name placeholder (DE)"
+  },
+  "shortcuts_addBtn": {
+    "message": "Hinzufügen",
+    "description": "Add (DE)"
+  },
+  "shortcuts_emptyState": {
+    "message": "Noch keine Shortcuts erstellt",
+    "description": "No shortcuts (DE)"
+  },
+  "shortcuts_shortcutCount": {
+    "message": "$used$/$max$ Shortcuts",
+    "description": "Shortcut count (DE)",
+    "placeholders": {
+      "used": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
+  },
+  "shortcuts_deleteBtn": {
+    "message": "Löschen",
+    "description": "Delete (DE)"
+  },
+  "shortcuts_errorNoName": {
+    "message": "Bitte einen Prefix-Namen eingeben.",
+    "description": "Error no name (DE)"
+  },
+  "shortcuts_errorMaxReached": {
+    "message": "Maximal $max$ Shortcuts erlaubt.",
+    "description": "Error max (DE)",
+    "placeholders": {
+      "max": {
+        "content": "$1"
+      }
+    }
+  },
+  "shortcuts_errorDuplicate": {
+    "message": "Dieser Shortcut existiert bereits.",
+    "description": "Error duplicate (DE)"
+  },
+  "shortcuts_addedSuccess": {
+    "message": "\"$name$_save.$format$\" hinzugefügt",
+    "description": "Added (DE)",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      },
+      "format": {
+        "content": "$2"
+      }
+    }
+  },
+  "shortcuts_deletedSuccess": {
+    "message": "Shortcut gelöscht.",
+    "description": "Deleted (DE)"
+  },
+  "recommendations_loading": {
+    "message": "Empfehlungen werden geladen...",
+    "description": "Loading (DE)"
+  },
+  "recommendations_mostUsedFormat": {
+    "message": "Meistgenutztes Format: $format$",
+    "description": "Most used (DE)",
+    "placeholders": {
+      "format": {
+        "content": "$1"
+      }
+    }
+  },
+  "recommendations_smartDetectionEnabled": {
+    "message": "Intelligente Auto-Erkennung aktiviert",
+    "description": "Smart detection (DE)"
+  },
+  "recommendations_detectionAccuracy": {
+    "message": "Erkennungsgenauigkeit: $percentage$%",
+    "description": "Accuracy (DE)",
+    "placeholders": {
+      "percentage": {
+        "content": "$1"
+      }
+    }
+  },
+  "recommendations_newFeatures": {
+    "message": "Neue Formaterkennungs-Features",
+    "description": "New features (DE)"
+  },
+  "recommendations_newFeaturesDesc": {
+    "message": "Unterstützt jetzt TypeScript, XML, SQL, Shell-Skripte und mehr!",
+    "description": "New features desc (DE)"
+  },
+  "recommendations_tryNewFormats": {
+    "message": "Neue Formate ausprobieren",
+    "description": "Try new (DE)"
+  },
+  "recommendations_filesSaved": {
+    "message": "$count$ Dateien gespeichert",
+    "description": "Files saved (DE)",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "recommendations_keepSaving": {
+    "message": "Weiter speichern für bessere Empfehlungen!",
+    "description": "Keep saving (DE)"
+  },
+  "rtl_warning": {
+    "message": "RTL-Support: Hebräisch und Arabisch werden unterstützt.",
+    "description": "RTL notice (DE)"
+  },
+  "contextMenu_autoLabel": {
+    "message": "Smart Auto-Erkennung",
+    "description": "Auto detect context menu (DE)"
+  },
+  "contextMenu_autoDesc": {
+    "message": "FlashDoc wählt das beste Format",
+    "description": "Auto detect description (DE)"
+  },
+  "contextMenu_txtLabel": {
+    "message": "Klartext (.txt)",
+    "description": "TXT label (DE)"
+  },
+  "contextMenu_txtDesc": {
+    "message": "Einfache Notizen und Prosa",
+    "description": "TXT description (DE)"
+  },
+  "contextMenu_mdLabel": {
+    "message": "Markdown (.md)",
+    "description": "MD label (DE)"
+  },
+  "contextMenu_mdDesc": {
+    "message": "Leicht formatierte Dokumente",
+    "description": "MD description (DE)"
+  },
+  "contextMenu_docxLabel": {
+    "message": "Word (.docx)",
+    "description": "DOCX label (DE)"
+  },
+  "contextMenu_docxDesc": {
+    "message": "Microsoft Word-Dokumente",
+    "description": "DOCX description (DE)"
+  },
+  "contextMenu_jsonLabel": {
+    "message": "JSON (.json)",
+    "description": "JSON label (DE)"
+  },
+  "contextMenu_jsonDesc": {
+    "message": "APIs und strukturierte Daten",
+    "description": "JSON description (DE)"
+  },
+  "contextMenu_jsLabel": {
+    "message": "JavaScript (.js)",
+    "description": "JS label (DE)"
+  },
+  "contextMenu_jsDesc": {
+    "message": "Browser- und Node-Snippets",
+    "description": "JS description (DE)"
+  },
+  "contextMenu_tsLabel": {
+    "message": "TypeScript (.ts)",
+    "description": "TS label (DE)"
+  },
+  "contextMenu_tsDesc": {
+    "message": "Typisierte Code-Blöcke",
+    "description": "TS description (DE)"
+  },
+  "contextMenu_pyLabel": {
+    "message": "Python (.py)",
+    "description": "PY label (DE)"
+  },
+  "contextMenu_pyDesc": {
+    "message": "Skripte & Notebooks",
+    "description": "PY description (DE)"
+  },
+  "contextMenu_htmlLabel": {
+    "message": "HTML (.html)",
+    "description": "HTML label (DE)"
+  },
+  "contextMenu_htmlDesc": {
+    "message": "Vorlagen und Snippets",
+    "description": "HTML description (DE)"
+  },
+  "contextMenu_cssLabel": {
+    "message": "CSS (.css)",
+    "description": "CSS label (DE)"
+  },
+  "contextMenu_cssDesc": {
+    "message": "Stylesheets",
+    "description": "CSS description (DE)"
+  },
+  "contextMenu_xmlLabel": {
+    "message": "XML (.xml)",
+    "description": "XML label (DE)"
+  },
+  "contextMenu_xmlDesc": {
+    "message": "Konfigurationen und Feeds",
+    "description": "XML description (DE)"
+  },
+  "contextMenu_sqlLabel": {
+    "message": "SQL (.sql)",
+    "description": "SQL label (DE)"
+  },
+  "contextMenu_sqlDesc": {
+    "message": "Datenbankabfragen",
+    "description": "SQL description (DE)"
+  },
+  "contextMenu_shLabel": {
+    "message": "Shell (.sh)",
+    "description": "SH label (DE)"
+  },
+  "contextMenu_shDesc": {
+    "message": "Bash- & Shell-Skripte",
+    "description": "SH description (DE)"
+  },
+  "contextMenu_yamlLabel": {
+    "message": "YAML (.yaml)",
+    "description": "YAML label (DE)"
+  },
+  "contextMenu_yamlDesc": {
+    "message": "Konfigurationen & Workflows",
+    "description": "YAML description (DE)"
+  },
+  "contextMenu_csvLabel": {
+    "message": "CSV (.csv)",
+    "description": "CSV label (DE)"
+  },
+  "contextMenu_csvDesc": {
+    "message": "Tabellen und Daten",
+    "description": "CSV description (DE)"
+  },
+  "contextMenu_pdfLabel": {
+    "message": "PDF (.pdf)",
+    "description": "PDF label (DE)"
+  },
+  "contextMenu_pdfDesc": {
+    "message": "Portierbare Dokumente",
+    "description": "PDF description (DE)"
+  },
+  "contextMenu_labelLabel": {
+    "message": "Etikett (89×28mm PDF)",
+    "description": "Label format (DE)"
+  },
+  "contextMenu_labelDesc": {
+    "message": "Druckfertige Etiketten",
+    "description": "Label description (DE)"
+  },
+  "contextMenu_saveasLabel": {
+    "message": "Speichern unter…",
+    "description": "Save as option (DE)"
+  },
+  "contextMenu_saveasDesc": {
+    "message": "Ordner & Dateiname jedes Mal auswählen",
+    "description": "Save as description (DE)"
   }
 }
