@@ -1675,16 +1675,16 @@ function updateSyncStatusDisplay(status) {
   
   // Determine status class
   let statusClass = 'synced';
-  let statusText = chrome.i18n.getMessage('syncSynced') || 'Synced';
+  let statusText = chrome.i18n.getMessage('options_syncSynced') || 'Synced';
   
   if (status.isSyncing) {
     statusClass = 'syncing';
-    statusText = chrome.i18n.getMessage('syncSyncing') || 'Syncing...';
+    statusText = chrome.i18n.getMessage('options_syncSyncing') || 'Syncing...';
   } else if (status.error) {
     statusClass = status.error === 'offline' ? 'offline' : 'error';
     statusText = status.error === 'offline' 
-      ? (chrome.i18n.getMessage('syncOffline') || 'Offline')
-      : (chrome.i18n.getMessage('syncError') || 'Sync Error');
+      ? (chrome.i18n.getMessage('options_syncOffline') || 'Offline')
+      : (chrome.i18n.getMessage('popup_syncError') || 'Sync Error');
   }
   
   syncBadge.className = 'sync-badge ' + statusClass;
@@ -1694,7 +1694,7 @@ function updateSyncStatusDisplay(status) {
   if (status.lastSyncFormatted && status.lastSyncFormatted !== 'Nie') {
     syncTime.textContent = status.lastSyncFormatted;
   } else {
-    syncTime.textContent = chrome.i18n.getMessage('syncNever') || 'Never synced';
+    syncTime.textContent = chrome.i18n.getMessage('options_syncNever') || 'Never synced';
   }
 }
 

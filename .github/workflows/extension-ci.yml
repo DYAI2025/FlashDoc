@@ -1,0 +1,38 @@
+name: Extension CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  validate-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Validate manifest, locales and file references
+        run: node scripts/validate-extension.cjs
+
+      - name: Detection sanity checks
+        run: node scripts/detection-check.js
+
+      - name: v3 feature suite
+        run: node scripts/v3-features-test.cjs
+
+      - name: Format quality suite
+        run: node scripts/format-quality-test.cjs
+
+      - name: Build store ZIP (fail-closed, validates extracted artifact)
+        run: bash scripts/build-zip.sh
+
+      - name: Upload store artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: flashdoc-store-zip
+          path: FlashDoc-v*.zip
+          if-no-files-found: error

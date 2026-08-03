@@ -8,7 +8,6 @@
     <link rel="stylesheet" href="_locales/rtl.css">
     <script src="sync-manager.js"></script>
     <script src="i18n.js"></script>
-    <script src="popup.js"></script>
 <body>
     <div class="container">
         <!-- Animated Header -->
@@ -16,17 +15,17 @@
             <div class="logo-container">
                 <div class="logo-icon">⚡</div>
                 <div class="logo-text">
-                    <h1>__MSG_popup.title__</h1>
-                    <p class="tagline">__MSG_popup.tagline__</p>
+                    <h1>__MSG_popup_title__</h1>
+                    <p class="tagline">__MSG_popup_tagline__</p>
                 </div>
             </div>
             <div class="status-indicator">
                 <span class="status-dot" id="sync-dot"></span>
-                <span class="status-text" id="sync-status">__MSG_popup.statusReady__</span>
+                <span class="status-text" id="sync-status">__MSG_popup_statusReady__</span>
             </div>
-            <div class="sync-indicator" id="sync-indicator" title="__MSG_popup.syncTooltip__">
+            <div class="sync-indicator" id="sync-indicator" title="__MSG_popup_syncTooltip__">
                 <span class="sync-icon">🔄</span>
-                <span class="sync-text" id="sync-text">__MSG_popup.syncSynced__</span>
+                <span class="sync-text" id="sync-text">__MSG_popup_syncSynced__</span>
             </div>
         </header>
 
@@ -39,7 +38,7 @@
                     <span id="privacy-reason">Click to activate FlashDoc on this page</span>
                 </div>
             </div>
-            <button class="activate-btn" id="activate-btn">__MSG_popup.activateBtn__</button>
+            <button class="activate-btn" id="activate-btn">__MSG_popup_activateBtn__</button>
         </section>
 
         <!-- Live Stats Dashboard -->
@@ -48,107 +47,107 @@
                 <div class="stat-icon">📊</div>
                 <div class="stat-content">
                     <span class="stat-value" id="total-files">0</span>
-                    <span class="stat-label">__MSG_popup.totalFiles__</span>
+                    <span class="stat-label">__MSG_popup_totalFiles__</span>
                 </div>
             </div>
             <div class="stat-card secondary">
                 <div class="stat-icon">📁</div>
                 <div class="stat-content">
                     <span class="stat-value" id="today-files">0</span>
-                    <span class="stat-label">__MSG_popup.todayLabel__</span>
+                    <span class="stat-label">__MSG_popup_todayLabel__</span>
                 </div>
             </div>
             <div class="stat-card accent">
                 <div class="stat-icon">⏱️</div>
                 <div class="stat-content">
-                    <span class="stat-value" id="last-saved">__MSG_popup.timeNever__</span>
-                    <span class="stat-label">__MSG_popup.lastSaveLabel__</span>
+                    <span class="stat-value" id="last-saved">__MSG_popup_timeNever__</span>
+                    <span class="stat-label">__MSG_popup_lastSaveLabel__</span>
                 </div>
             </div>
         </section>
 
         <!-- Quick Actions Grid -->
         <section class="quick-actions">
-            <h2 class="section-title">__MSG_popup.quickSaveTitle__</h2>
+            <h2 class="section-title">__MSG_popup_quickSaveTitle__</h2>
             <div class="actions-grid">
                 <button class="action-card" data-action="smart">
                     <span class="action-icon">🎯</span>
-                    <span class="action-name">__MSG_actions.smart__</span>
-                    <span class="action-desc">__MSG_actions.smartDesc__</span>
+                    <span class="action-name">__MSG_actions_smart__</span>
+                    <span class="action-desc">__MSG_actions_smartDesc__</span>
                 </button>
                 <button class="action-card" data-action="txt">
                     <span class="action-icon">📄</span>
-                    <span class="action-name">__MSG_actions.text__</span>
-                    <span class="action-desc">__MSG_actions.textDesc__</span>
+                    <span class="action-name">__MSG_actions_text__</span>
+                    <span class="action-desc">__MSG_actions_textDesc__</span>
                 </button>
                 <button class="action-card" data-action="md">
                     <span class="action-icon">📝</span>
-                    <span class="action-name">__MSG_actions.markdown__</span>
-                    <span class="action-desc">__MSG_actions.markdownDesc__</span>
+                    <span class="action-name">__MSG_actions_markdown__</span>
+                    <span class="action-desc">__MSG_actions_markdownDesc__</span>
                 </button>
                 <button class="action-card" data-action="docx">
                     <span class="action-icon">📜</span>
-                    <span class="action-name">__MSG_actions.word__</span>
-                    <span class="action-desc">__MSG_actions.wordDesc__</span>
+                    <span class="action-name">__MSG_actions_word__</span>
+                    <span class="action-desc">__MSG_actions_wordDesc__</span>
                 </button>
                 <button class="action-card" data-action="pdf">
                     <span class="action-icon">📕</span>
-                    <span class="action-name">__MSG_actions.pdfAction__</span>
-                    <span class="action-desc">__MSG_actions.pdfActionDesc__</span>
+                    <span class="action-name">__MSG_actions_pdfAction__</span>
+                    <span class="action-desc">__MSG_actions_pdfActionDesc__</span>
                 </button>
                 <button class="action-card" data-action="label">
                     <span class="action-icon">🏷️</span>
-                    <span class="action-name">__MSG_actions.labelAction__</span>
-                    <span class="action-desc">__MSG_actions.labelDesc__</span>
+                    <span class="action-name">__MSG_actions_labelAction__</span>
+                    <span class="action-desc">__MSG_actions_labelDesc__</span>
                 </button>
                 <button class="action-card" data-action="code">
                     <span class="action-icon">👨‍💻</span>
-                    <span class="action-name">__MSG_actions.code__</span>
-                    <span class="action-desc">__MSG_actions.codeDesc__</span>
+                    <span class="action-name">__MSG_actions_code__</span>
+                    <span class="action-desc">__MSG_actions_codeDesc__</span>
                 </button>
                 <button class="action-card" data-action="data">
                     <span class="action-icon">📊</span>
-                    <span class="action-name">__MSG_actions.data__</span>
-                    <span class="action-desc">__MSG_actions.dataDesc__</span>
+                    <span class="action-name">__MSG_actions_data__</span>
+                    <span class="action-desc">__MSG_actions_dataDesc__</span>
                 </button>
             </div>
         </section>
 
         <!-- Recent Files / Last Action -->
         <section class="recent-files">
-            <h2 class="section-title">__MSG_popup.lastActionTitle__</h2>
+            <h2 class="section-title">__MSG_popup_lastActionTitle__</h2>
             <div class="recent-list" id="recent-list">
                 <div class="empty-state">
                     <span class="empty-icon">📂</span>
-                    <p>__MSG_popup.noRecentFiles__</p>
+                    <p>__MSG_popup_noRecentFiles__</p>
                 </div>
             </div>
             <!-- Repeat Last Action Button -->
             <button class="repeat-action-btn hidden" id="repeat-action-btn">
                 <span class="repeat-icon">🔄</span>
-                <span class="repeat-text">__MSG_popup.repeatAction__: <span id="repeat-type">.txt</span></span>
+                <span class="repeat-text">__MSG_popup_repeatAction__: <span id="repeat-type">.txt</span></span>
             </button>
         </section>
 
         <!-- Keyboard Shortcuts -->
         <section class="shortcuts">
-            <h2 class="section-title">__MSG_popup.shortcutsTitle__</h2>
+            <h2 class="section-title">__MSG_popup_shortcutsTitle__</h2>
             <div class="shortcut-list">
                 <div class="shortcut">
                     <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd>
-                    <span>__MSG_commands.smartDesc__</span>
+                    <span>__MSG_commands_smartDesc__</span>
                 </div>
                 <div class="shortcut">
                     <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>T</kbd>
-                    <span>__MSG_commands.txtDesc__</span>
+                    <span>__MSG_commands_txtDesc__</span>
                 </div>
                 <div class="shortcut">
                     <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>M</kbd>
-                    <span>__MSG_commands.mdDesc__</span>
+                    <span>__MSG_commands_mdDesc__</span>
                 </div>
                 <div class="shortcut">
                     <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>
-                    <span>__MSG_commands.pdfDesc__</span>
+                    <span>__MSG_commands_pdfDesc__</span>
                 </div>
             </div>
         </section>
@@ -157,15 +156,15 @@
         <footer class="footer">
             <button class="footer-btn" id="open-folder">
                 <span>📁</span>
-                <span>__MSG_popup.openFolder__</span>
+                <span>__MSG_popup_openFolder__</span>
             </button>
             <button class="footer-btn" id="settings">
                 <span>⚙️</span>
-                <span>__MSG_popup.settings__</span>
+                <span>__MSG_popup_settings__</span>
             </button>
             <button class="footer-btn" id="help">
                 <span>❓</span>
-                <span>__MSG_popup.help__</span>
+                <span>__MSG_popup_help__</span>
             </button>
         </footer>
     </div>
