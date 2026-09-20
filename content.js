@@ -494,10 +494,8 @@ class FlashDocContent {
         .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
         // Remove comments
         .replace(/<!--[\s\S]*?-->/g, '')
-        // Clean excessive whitespace between tags
-        .replace(/>\s+</g, '><')
-        // Remove leading/trailing whitespace in tags
-        .replace(/\s+/g, ' ')
+        // Preserve inter-element and preformatted whitespace; renderer normalization
+        // must not change the user's selected text semantics.
         .trim();
 
       return html;
