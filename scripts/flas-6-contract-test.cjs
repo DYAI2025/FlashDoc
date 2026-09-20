@@ -30,6 +30,41 @@ check('structured payload preserves html', structured.html.includes('<strong>bol
 check('structured payload preserves sourceUrl', structured.sourceUrl === 'https://example.test/page');
 check('structured payload preserves frameId', structured.frameId === 3);
 
+const whitespaceSpan = api.createSelectionPayload({
+  text: 'one two',
+  html: '<strong>one</strong><span> </span><em>two</em>'
+});
+check('whitespace-only span is unwrapped without deleting its separator',
+  whitespaceSpan.html === '<strong>one</strong> <em>two</em>',
+  whitespaceSpan.html);
+
+const nbspSpan = api.createSelectionPayload({
+  text: 'one\u00a0two',
+  html: '<strong>one</strong><span>&nbsp;</span><em>two</em>'
+});
+check('nbsp-only span is unwrapped without deleting its separator',
+  nbspSpan.html === '<strong>one</strong>&nbsp;<em>two</em>',
+  nbspSpan.html);
+
+const legacyFont = api.createSelectionPayload({
+  text: 'before important after',
+  html: 'before <font color="red">important</font> after'
+});
+check('legacy font wrapper is removed without deleting text',
+  legacyFont.html === 'before important after',
+  legacyFont.html);
+
+const unsafeMarkup = api.createSelectionPayload({
+  text: 'safe',
+  html: '<style>.x{}</style><script>alert(1)</script><!--comment--><strong>safe</strong>'
+});
+check('script/style/comments are stripped centrally',
+  unsafeMarkup.html === '<strong>safe</strong>',
+  unsafeMarkup.html);
+
+check('comparable text canonicalizes NBSP and whitespace',
+  api.normalizeComparableText('one\u00a0\n two') === 'one two');
+
 const unavailable = api.createSelectionPayload({ text: 'plain', html: null, sourceUrl: null, frameId: undefined });
 check('html absence is explicit empty string', unavailable.html === '');
 check('unknown sourceUrl is explicit null', unavailable.sourceUrl === null);
@@ -53,6 +88,17 @@ check('popup sends selection object', popup.includes('selection: FlashDocSelecti
 check('repeat reuses canonical selection', popup.includes('const selectionResult = await getSelectionPayload(tab.id);') && popup.includes('sendSaveRequest(selection, lastActionData.type)'));
 check('floating UI sends canonical selection', content.includes('selection: this.createSelectionPayload()'));
 check('content scripts include shared contract', sw.includes("js: ['detection-utils.js', 'selection-payload.js', 'content.js']"));
+
+check('service worker no longer owns selection span sanitizing',
+  !sw.includes(".replace(/<span[^>]*>\\s*<\\/span>/gi, '')"));
+check('popup no longer owns selection style/script sanitizing',
+  !popup.includes(".replace(/<style[^>]*>[\\s\\S]*?<\\/style>/gi, '')"));
+check('content script no longer owns destructive whitespace-span sanitizing',
+  !content.includes(".replace(/<span[^>]*>\\s*<\\/span>/gi, '')") &&
+  !content.includes(".replace(/<span[^>]*>(?:\\s*&nbsp;\\s*)*<\\/span>/gi, '')"));
+check('service worker exposes semantic parity gate',
+  sw.includes('selectionHtmlMatchesText(selection)') &&
+  sw.includes('HTML/text semantic mismatch; using plain text'));
 
 console.log(failures === 0 ? '\nFLAS-6 CONTRACT OK' : '\nFLAS-6 CONTRACT FAILED (' + failures + ')');
 process.exit(failures === 0 ? 0 : 1);
