@@ -1777,7 +1777,7 @@ class FlashDoc {
     return blocks;
   }
 
-  buildSelectionTextPattern(html) {
+  buildSelectionTextSegments(html) {
     if (!html || !html.trim()) return null;
 
     try {
@@ -1786,9 +1786,21 @@ class FlashDoc {
         'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
         'ul', 'ol', 'li', 'blockquote', 'pre', 'tr', 'td', 'th', 'br', 'hr'
       ]);
-      const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      let source = '^\\s*';
+      const segments = [];
       let hasText = false;
+
+      const pushWhitespace = (required) => {
+        const last = segments[segments.length - 1];
+        if (last && last.type === 'whitespace') {
+          if (required) last.required = true;
+          return;
+        }
+        segments.push({ type: 'whitespace', required });
+      };
+
+      // Browser Selection.toString() may include leading/trailing whitespace
+      // around selected block elements; tolerate it without regex backtracking.
+      pushWhitespace(false);
 
       for (const token of HtmlTokenizer.tokenize(html)) {
         if (token.type === 'text') {
@@ -1796,18 +1808,19 @@ class FlashDoc {
           for (const chunk of chunks) {
             if (!chunk) continue;
             if (/^[ \t\r\n\f\v\u00a0]+$/.test(chunk)) {
-              source += '\\s+';
+              pushWhitespace(true);
             } else {
-              source += escapeRegex(chunk);
+              segments.push({ type: 'text', value: chunk });
               hasText = true;
             }
           }
         } else if (blockBoundaryTags.has(token.tag)) {
-          source += '\\s*';
+          pushWhitespace(false);
         }
       }
 
-      return hasText ? new RegExp(source + '\\s*$') : null;
+      pushWhitespace(false);
+      return hasText ? segments : null;
     } catch (error) {
       console.warn('[FlashDoc] Selection HTML comparison failed; plain-text fallback will be used', {
         errorType: error?.name || 'Error'
@@ -1816,10 +1829,31 @@ class FlashDoc {
     }
   }
 
+  matchSelectionTextSegments(text, segments) {
+    if (!segments) return false;
+    const value = typeof text === 'string' ? text : '';
+    let offset = 0;
+    const isWhitespace = (char) => /[ \t\r\n\f\v\u00a0]/.test(char);
+
+    for (const segment of segments) {
+      if (segment.type === 'whitespace') {
+        const startOffset = offset;
+        while (offset < value.length && isWhitespace(value[offset])) offset++;
+        if (segment.required && offset === startOffset) return false;
+        continue;
+      }
+
+      if (!value.startsWith(segment.value, offset)) return false;
+      offset += segment.value.length;
+    }
+
+    return offset === value.length;
+  }
+
   selectionHtmlMatchesText(selection) {
     if (!FlashDocSelection.hasStructuredHtml(selection)) return true;
-    const pattern = this.buildSelectionTextPattern(selection.html);
-    return Boolean(pattern && pattern.test(selection.text || ''));
+    const segments = this.buildSelectionTextSegments(selection.html);
+    return this.matchSelectionTextSegments(selection.text, segments);
   }
   async saveSelection(selectionInput, type, tab, options = {}) {
     let selection = FlashDocSelection.withRuntimeContext(selectionInput, {
