@@ -1703,11 +1703,11 @@ class FlashDoc {
             container.appendChild(range.cloneContents());
             html = container.innerHTML
               .replace(/<span[^>]*>\s*<\/span>/gi, '')
-              .replace(/<font[^>]*>[\s\S]*?<\/font>/gi, '')
+              .replace(/<font[^>]*>/gi, '')
+              .replace(/<\/font>/gi, '')
               .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
               .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
               .replace(/<!--[\s\S]*?-->/g, '')
-              .replace(/>\s+</g, '><')
               .replace(/\n+/g, '\n')
               .trim();
           } catch (_) {
