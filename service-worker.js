@@ -1781,10 +1781,13 @@ class FlashDoc {
     if (!html || !html.trim()) return '';
 
     try {
-      const blocks = this.buildCanonicalBlocks('', html);
-      return blocks
-        .map((block) => (block.runs || []).map((run) => run.text || '').join(''))
-        .join(' ');
+      // Range.toString()/Selection.toString() concatenates text-node contents;
+      // do the same here. Do not inject synthetic block separators, otherwise
+      // valid structured HTML can be rejected even when no selected text changed.
+      return HtmlTokenizer.tokenize(html)
+        .filter((token) => token.type === 'text')
+        .map((token) => token.content || '')
+        .join('');
     } catch (error) {
       console.warn('[FlashDoc] Selection HTML comparison failed; plain-text fallback will be used', {
         errorType: error?.name || 'Error'
