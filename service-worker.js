@@ -1759,14 +1759,29 @@ class FlashDoc {
     }
   }
 
+  buildCanonicalBlocks(content, html = '') {
+    let blocks;
+    if (html && html.trim()) {
+      const tokens = HtmlTokenizer.tokenize(html);
+      blocks = BlockBuilder.build(tokens);
+    }
+    if (!blocks || blocks.length === 0) {
+      blocks = PlainTextStructurer.structure(content);
+    }
+    if (!blocks || blocks.length === 0) {
+      blocks = [{
+        type: 'paragraph',
+        runs: [{ text: (content || '').trim(), bold: false, italic: false, underline: false, strikethrough: false, code: false }]
+      }];
+    }
+    return blocks;
+  }
+
   getComparableTextFromSelectionHtml(html) {
     if (!html || !html.trim()) return '';
 
     try {
-      const tokens = HtmlTokenizer.tokenize(html);
-      const blocks = BlockBuilder.build(tokens);
-      if (!blocks || blocks.length === 0) return '';
-
+      const blocks = this.buildCanonicalBlocks('', html);
       return blocks
         .map((block) => (block.runs || []).map((run) => run.text || '').join(''))
         .join(' ');
@@ -2061,23 +2076,8 @@ class FlashDoc {
     const margin = 20;
     const maxWidth = pageWidth - (margin * 2);
 
-    // Parse HTML or structure plain text
-    let blocks;
-    if (html && html.trim()) {
-      const tokens = HtmlTokenizer.tokenize(html);
-      blocks = BlockBuilder.build(tokens);
-    }
-    if (!blocks || blocks.length === 0) {
-      // Use PlainTextStructurer for intelligent structure detection
-      blocks = PlainTextStructurer.structure(content);
-    }
-    if (!blocks || blocks.length === 0) {
-      // Absolute fallback: single paragraph with all content
-      blocks = [{
-        type: 'paragraph',
-        runs: [{ text: content.trim(), bold: false, italic: false, underline: false, strikethrough: false, code: false }]
-      }];
-    }
+    // PDF and DOCX share the same canonical block representation.
+    const blocks = this.buildCanonicalBlocks(content, html);
 
     const fontSizes = {
       h1: 20, h2: 16, h3: 14, h4: 12, h5: 11, h6: 10,
@@ -2295,25 +2295,8 @@ class FlashDoc {
   async createDocxBlob(content, html = '') {
     const { Document, Paragraph, TextRun, Packer, HeadingLevel, AlignmentType, BorderStyle } = docx;
 
-    // Parse HTML or structure plain text
-    let blocks;
-    if (html && html.trim()) {
-      const tokens = HtmlTokenizer.tokenize(html);
-      console.log('[DOCX] Tokens count:', tokens.length);
-      console.log('[DOCX] Tokens:', JSON.stringify(tokens.slice(0, 10), null, 2));
-      blocks = BlockBuilder.build(tokens);
-    }
-    if (!blocks || blocks.length === 0) {
-      // Use PlainTextStructurer for intelligent structure detection
-      blocks = PlainTextStructurer.structure(content);
-    }
-    if (!blocks || blocks.length === 0) {
-      // Absolute fallback: single paragraph
-      blocks = [{
-        type: 'paragraph',
-        runs: [{ text: content.trim(), bold: false, italic: false, underline: false, strikethrough: false, code: false }]
-      }];
-    }
+    // PDF and DOCX share the same canonical block representation.
+    const blocks = this.buildCanonicalBlocks(content, html);
 
     const headingLevels = {
       1: HeadingLevel.HEADING_1,
