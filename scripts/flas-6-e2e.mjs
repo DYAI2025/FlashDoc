@@ -240,6 +240,19 @@ const oracleBad = { canonicalBlocks: [{ type: 'paragraph', runs: [
 check('canonical oracle distinguishes material whitespace loss',
   canonicalSignature(oracleGood) !== canonicalSignature(oracleBad));
 
+const nestedParity = await sw.evaluate(() => {
+  const html = '<div>'.repeat(100) +
+    '<strong>one</strong><span> </span><em>two</em>' +
+    '</div>'.repeat(100);
+  return {
+    good: globalThis.__flashDoc.selectionHtmlMatchesText({ text: 'one two', html }),
+    bad: globalThis.__flashDoc.selectionHtmlMatchesText({ text: 'onetwo', html })
+  };
+});
+check('deeply nested block markup matches without backtracking oracle',
+  nestedParity.good === true && nestedParity.bad === false,
+  JSON.stringify(nestedParity));
+
 console.log('\n=== FLAS-6 browser verification ===');
 const formats = ['md', 'pdf', 'docx'];
 const entries = [
