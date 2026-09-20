@@ -259,17 +259,48 @@ document.addEventListener('DOMContentLoaded', () => {
     return tab || null;
   };
 
-  const getSelectionText = async (tabId) => {
-    if (!tabId) return { text: '', success: false };
+  const getSelectionPayload = async (tabId) => {
+    if (!tabId) {
+      return { selection: FlashDocSelection.createSelectionPayload(), success: false };
+    }
     try {
       const [result] = await chrome.scripting.executeScript({
         target: { tabId },
-        func: () => window.getSelection().toString()
+        func: () => {
+          const sel = window.getSelection();
+          if (!sel || sel.rangeCount === 0) {
+            return { text: '', html: '', sourceUrl: window.location.href };
+          }
+          const text = sel.toString();
+          let html = '';
+          try {
+            const range = sel.getRangeAt(0);
+            const container = document.createElement('div');
+            container.appendChild(range.cloneContents());
+            html = container.innerHTML
+              .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+              .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+              .replace(/<!--[\s\S]*?-->/g, '')
+              .replace(/>\s+</g, '><')
+              .trim();
+          } catch (_) {
+            html = '';
+          }
+          return { text, html, sourceUrl: window.location.href };
+        }
       });
-      return { text: (result && result.result) || '', success: true };
+      return {
+        selection: FlashDocSelection.createSelectionPayload({
+          text: result?.result?.text || '',
+          html: result?.result?.html || '',
+          sourceUrl: result?.result?.sourceUrl || null,
+          frameId: Number.isInteger(result?.frameId) ? result.frameId : null
+        }),
+        success: true
+      };
     } catch (error) {
       console.warn('Selection read failed:', error);
-      return { text: '', success: false, error };
+      return { selection: FlashDocSelection.createSelectionPayload(), success: false, error };
     }
   };
 
@@ -287,11 +318,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  const sendSaveRequest = async (content, type) => {
+  const sendSaveRequest = async (selection, type) => {
     try {
       const response = await sendMessageWithTimeout({
         action: 'saveContent',
-        content,
+        selection: FlashDocSelection.createSelectionPayload(selection),
         type,
       }, 5000);
       return response || { success: false, error: 'No response from service worker' };
@@ -319,18 +350,30 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    const selection = await getSelectionText(tab.id);
+    const selectionResult = await getSelectionPayload(tab.id);
+    let selection = selectionResult.selection;
     let text = selection.text.trim();
 
     if (!text && action === 'smart') {
       text = `${tab.title || 'Untitled'}\n${tab.url || ''}`.trim();
+      selection = FlashDocSelection.createSelectionPayload({
+        text,
+        html: '',
+        sourceUrl: tab.url || null,
+        frameId: null
+      });
     }
 
     if (!text && action === 'code') {
       text = await getPageSource(tab.id);
       if (text) {
         setStatus('Saving page source...', 'info');
-        const response = await sendSaveRequest(text, 'html');
+        const response = await sendSaveRequest(FlashDocSelection.createSelectionPayload({
+          text,
+          html: '',
+          sourceUrl: tab.url || null,
+          frameId: null
+        }), 'html');
         if (response.success) {
           await loadStats(true);
           setStatus('Page source saved', 'ok');
@@ -342,7 +385,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (!text) {
-      if (selection.error) {
+      if (selectionResult.error) {
         setStatus('Cannot access this page. Try a different tab.', 'error');
       } else {
         setStatus('Select text first', 'warn');
@@ -351,7 +394,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const type = resolveActionType(action, text);
-    const response = await sendSaveRequest(text, type);
+    const response = await sendSaveRequest(selection, type);
 
     if (response.success) {
       const label = type === 'auto' ? 'smart' : type;
@@ -497,7 +540,8 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      const selection = await getSelectionText(tab.id);
+      const selectionResult = await getSelectionPayload(tab.id);
+      const selection = selectionResult.selection;
       const text = selection.text.trim();
 
       if (!text) {
@@ -507,7 +551,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       // Send save request with the last used type
-      const response = await sendSaveRequest(text, lastActionData.type);
+      const response = await sendSaveRequest(selection, lastActionData.type);
 
       if (response.success) {
         await loadStats(true);
