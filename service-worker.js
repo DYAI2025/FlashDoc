@@ -1786,37 +1786,7 @@ class FlashDoc {
         'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
         'ul', 'ol', 'li', 'blockquote', 'pre', 'tr', 'td', 'th', 'br', 'hr'
       ]);
-      const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\  getComparableTextFromSelectionHtml(html) {
-    if (!html || !html.trim()) return '';
-
-    try {
-      // Build semantic blocks so block boundaries become separators, while
-      // preserving inline whitespace that changes token identity.
-      const blocks = this.buildCanonicalBlocks('', html);
-      return blocks
-        .map((block) => (block.runs || []).map((run) => run.text || '').join(''))
-        .join(' ');
-    } catch (error) {
-      console.warn('[FlashDoc] Selection HTML comparison failed; plain-text fallback will be used', {
-        errorType: error?.name || 'Error'
-      });
-      return '';
-    }
-  }
-
-  selectionHtmlMatchesText(selection) {
-    if (!FlashDocSelection.hasStructuredHtml(selection)) return true;
-
-    const selectedTokens = FlashDocSelection.tokenizeComparableText(selection.text);
-    const htmlTokens = FlashDocSelection.tokenizeComparableText(
-      this.getComparableTextFromSelectionHtml(selection.html)
-    );
-
-    return selectedTokens.length > 0 &&
-      selectedTokens.length === htmlTokens.length &&
-      selectedTokens.every((token, index) => token === htmlTokens[index]);
-  }
-');
+      const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       let source = '^\\s*';
       let hasText = false;
 
@@ -1833,13 +1803,24 @@ class FlashDoc {
             }
           }
         } else if (blockBoundaryTags.has(token.tag)) {
-          // Browser Selection.toString() may expose block boundaries as zero or
-          // more whitespace depending on DOM/layout; tolerate only that variance.
           source += '\\s*';
         }
       }
 
-      return hasText ? new RegExp(source + '\\s*
+      return hasText ? new RegExp(source + '\\s*$') : null;
+    } catch (error) {
+      console.warn('[FlashDoc] Selection HTML comparison failed; plain-text fallback will be used', {
+        errorType: error?.name || 'Error'
+      });
+      return null;
+    }
+  }
+
+  selectionHtmlMatchesText(selection) {
+    if (!FlashDocSelection.hasStructuredHtml(selection)) return true;
+    const pattern = this.buildSelectionTextPattern(selection.html);
+    return Boolean(pattern && pattern.test(selection.text || ''));
+  }
   async saveSelection(selectionInput, type, tab, options = {}) {
     let selection = FlashDocSelection.withRuntimeContext(selectionInput, {
       sourceUrl: tab?.url || null
