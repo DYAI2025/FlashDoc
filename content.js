@@ -380,26 +380,10 @@ class FlashDocContent {
         
         // If we got meaningful content, use it
         if (container.innerHTML.trim() && container.innerHTML !== '&nbsp;') {
-          let html = container.innerHTML;
+          const html = container.innerHTML;
           
-          // Clean up while preserving structure
-          html = html
-            // Remove empty elements that add no value
-            .replace(/<span[^>]*>\s*<\/span>/gi, '')
-            // Unwrap legacy font tags without deleting their selected text.
-            .replace(/<font[^>]*>/gi, '')
-            .replace(/<\/font>/gi, '')
-            .replace(/<span[^>]*>(?:\s*&nbsp;\s*)*<\/span>/gi, '')
-            // Remove style blocks (not content)
-            .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
-            // Remove script tags
-            .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
-            // Remove comments
-            .replace(/<!--[\s\S]*?-->/g, '')
-            // Preserve inter-element whitespace; only normalize repeated line breaks.
-            .replace(/\n+/g, '\n')
-            .trim();
-          
+          // Raw DOM markup is normalized exactly once by
+          // FlashDocSelection.createSelectionPayload().
           if (html.length > 0) {
             console.log('[FlashDoc] HTML captured via cloneContents:', html.length, 'chars');
             return html;
@@ -466,42 +450,11 @@ class FlashDocContent {
     }
   }
 
-  // Sanitize and clean HTML for export
-  // IMPROVED: Better sanitization that preserves structure while removing artifacts
+  // Return raw markup only. String-level selection normalization is owned by
+  // FlashDocSelection so every entry point applies the same rules.
   sanitizeHtmlForExport(node) {
-    if (!node) return '';
-
-    // If node is an Element, use innerHTML
-    if (node.nodeType === Node.ELEMENT_NODE) {
-      let html = node.innerHTML;
-
-      // Clean up common artifacts while preserving structure
-      html = html
-        // Remove empty spans (often from formatting)
-        .replace(/<span[^>]*>\s*<\/span>/gi, '')
-        // Remove empty divs
-        .replace(/<div[^>]*>\s*<\/div>/gi, '')
-        // Remove empty paragraphs
-        .replace(/<p[^>]*>\s*<\/p>/gi, '')
-        // Remove empty line breaks
-        .replace(/<br\s*\/?>\s*<br\s*\/?>/gi, '<br>')
-        // Clean legacy font tags
-        .replace(/<font[^>]*>/gi, '')
-        .replace(/<\/font>/gi, '')
-        // Clean style tags in content
-        .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
-        // Clean script tags (shouldn't be in selection but just in case)
-        .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
-        // Remove comments
-        .replace(/<!--[\s\S]*?-->/g, '')
-        // Preserve inter-element and preformatted whitespace; renderer normalization
-        // must not change the user's selected text semantics.
-        .trim();
-
-      return html;
-    }
-
-    return '';
+    if (!node || node.nodeType !== Node.ELEMENT_NODE) return '';
+    return node.innerHTML;
   }
 
   onSelectionCleared() {
