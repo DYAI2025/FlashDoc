@@ -100,10 +100,10 @@ check('service worker exposes semantic parity gate',
   sw.includes('selectionHtmlMatchesText(selection)') &&
   sw.includes('HTML/text semantic mismatch; using plain text'));
 
-check('service worker distinguishes block-boundary and inline whitespace',
-  sw.includes('buildSelectionTextPattern(html)') &&
-  sw.includes("source += '\\\\s*'") &&
-  sw.includes("source += '\\\\s+'"));
+check('service worker uses deterministic segment parity matcher',
+  sw.includes('buildSelectionTextSegments(html)') &&
+  sw.includes('matchSelectionTextSegments(text, segments)') &&
+  !sw.includes('new RegExp(source'));
 
 console.log(failures === 0 ? '\nFLAS-6 CONTRACT OK' : '\nFLAS-6 CONTRACT FAILED (' + failures + ')');
 process.exit(failures === 0 ? 0 : 1);
