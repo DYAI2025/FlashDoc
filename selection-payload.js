@@ -8,10 +8,33 @@
   const normalizeFrameId = (value) =>
     Number.isInteger(value) && value >= 0 ? value : null;
 
+  // Keep extraction dumb and centralize all string-level cleanup here.
+  // Important: whitespace-only inline wrappers are unwrapped, never deleted with
+  // their contents, because they can carry the only separator between words.
+  function normalizeHtml(value) {
+    const html = normalizeString(value);
+    if (!html) return '';
+
+    return html
+      .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, '')
+      .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '')
+      .replace(/<!--[\s\S]*?-->/g, '')
+      .replace(/<font\b[^>]*>/gi, '')
+      .replace(/<\/font\s*>/gi, '')
+      .replace(/<span\b[^>]*>((?:\s|&nbsp;|&#160;|&#x0*a0;)*)<\/span>/gi, '$1');
+  }
+
+  function normalizeComparableText(value) {
+    return normalizeString(value)
+      .replace(/\u00a0/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
   function createSelectionPayload(input = {}) {
     return {
       text: normalizeString(input.text),
-      html: normalizeString(input.html),
+      html: normalizeHtml(input.html),
       sourceUrl: normalizeSourceUrl(input.sourceUrl),
       frameId: normalizeFrameId(input.frameId)
     };
@@ -34,6 +57,8 @@
     createSelectionPayload,
     withRuntimeContext,
     hasStructuredHtml,
+    normalizeHtml,
+    normalizeComparableText,
     fields: Object.freeze(['text', 'html', 'sourceUrl', 'frameId'])
   });
 })();
