@@ -4,6 +4,7 @@
 // Import libraries for PDF and DOCX generation
 importScripts('./lib/jspdf.umd.min.js');
 importScripts('./lib/docx.umd.min.js');
+importScripts('./selection-payload.js');
 
 // Shared detection helpers (also used in content script and tests)
 try {
@@ -1452,7 +1453,7 @@ class FlashDoc {
         await chrome.scripting.registerContentScripts([{
           id: 'flashdoc-content',
           matches: ['<all_urls>'],
-          js: ['detection-utils.js', 'content.js'],
+          js: ['detection-utils.js', 'selection-payload.js', 'content.js'],
           runAt: 'document_idle',
           allFrames: true,
           persistAcrossSessions: true
@@ -1544,7 +1545,7 @@ class FlashDoc {
     try {
       await chrome.scripting.executeScript({
         target: { tabId: tabId, allFrames: true },
-        files: ['detection-utils.js', 'content.js']
+        files: ['detection-utils.js', 'selection-payload.js', 'content.js']
       });
       console.log(`✅ Content scripts injected into tab ${tabId}`);
       return { success: true };
@@ -1559,9 +1560,22 @@ class FlashDoc {
       if (message.action === 'saveContent') {
         const options = {
           prefix: message.prefix || null,
-          html: message.html || '' // HTML content for formatting
+          saveAs: message.saveAs || false
         };
-        this.handleSave(message.content, message.type, sender.tab, options)
+        const legacySelection = {
+          text: message.content,
+          html: message.html,
+          sourceUrl: sender.tab?.url || null,
+          frameId: Number.isInteger(sender.frameId) ? sender.frameId : null
+        };
+        const selection = FlashDocSelection.withRuntimeContext(
+          message.selection || legacySelection,
+          {
+            sourceUrl: sender.tab?.url || null,
+            frameId: Number.isInteger(sender.frameId) ? sender.frameId : null
+          }
+        );
+        this.saveSelection(selection, message.type, sender.tab, options)
           .then((result) => sendResponse({ success: true, result }))
           .catch((error) => {
             const messageText = error instanceof Error ? error.message : String(error);
@@ -1643,127 +1657,85 @@ class FlashDoc {
       const shortcut = shortcuts.find(s => s.id === shortcutId);
 
       if (shortcut) {
-        this.handleSave(info.selectionText, shortcut.format, tab, { prefix: shortcut.name }).catch((error) => {
-          console.error('Shortcut save failed:', error);
-        });
+        this.getSelectionPayloadFromTab(tab, info.frameId, info.selectionText)
+          .then((selection) => this.saveSelection(selection, shortcut.format, tab, { prefix: shortcut.name }))
+          .catch((error) => {
+            console.error('Shortcut save failed:', error);
+          });
       }
       return;
     }
 
-    // Standard format save - need to get HTML from tab
-    this.getHtmlSelectionAndSave(info.selectionText, menuId, tab).catch((error) => {
-      console.error('Context menu save failed:', error);
-    });
+    this.getSelectionPayloadFromTab(tab, info.frameId, info.selectionText)
+      .then((selection) => this.saveSelection(selection, menuId, tab))
+      .catch((error) => {
+        console.error('Context menu save failed:', error);
+      });
   }
 
-  /**
-   * Get HTML selection from tab and save
-   * IMPROVED: Better HTML extraction with multiple strategies for structure preservation
-   */
-  async getHtmlSelectionAndSave(fallbackText, type, tab) {
-    let html = '';
-    let text = fallbackText;
-
-    // Try to get HTML from the tab with improved extraction
-    if (tab && tab.id) {
-      try {
-        const [result] = await chrome.scripting.executeScript({
-          target: { tabId: tab.id },
-          func: () => {
-            const sel = window.getSelection();
-            if (!sel || sel.rangeCount === 0) return { html: '' };
-
-            try {
-              const range = sel.getRangeAt(0);
-              
-              // Strategy 1: cloneContents (most reliable for selections)
-              const container = document.createElement('div');
-              container.appendChild(range.cloneContents());
-              
-              if (container.innerHTML.trim() && container.innerHTML !== '&nbsp;') {
-                let html = container.innerHTML;
-                
-                // Clean up but preserve structure
-                html = html
-                  // Remove empty elements
-                  .replace(/<span[^>]*>\s*<\/span>/gi, '')
-                  .replace(/<font[^>]*>[\s\S]*?<\/font>/gi, '')
-                  // Remove non-content elements
-                  .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
-                  .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
-                  // Remove comments
-                  .replace(/<!--[\s\S]*?-->/g, '')
-                  // Clean whitespace between tags
-                  .replace(/>\s+</g, '><')
-                  // Normalize
-                  .replace(/\n+/g, '\n')
-                  .trim();
-                
-                if (html.length > 0) {
-                  console.log('[FlashDoc] HTML captured:', html.length, 'chars');
-                  console.log('[FlashDoc] HTML preview:', html.substring(0, 300));
-                  return { html };
-                }
-              }
-              
-              // Strategy 2: Get common ancestor
-              const commonAncestor = range.commonAncestorContainer;
-              
-              if (commonAncestor.nodeType === Node.ELEMENT_NODE) {
-                const clone = commonAncestor.cloneNode(true);
-                let html = clone.innerHTML
-                  .replace(/<span[^>]*>\s*<\/span>/gi, '')
-                  .replace(/<font[^>]*>[\s\S]*?<\/font>/gi, '')
-                  .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
-                  .replace(/<!--[\s\S]*?-->/g, '')
-                  .replace(/>\s+</g, '><')
-                  .trim();
-                  
-                if (html.length > 0) {
-                  console.log('[FlashDoc] HTML via ancestor:', html.length, 'chars');
-                  return { html };
-                }
-              }
-              
-              // Strategy 3: Parent element with selection
-              if (commonAncestor.parentNode) {
-                try {
-                  const parent = commonAncestor.parentNode.cloneNode(false);
-                  const fragment = range.cloneContents();
-                  parent.appendChild(fragment);
-                  let html = parent.innerHTML
-                    .replace(/<span[^>]*>\s*<\/span>/gi, '')
-                    .replace(/<font[^>]*>[\s\S]*?<\/font>/gi, '')
-                    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
-                    .replace(/<!--[\s\S]*?-->/g, '')
-                    .replace(/>\s+</g, '><')
-                    .trim();
-                    
-                  if (html.length > 0) {
-                    console.log('[FlashDoc] HTML via parent:', html.length, 'chars');
-                    return { html };
-                  }
-                } catch (e) {
-                  console.log('[FlashDoc] Parent strategy failed:', e);
-                }
-              }
-              
-              return { html: '' };
-            } catch (e) {
-              console.log('[FlashDoc] HTML extraction error:', e);
-              return { html: '' };
-            }
-          }
-        });
-        if (result && result.result && result.result.html) {
-          html = result.result.html;
-        }
-      } catch (e) {
-        console.log('[FlashDoc] Could not get HTML selection:', e);
-      }
+  async getSelectionPayloadFromTab(tab, frameId = null, fallbackText = '') {
+    const runtimeFrameId = Number.isInteger(frameId) && frameId >= 0 ? frameId : null;
+    if (!tab || !tab.id) {
+      return FlashDocSelection.createSelectionPayload({
+        text: fallbackText,
+        html: '',
+        sourceUrl: tab?.url || null,
+        frameId: runtimeFrameId
+      });
     }
 
-    await this.handleSave(text, type, tab, { html });
+    try {
+      const target = runtimeFrameId !== null
+        ? { tabId: tab.id, frameIds: [runtimeFrameId] }
+        : { tabId: tab.id, allFrames: true };
+      const results = await chrome.scripting.executeScript({
+        target,
+        func: () => {
+          const sel = window.getSelection();
+          if (!sel || sel.rangeCount === 0) {
+            return { text: '', html: '', sourceUrl: window.location.href };
+          }
+          const text = sel.toString();
+          let html = '';
+          try {
+            const range = sel.getRangeAt(0);
+            const container = document.createElement('div');
+            container.appendChild(range.cloneContents());
+            html = container.innerHTML
+              .replace(/<span[^>]*>\s*<\/span>/gi, '')
+              .replace(/<font[^>]*>/gi, '')
+              .replace(/<\/font>/gi, '')
+              .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+              .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+              .replace(/<!--[\s\S]*?-->/g, '')
+              .replace(/\n+/g, '\n')
+              .trim();
+          } catch (_) {
+            html = '';
+          }
+          return { text, html, sourceUrl: window.location.href };
+        }
+      });
+
+      const result = results.find((entry) => entry?.result?.text?.trim()) || results[0];
+      return FlashDocSelection.createSelectionPayload({
+        text: result?.result?.text || fallbackText,
+        html: result?.result?.html || '',
+        sourceUrl: result?.result?.sourceUrl || tab.url || null,
+        frameId: Number.isInteger(result?.frameId) ? result.frameId : runtimeFrameId
+      });
+    } catch (error) {
+      console.warn('[FlashDoc] Structured selection extraction unavailable; plain-text fallback will be used', {
+        hasSourceUrl: Boolean(tab?.url),
+        frameId: runtimeFrameId
+      });
+      return FlashDocSelection.createSelectionPayload({
+        text: fallbackText,
+        html: '',
+        sourceUrl: tab?.url || null,
+        frameId: runtimeFrameId
+      });
+    }
   }
 
   async getSelectionAndSave(type) {
@@ -1776,65 +1748,9 @@ class FlashDoc {
         throw error;
       }
 
-      const [selection] = await chrome.scripting.executeScript({
-        target: { tabId: tab.id },
-        func: () => {
-          const sel = window.getSelection();
-          if (!sel || sel.rangeCount === 0) return { text: '', html: '' };
-
-          const text = sel.toString();
-
-          // Extract HTML from selection with multiple strategies for best structure preservation
-          let html = '';
-          try {
-            const range = sel.getRangeAt(0);
-            
-            // Strategy 1: cloneContents (best for selections)
-            const container = document.createElement('div');
-            container.appendChild(range.cloneContents());
-            
-            if (container.innerHTML.trim() && container.innerHTML !== '&nbsp;') {
-              html = container.innerHTML
-                .replace(/<span[^>]*>\s*<\/span>/gi, '')
-                .replace(/<font[^>]*>[\s\S]*?<\/font>/gi, '')
-                .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
-                .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
-                .replace(/<!--[\s\S]*?-->/g, '')
-                .replace(/>\s+</g, '><')
-                .replace(/\n+/g, '\n')
-                .trim();
-            }
-            
-            // Strategy 2: Fallback to common ancestor if no meaningful HTML
-            if (!html || html.length < 5) {
-              const commonAncestor = range.commonAncestorContainer;
-              
-              if (commonAncestor.nodeType === Node.ELEMENT_NODE) {
-                const clone = commonAncestor.cloneNode(true);
-                html = clone.innerHTML
-                  .replace(/<span[^>]*>\s*<\/span>/gi, '')
-                  .replace(/<font[^>]*>[\s\S]*?<\/font>/gi, '')
-                  .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
-                  .replace(/<!--[\s\S]*?-->/g, '')
-                  .replace(/>\s+</g, '><')
-                  .trim();
-              }
-            }
-          } catch (e) {
-            html = '';
-          }
-
-          return { text, html };
-        }
-      });
-
-      if (selection && selection.result && selection.result.text && selection.result.text.trim()) {
-        console.log('[FlashDoc] Selection:', selection.result.text.length, 'chars');
-        console.log('[FlashDoc] HTML:', selection.result.html?.length || 0, 'chars');
-        if (selection.result.html && selection.result.html.length > 0) {
-          console.log('[FlashDoc] HTML preview:', selection.result.html.substring(0, 500));
-        }
-        await this.handleSave(selection.result.text, type, tab, { html: selection.result.html });
+      const selection = await this.getSelectionPayloadFromTab(tab);
+      if (selection.text && selection.text.trim()) {
+        await this.saveSelection(selection, type, tab);
       } else {
         const error = new Error('No text selected');
         error.handled = true;
@@ -1847,6 +1763,23 @@ class FlashDoc {
         this.showNotification('\u274C No text selected', 'error');
       }
     }
+  }
+
+  async saveSelection(selectionInput, type, tab, options = {}) {
+    const selection = FlashDocSelection.withRuntimeContext(selectionInput, {
+      sourceUrl: tab?.url || null
+    });
+    if (!FlashDocSelection.hasStructuredHtml(selection)) {
+      console.warn('[FlashDoc] Structured selection fallback: HTML unavailable; using plain text', {
+        hasSourceUrl: Boolean(selection.sourceUrl),
+        frameId: selection.frameId
+      });
+    }
+    return this.handleSave(selection.text, type, tab, {
+      ...options,
+      html: selection.html,
+      selection
+    });
   }
 
   async handleSave(content, type, tab, options = {}) {
@@ -2518,6 +2451,7 @@ class FlashDoc {
 
 // Initialize
 const flashDoc = new FlashDoc();
+globalThis.__flashDoc = flashDoc;
 
 // Handle installation and extension reload
 chrome.runtime.onInstalled.addListener(async (details) => {
@@ -2536,7 +2470,7 @@ chrome.runtime.onInstalled.addListener(async (details) => {
         try {
           await chrome.scripting.executeScript({
             target: { tabId: tab.id, allFrames: true },
-            files: ['detection-utils.js', 'content.js']
+            files: ['detection-utils.js', 'selection-payload.js', 'content.js']
           });
         } catch (e) {
           // Tab might not support scripting - this is normal

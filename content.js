@@ -386,7 +386,9 @@ class FlashDocContent {
           html = html
             // Remove empty elements that add no value
             .replace(/<span[^>]*>\s*<\/span>/gi, '')
-            .replace(/<font[^>]*>[\s\S]*?<\/font>/gi, '')
+            // Unwrap legacy font tags without deleting their selected text.
+            .replace(/<font[^>]*>/gi, '')
+            .replace(/<\/font>/gi, '')
             .replace(/<span[^>]*>(?:\s*&nbsp;\s*)*<\/span>/gi, '')
             // Remove style blocks (not content)
             .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
@@ -394,9 +396,7 @@ class FlashDocContent {
             .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
             // Remove comments
             .replace(/<!--[\s\S]*?-->/g, '')
-            // Clean excessive whitespace between tags while preserving line breaks
-            .replace(/>\s+</g, '><')
-            // Normalize line breaks
+            // Preserve inter-element whitespace; only normalize repeated line breaks.
             .replace(/\n+/g, '\n')
             .trim();
           
@@ -494,10 +494,8 @@ class FlashDocContent {
         .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
         // Remove comments
         .replace(/<!--[\s\S]*?-->/g, '')
-        // Clean excessive whitespace between tags
-        .replace(/>\s+</g, '><')
-        // Remove leading/trailing whitespace in tags
-        .replace(/\s+/g, ' ')
+        // Preserve inter-element and preformatted whitespace; renderer normalization
+        // must not change the user's selected text semantics.
         .trim();
 
       return html;
@@ -1037,6 +1035,15 @@ class FlashDocContent {
   }
 
   // Save Functions
+  createSelectionPayload(text = this.selectedText, html = this.selectedHtml) {
+    return FlashDocSelection.createSelectionPayload({
+      text: text || '',
+      html: html || '',
+      sourceUrl: window.location.href,
+      frameId: null
+    });
+  }
+
   async quickSave() {
     if (!this.selectedText) {
       this.showToast('⚠️ No text selected', 'warning');
@@ -1046,8 +1053,7 @@ class FlashDocContent {
     try {
       const response = await this.safeSendMessage({
         action: 'saveContent',
-        content: this.selectedText,
-        html: this.selectedHtml, // Include HTML for formatting
+        selection: this.createSelectionPayload(),
         type: 'auto'
       });
 
@@ -1078,8 +1084,7 @@ class FlashDocContent {
     try {
       const response = await this.safeSendMessage({
         action: 'saveContent',
-        content: this.selectedText,
-        html: this.selectedHtml,
+        selection: this.createSelectionPayload(),
         type: type || 'auto'
       });
 
@@ -1113,8 +1118,7 @@ class FlashDocContent {
     try {
       const response = await this.safeSendMessage({
         action: 'saveContent',
-        content: content,
-        html: html, // Include HTML for formatting
+        selection: this.createSelectionPayload(content, html),
         type: format === 'smart' ? 'auto' : format
       });
 
@@ -1149,8 +1153,7 @@ class FlashDocContent {
     try {
       const response = await this.safeSendMessage({
         action: 'saveContent',
-        content: this.selectedText,
-        html: this.selectedHtml, // Include HTML for formatting
+        selection: this.createSelectionPayload(),
         type: format,
         prefix: categoryName // Pass the category name as prefix
       });
