@@ -386,7 +386,9 @@ class FlashDocContent {
           html = html
             // Remove empty elements that add no value
             .replace(/<span[^>]*>\s*<\/span>/gi, '')
-            .replace(/<font[^>]*>[\s\S]*?<\/font>/gi, '')
+            // Unwrap legacy font tags without deleting their selected text.
+            .replace(/<font[^>]*>/gi, '')
+            .replace(/<\/font>/gi, '')
             .replace(/<span[^>]*>(?:\s*&nbsp;\s*)*<\/span>/gi, '')
             // Remove style blocks (not content)
             .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
@@ -394,9 +396,7 @@ class FlashDocContent {
             .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
             // Remove comments
             .replace(/<!--[\s\S]*?-->/g, '')
-            // Clean excessive whitespace between tags while preserving line breaks
-            .replace(/>\s+</g, '><')
-            // Normalize line breaks
+            // Preserve inter-element whitespace; only normalize repeated line breaks.
             .replace(/\n+/g, '\n')
             .trim();
           
