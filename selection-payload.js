@@ -31,11 +31,6 @@
       .trim();
   }
 
-  function tokenizeComparableText(value) {
-    const normalized = normalizeComparableText(value);
-    return normalized ? normalized.split(' ') : [];
-  }
-
   function createSelectionPayload(input = {}) {
     return {
       text: normalizeString(input.text),
@@ -64,7 +59,6 @@
     hasStructuredHtml,
     normalizeHtml,
     normalizeComparableText,
-    tokenizeComparableText,
     fields: Object.freeze(['text', 'html', 'sourceUrl', 'frameId'])
   });
 })();
