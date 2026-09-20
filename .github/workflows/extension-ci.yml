@@ -21,6 +21,9 @@ jobs:
       - name: Detection sanity checks
         run: node scripts/detection-check.js
 
+      - name: FLAS-6 selection contract suite
+        run: node scripts/flas-6-contract-test.cjs
+
       - name: v3 feature suite
         run: node scripts/v3-features-test.cjs
 
@@ -29,6 +32,21 @@ jobs:
 
       - name: Build store ZIP (fail-closed, validates extracted artifact)
         run: bash scripts/build-zip.sh
+
+      - name: Install Playwright Chromium for browser E2E
+        run: |
+          npm install --prefix "$RUNNER_TEMP/flashdoc-pw" playwright@1.55.0
+          "$RUNNER_TEMP/flashdoc-pw/node_modules/.bin/playwright" install --with-deps chromium
+
+      - name: Browser E2E smoke
+        env:
+          FLASHDOC_PW_ROOT: ${{ runner.temp }}/flashdoc-pw/node_modules
+        run: node scripts/e2e-smoke.mjs .
+
+      - name: FLAS-6 structured-selection browser E2E
+        env:
+          FLASHDOC_PW_ROOT: ${{ runner.temp }}/flashdoc-pw/node_modules
+        run: node scripts/flas-6-e2e.mjs .
 
       - name: Upload store artifact
         uses: actions/upload-artifact@v4
