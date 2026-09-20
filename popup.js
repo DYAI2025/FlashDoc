@@ -281,7 +281,6 @@ document.addEventListener('DOMContentLoaded', () => {
               .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
               .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
               .replace(/<!--[\s\S]*?-->/g, '')
-              .replace(/>\s+</g, '><')
               .trim();
           } catch (_) {
             html = '';
