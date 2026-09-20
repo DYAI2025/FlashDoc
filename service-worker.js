@@ -1685,9 +1685,10 @@ class FlashDoc {
     }
 
     try {
-      const target = { tabId: tab.id };
-      if (runtimeFrameId !== null) target.frameIds = [runtimeFrameId];
-      const [result] = await chrome.scripting.executeScript({
+      const target = runtimeFrameId !== null
+        ? { tabId: tab.id, frameIds: [runtimeFrameId] }
+        : { tabId: tab.id, allFrames: true };
+      const results = await chrome.scripting.executeScript({
         target,
         func: () => {
           const sel = window.getSelection();
@@ -1716,6 +1717,7 @@ class FlashDoc {
         }
       });
 
+      const result = results.find((entry) => entry?.result?.text?.trim()) || results[0];
       return FlashDocSelection.createSelectionPayload({
         text: result?.result?.text || fallbackText,
         html: result?.result?.html || '',
