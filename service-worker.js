@@ -1792,10 +1792,10 @@ class FlashDoc {
 
       for (const token of HtmlTokenizer.tokenize(html)) {
         if (token.type === 'text') {
-          const chunks = String(token.content || '').split(/(\\s+)/);
+          const chunks = String(token.content || '').split(/([ \t\r\n\f\v\u00a0]+)/);
           for (const chunk of chunks) {
             if (!chunk) continue;
-            if (/^\\s+$/.test(chunk)) {
+            if (/^[ \t\r\n\f\v\u00a0]+$/.test(chunk)) {
               source += '\\s+';
             } else {
               source += escapeRegex(chunk);
