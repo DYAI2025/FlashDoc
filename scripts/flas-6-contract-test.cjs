@@ -70,7 +70,7 @@ check('comparable tokens tolerate block whitespace differences',
   JSON.stringify(Array.from(api.tokenizeComparableText('Structured Selection This text'))));
 check('comparable tokens detect lost inline separator',
   JSON.stringify(Array.from(api.tokenizeComparableText('one two'))) !==
-  JSON.stringify(Array.from(api.tokenizeComparableText('onetwo')));
+  JSON.stringify(Array.from(api.tokenizeComparableText('onetwo'))));
 
 const unavailable = api.createSelectionPayload({ text: 'plain', html: null, sourceUrl: null, frameId: undefined });
 check('html absence is explicit empty string', unavailable.html === '');
