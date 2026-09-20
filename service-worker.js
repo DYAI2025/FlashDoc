@@ -1781,13 +1781,12 @@ class FlashDoc {
     if (!html || !html.trim()) return '';
 
     try {
-      // Range.toString()/Selection.toString() concatenates text-node contents;
-      // do the same here. Do not inject synthetic block separators, otherwise
-      // valid structured HTML can be rejected even when no selected text changed.
-      return HtmlTokenizer.tokenize(html)
-        .filter((token) => token.type === 'text')
-        .map((token) => token.content || '')
-        .join('');
+      // Build semantic blocks so block boundaries become separators, while
+      // preserving inline whitespace that changes token identity.
+      const blocks = this.buildCanonicalBlocks('', html);
+      return blocks
+        .map((block) => (block.runs || []).map((run) => run.text || '').join(''))
+        .join(' ');
     } catch (error) {
       console.warn('[FlashDoc] Selection HTML comparison failed; plain-text fallback will be used', {
         errorType: error?.name || 'Error'
@@ -1799,12 +1798,14 @@ class FlashDoc {
   selectionHtmlMatchesText(selection) {
     if (!FlashDocSelection.hasStructuredHtml(selection)) return true;
 
-    const selectedText = FlashDocSelection.normalizeComparableText(selection.text);
-    const htmlText = FlashDocSelection.normalizeComparableText(
+    const selectedTokens = FlashDocSelection.tokenizeComparableText(selection.text);
+    const htmlTokens = FlashDocSelection.tokenizeComparableText(
       this.getComparableTextFromSelectionHtml(selection.html)
     );
 
-    return selectedText.length > 0 && htmlText.length > 0 && selectedText === htmlText;
+    return selectedTokens.length > 0 &&
+      selectedTokens.length === htmlTokens.length &&
+      selectedTokens.every((token, index) => token === htmlTokens[index]);
   }
 
   async saveSelection(selectionInput, type, tab, options = {}) {
