@@ -1037,6 +1037,15 @@ class FlashDocContent {
   }
 
   // Save Functions
+  createSelectionPayload(text = this.selectedText, html = this.selectedHtml) {
+    return FlashDocSelection.createSelectionPayload({
+      text: text || '',
+      html: html || '',
+      sourceUrl: window.location.href,
+      frameId: null
+    });
+  }
+
   async quickSave() {
     if (!this.selectedText) {
       this.showToast('⚠️ No text selected', 'warning');
@@ -1046,8 +1055,7 @@ class FlashDocContent {
     try {
       const response = await this.safeSendMessage({
         action: 'saveContent',
-        content: this.selectedText,
-        html: this.selectedHtml, // Include HTML for formatting
+        selection: this.createSelectionPayload(),
         type: 'auto'
       });
 
@@ -1078,8 +1086,7 @@ class FlashDocContent {
     try {
       const response = await this.safeSendMessage({
         action: 'saveContent',
-        content: this.selectedText,
-        html: this.selectedHtml,
+        selection: this.createSelectionPayload(),
         type: type || 'auto'
       });
 
@@ -1113,8 +1120,7 @@ class FlashDocContent {
     try {
       const response = await this.safeSendMessage({
         action: 'saveContent',
-        content: content,
-        html: html, // Include HTML for formatting
+        selection: this.createSelectionPayload(content, html),
         type: format === 'smart' ? 'auto' : format
       });
 
@@ -1149,8 +1155,7 @@ class FlashDocContent {
     try {
       const response = await this.safeSendMessage({
         action: 'saveContent',
-        content: this.selectedText,
-        html: this.selectedHtml, // Include HTML for formatting
+        selection: this.createSelectionPayload(),
         type: format,
         prefix: categoryName // Pass the category name as prefix
       });
