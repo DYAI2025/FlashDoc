@@ -23,7 +23,7 @@ function check(name, cond, detail = '') {
   else { failures++; console.error('  ✗ ' + name + ' ' + detail); }
 }
 
-const FIXTURE_HTML = '<div id="fixture"><h2>Structured Selection</h2><p>This contains <strong>bold</strong> and <em>italic</em> content.</p><ul><li>First list item</li><li>Second list item</li></ul><hr><p>Final paragraph.</p></div>';
+const FIXTURE_HTML = '<div id="fixture"><h2>Structured Selection</h2><p>This contains <strong>bold</strong> and <em>italic</em> content.</p><p><strong>Adjacent bold</strong> <em>adjacent italic</em></p><p>before <font color="red">important</font> after</p><ul><li>First list item</li><li>Second list item</li></ul><hr><p>Final paragraph.</p></div>';
 const server = http.createServer((req, res) => {
   res.setHeader('content-type', 'text/html; charset=utf-8');
   res.end('<!doctype html><html><head><title>FLAS-6 fixture</title></head><body>' + FIXTURE_HTML + '</body></html>');
@@ -216,6 +216,8 @@ for (const format of formats) {
     const p = data.selections[i];
     check(format + ' payload ' + entries[i][0] + ' has exact keys', JSON.stringify(Object.keys(p).filter((k) => k !== 'type').sort()) === JSON.stringify(['frameId','html','sourceUrl','text']));
     check(format + ' payload ' + entries[i][0] + ' preserves structured HTML', /<h2\b/i.test(p.html) && /<strong\b/i.test(p.html) && /<em\b/i.test(p.html) && /<ul\b/i.test(p.html) && /<hr\b/i.test(p.html));
+    check(format + ' payload ' + entries[i][0] + ' preserves adjacent inline whitespace', /<\/strong>\s+<em\b/i.test(p.html));
+    check(format + ' payload ' + entries[i][0] + ' preserves legacy font text', p.html.includes('important'));
     check(format + ' payload ' + entries[i][0] + ' source URL is real', p.sourceUrl === PAGE_URL, String(p.sourceUrl));
     check(format + ' payload ' + entries[i][0] + ' frameId is real top frame', p.frameId === 0, String(p.frameId));
   }
@@ -229,6 +231,8 @@ for (const format of formats) {
       check('Markdown preserves italic', data.exports.every((item) => /\*italic\*/.test(item.markdown || '')));
       check('Markdown preserves list', data.exports.every((item) => /[-*] First list item/.test(item.markdown || '')));
       check('Markdown preserves horizontal rule', data.exports.every((item) => /^---$/m.test(item.markdown || '')));
+      check('Markdown preserves adjacent inline whitespace', data.exports.every((item) => /\*\*Adjacent bold\*\*\s+\*adjacent italic\*/.test(item.markdown || '')));
+      check('Markdown preserves legacy font text', data.exports.every((item) => /before\s+important\s+after/.test(item.markdown || '')));
     }
   }
 }
