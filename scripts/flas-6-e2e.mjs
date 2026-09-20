@@ -51,6 +51,14 @@ await sw.evaluate(async () => {
   await globalThis.__flashDoc.updateContentScriptRegistration();
   globalThis.__flas6Selections = [];
   globalThis.__flas6Exports = [];
+  globalThis.__flas6Warnings = [];
+  const originalWarn = console.warn.bind(console);
+  console.warn = (...args) => {
+    globalThis.__flas6Warnings.push(args.map((value) =>
+      typeof value === 'string' ? value : JSON.stringify(value)
+    ).join(' '));
+    originalWarn(...args);
+  };
   const fd = globalThis.__flashDoc;
   const originalSaveSelection = fd.saveSelection.bind(fd);
   fd.saveSelection = async (selection, type, tab, options = {}) => {
@@ -68,9 +76,6 @@ await sw.evaluate(async () => {
     return result;
   };
 });
-
-const fallbackLogs = [];
-sw.on('console', (msg) => { if (msg.type() === 'warning') fallbackLogs.push(msg.text()); });
 
 const page = await ctx.newPage();
 await page.goto(PAGE_URL);
@@ -234,6 +239,7 @@ const fallbackBefore = (await counts()).exports;
 await sw.evaluate(({ id, url }) => globalThis.__flashDoc.saveSelection({ text: 'Fallback only', html: '', sourceUrl: url, frameId: 0 }, 'txt', { id, url, title: 'fixture' }), { id, url: PAGE_URL });
 await waitForExport(fallbackBefore);
 await new Promise((resolve) => setTimeout(resolve, 100));
+const fallbackLogs = await sw.evaluate(() => globalThis.__flas6Warnings.slice());
 check('plain-text fallback emits visible log signal', fallbackLogs.some((line) => line.includes('Structured selection fallback: HTML unavailable; using plain text')));
 check('fallback log does not leak selected content', fallbackLogs.every((line) => !line.includes('Fallback only')));
 
