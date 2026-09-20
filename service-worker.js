@@ -1820,6 +1820,9 @@ class FlashDoc {
       }
 
       pushWhitespace(false);
+      if (segments[0]?.type === 'whitespace') segments[0].required = false;
+      const last = segments[segments.length - 1];
+      if (last?.type === 'whitespace') last.required = false;
       return hasText ? segments : null;
     } catch (error) {
       console.warn('[FlashDoc] Selection HTML comparison failed; plain-text fallback will be used', {
