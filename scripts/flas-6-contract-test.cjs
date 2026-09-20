@@ -65,13 +65,6 @@ check('script/style/comments are stripped centrally',
 check('comparable text canonicalizes NBSP and whitespace',
   api.normalizeComparableText('one\u00a0\n two') === 'one two');
 
-check('comparable tokens tolerate block whitespace differences',
-  JSON.stringify(Array.from(api.tokenizeComparableText('Structured Selection\nThis text'))) ===
-  JSON.stringify(Array.from(api.tokenizeComparableText('Structured Selection This text'))));
-check('comparable tokens detect lost inline separator',
-  JSON.stringify(Array.from(api.tokenizeComparableText('one two'))) !==
-  JSON.stringify(Array.from(api.tokenizeComparableText('onetwo'))));
-
 const unavailable = api.createSelectionPayload({ text: 'plain', html: null, sourceUrl: null, frameId: undefined });
 check('html absence is explicit empty string', unavailable.html === '');
 check('unknown sourceUrl is explicit null', unavailable.sourceUrl === null);
@@ -106,6 +99,11 @@ check('content script no longer owns destructive whitespace-span sanitizing',
 check('service worker exposes semantic parity gate',
   sw.includes('selectionHtmlMatchesText(selection)') &&
   sw.includes('HTML/text semantic mismatch; using plain text'));
+
+check('service worker distinguishes block-boundary and inline whitespace',
+  sw.includes('buildSelectionTextPattern(html)') &&
+  sw.includes("source += '\\\\s*'") &&
+  sw.includes("source += '\\\\s+'"));
 
 console.log(failures === 0 ? '\nFLAS-6 CONTRACT OK' : '\nFLAS-6 CONTRACT FAILED (' + failures + ')');
 process.exit(failures === 0 ? 0 : 1);
