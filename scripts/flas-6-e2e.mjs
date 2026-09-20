@@ -5,6 +5,7 @@ import os from 'node:os';
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
+import { spawnSync } from 'node:child_process';
 
 const require_ = createRequire(import.meta.url);
 let chromium;
@@ -23,7 +24,7 @@ function check(name, cond, detail = '') {
   else { failures++; console.error('  ✗ ' + name + ' ' + detail); }
 }
 
-const FIXTURE_HTML = '<div id="fixture"><h2>Structured Selection</h2><p>This contains <strong>bold</strong> and <em>italic</em> content.</p><p><strong>Adjacent bold</strong> <em>adjacent italic</em></p><p>before <font color="red">important</font> after</p><ul><li>First list item</li><li>Second list item</li></ul><hr><p>Final paragraph.</p></div>';
+const FIXTURE_HTML = '<div id="fixture"><h2>Structured Selection</h2><p>This contains <strong>bold</strong> and <em>italic</em> content.</p><p><strong>Adjacent bold</strong> <em>adjacent italic</em></p><p><strong>Span one</strong><span> </span><em>Span two</em></p><p><strong>Nbsp one</strong><span>&nbsp;</span><em>Nbsp two</em></p><p>before <font color="red">important</font> after</p><ul><li>First list item</li><li>Second list item</li></ul><hr><p>Final paragraph.</p></div>';
 const server = http.createServer((req, res) => {
   res.setHeader('content-type', 'text/html; charset=utf-8');
   res.end('<!doctype html><html><head><title>FLAS-6 fixture</title></head><body>' + FIXTURE_HTML + '</body></html>');
@@ -69,8 +70,25 @@ await sw.evaluate(async () => {
   const originalCreateBlob = fd.createBlob.bind(fd);
   fd.createBlob = async (content, type, html) => {
     const result = await originalCreateBlob(content, type, html);
+    const canonicalBlocks = fd.buildCanonicalBlocks(content, html).map((block) => ({
+      type: block.type,
+      level: block.level || null,
+      listType: block.listType || null,
+      listLevel: block.listLevel || 0,
+      runs: (block.runs || []).map((run) => ({
+        text: run.text || '',
+        bold: Boolean(run.bold),
+        italic: Boolean(run.italic),
+        underline: Boolean(run.underline),
+        strikethrough: Boolean(run.strikethrough),
+        code: Boolean(run.code)
+      }))
+    }));
+    const docxBytes = type === 'docx'
+      ? Array.from(new Uint8Array(await result.blob.arrayBuffer()))
+      : null;
     globalThis.__flas6Exports.push({
-      content, type, html, size: result.blob.size,
+      content, type, html, canonicalBlocks, size: result.blob.size, docxBytes,
       markdown: type === 'md' ? await result.blob.text() : null
     });
     return result;
@@ -177,34 +195,79 @@ async function triggerRepeat(format) {
   await popup.close();
 }
 
-function semanticSignature(record) {
-  const html = (record.html || '').toLowerCase();
-  return JSON.stringify({
-    text: (record.content || '').replace(/\s+/g, ' ').trim(),
-    h2: (html.match(/<h2\b/g) || []).length,
-    strong: (html.match(/<strong\b/g) || []).length,
-    em: (html.match(/<em\b/g) || []).length,
-    ul: (html.match(/<ul\b/g) || []).length,
-    li: (html.match(/<li\b/g) || []).length,
-    hr: (html.match(/<hr\b/g) || []).length
-  });
+function normalizeText(value) {
+  return String(value || '').replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
-console.log('\n=== FLAS-6 browser E2E ===');
+function canonicalSignature(record) {
+  return JSON.stringify(record.canonicalBlocks || []);
+}
+
+function canonicalText(record) {
+  return normalizeText((record.canonicalBlocks || [])
+    .map((block) => (block.runs || []).map((run) => run.text || '').join(''))
+    .join(' '));
+}
+
+function extractDocxText(bytes) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'flashdoc-docx-'));
+  const docxPath = path.join(dir, 'artifact.docx');
+  fs.writeFileSync(docxPath, Buffer.from(bytes || []));
+  const unzip = spawnSync('unzip', ['-p', docxPath, 'word/document.xml'], { encoding: 'utf8' });
+  fs.rmSync(dir, { recursive: true, force: true });
+  if (unzip.status !== 0) {
+    throw new Error('DOCX document.xml extraction failed: ' + (unzip.stderr || unzip.status));
+  }
+  const xml = unzip.stdout || '';
+  return normalizeText(
+    Array.from(xml.matchAll(/<w:t(?:\s[^>]*)?>([\s\S]*?)<\/w:t>/g))
+      .map((match) => match[1]
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&apos;/g, "'"))
+      .join('')
+  );
+}
+
+const oracleGood = { canonicalBlocks: [{ type: 'paragraph', runs: [
+  { text: 'one', bold: true }, { text: ' ', bold: false }, { text: 'two', italic: true }
+]}] };
+const oracleBad = { canonicalBlocks: [{ type: 'paragraph', runs: [
+  { text: 'one', bold: true }, { text: 'two', italic: true }
+]}] };
+check('canonical oracle distinguishes material whitespace loss',
+  canonicalSignature(oracleGood) !== canonicalSignature(oracleBad));
+
+const nestedParity = await sw.evaluate(() => {
+  const html = '<div>'.repeat(100) +
+    '<strong>one</strong><span> </span><em>two</em>' +
+    '</div>'.repeat(100);
+  return {
+    good: globalThis.__flashDoc.selectionHtmlMatchesText({ text: 'one two', html }),
+    bad: globalThis.__flashDoc.selectionHtmlMatchesText({ text: 'onetwo', html })
+  };
+});
+check('deeply nested block markup matches without backtracking oracle',
+  nestedParity.good === true && nestedParity.bad === false,
+  JSON.stringify(nestedParity));
+
+console.log('\n=== FLAS-6 browser verification ===');
 const formats = ['md', 'pdf', 'docx'];
 const entries = [
-  ['Context Menu', triggerContextMenu],
-  ['Keyboard Shortcut', triggerKeyboard],
-  ['Popup', triggerPopup],
-  ['Floating UI', triggerFloating],
-  ['Repeat', triggerRepeat]
+  ['Context Menu', triggerContextMenu, 'browser-integration'],
+  ['Keyboard Shortcut', triggerKeyboard, 'browser-integration'],
+  ['Popup', triggerPopup, 'ui-e2e'],
+  ['Floating UI', triggerFloating, 'ui-e2e'],
+  ['Repeat', triggerRepeat, 'ui-e2e']
 ];
 
 for (const format of formats) {
   const start = await counts();
-  for (const [name, trigger] of entries) {
-    try { await trigger(format); check(format + ' ' + name + ' reaches export', true); }
-    catch (error) { check(format + ' ' + name + ' reaches export', false, error.message); }
+  for (const [name, trigger, coverage] of entries) {
+    try { await trigger(format); check(format + ' ' + name + ' [' + coverage + '] reaches export', true); }
+    catch (error) { check(format + ' ' + name + ' [' + coverage + '] reaches export', false, error.message); }
   }
   const data = await sw.evaluate((startIndex) => ({
     selections: globalThis.__flas6Selections.slice(startIndex),
@@ -217,13 +280,22 @@ for (const format of formats) {
     check(format + ' payload ' + entries[i][0] + ' has exact keys', JSON.stringify(Object.keys(p).filter((k) => k !== 'type').sort()) === JSON.stringify(['frameId','html','sourceUrl','text']));
     check(format + ' payload ' + entries[i][0] + ' preserves structured HTML', /<h2\b/i.test(p.html) && /<strong\b/i.test(p.html) && /<em\b/i.test(p.html) && /<ul\b/i.test(p.html) && /<hr\b/i.test(p.html));
     check(format + ' payload ' + entries[i][0] + ' preserves adjacent inline whitespace', /<\/strong>\s+<em\b/i.test(p.html));
+    check(format + ' payload ' + entries[i][0] + ' unwraps whitespace-only span without losing separator',
+      /<strong>Span one<\/strong>\s+<em>Span two<\/em>/i.test(p.html), p.html);
+    check(format + ' payload ' + entries[i][0] + ' unwraps nbsp-only span without losing separator',
+      /<strong>Nbsp one<\/strong>(?:&nbsp;|&#160;|&#x0*a0;|\u00a0)<em>Nbsp two<\/em>/i.test(p.html), p.html);
     check(format + ' payload ' + entries[i][0] + ' preserves legacy font text', p.html.includes('important'));
     check(format + ' payload ' + entries[i][0] + ' source URL is real', p.sourceUrl === PAGE_URL, String(p.sourceUrl));
     check(format + ' payload ' + entries[i][0] + ' frameId is real top frame', p.frameId === 0, String(p.frameId));
   }
   if (data.exports.length === 5) {
-    const signatures = data.exports.map(semanticSignature);
-    check(format + ' exports are semantically equivalent across triggers', new Set(signatures).size === 1, signatures.join(' | '));
+    const signatures = data.exports.map(canonicalSignature);
+    check(format + ' canonical renderer inputs are equivalent across triggers',
+      new Set(signatures).size === 1, signatures.join(' | '));
+    check(format + ' canonical text retains whitespace-span semantics',
+      data.exports.every((item) => canonicalText(item).includes('Span one Span two')));
+    check(format + ' canonical text retains nbsp-span semantics',
+      data.exports.every((item) => canonicalText(item).includes('Nbsp one Nbsp two')));
     check(format + ' generated non-empty artifacts', data.exports.every((item) => item.size > 0));
     if (format === 'md') {
       check('Markdown preserves heading', data.exports.every((item) => /^## Structured Selection/m.test(item.markdown || '')));
@@ -233,9 +305,48 @@ for (const format of formats) {
       check('Markdown preserves horizontal rule', data.exports.every((item) => /^---$/m.test(item.markdown || '')));
       check('Markdown preserves adjacent inline whitespace', data.exports.every((item) => /\*\*Adjacent bold\*\*\s+\*adjacent italic\*/.test(item.markdown || '')));
       check('Markdown preserves legacy font text', data.exports.every((item) => /before\s+important\s+after/.test(item.markdown || '')));
+      check('Markdown artifact preserves whitespace-only span semantics',
+        data.exports.every((item) => /\*\*Span one\*\*\s+\*Span two\*/.test(item.markdown || '')));
+      check('Markdown artifact preserves nbsp-span semantics',
+        data.exports.every((item) => /\*\*Nbsp one\*\*\s+\*Nbsp two\*/.test(item.markdown || '')));
+    }
+    if (format === 'docx') {
+      const docxTexts = data.exports.map((item) => extractDocxText(item.docxBytes));
+      check('DOCX document.xml preserves whitespace-only span semantics',
+        docxTexts.every((text) => text.includes('Span one Span two')), docxTexts.join(' | '));
+      check('DOCX document.xml preserves nbsp-span semantics',
+        docxTexts.every((text) => text.includes('Nbsp one Nbsp two')), docxTexts.join(' | '));
+      check('DOCX document.xml text is equivalent across triggers',
+        new Set(docxTexts).size === 1, docxTexts.join(' | '));
+    }
+    if (format === 'pdf') {
+      check('PDF claim is bound to shared canonical block representation',
+        data.exports.every((item) => Array.isArray(item.canonicalBlocks) && item.canonicalBlocks.length > 0));
     }
   }
 }
+
+// Semantic mismatch must fail closed to plain text before rendering.
+const mismatchBefore = (await counts()).exports;
+await sw.evaluate(({ url }) => globalThis.__flashDoc.saveSelection({
+  text: 'one two',
+  html: '<strong>one</strong><em>two</em>',
+  sourceUrl: url,
+  frameId: 0
+}, 'md', { id: 1, url, title: 'fixture' }), { url: PAGE_URL });
+await waitForExport(mismatchBefore);
+const mismatchData = await sw.evaluate((index) => ({
+  exported: globalThis.__flas6Exports[index],
+  warnings: globalThis.__flas6Warnings.slice()
+}), mismatchBefore);
+check('semantic mismatch clears structured HTML before renderer',
+  mismatchData.exported?.html === '', String(mismatchData.exported?.html));
+check('semantic mismatch falls back to complete plain text artifact',
+  /one two/.test(mismatchData.exported?.markdown || ''), String(mismatchData.exported?.markdown));
+check('semantic mismatch emits visible metadata-only warning',
+  mismatchData.warnings.some((line) => line.includes('HTML/text semantic mismatch; using plain text')));
+check('semantic mismatch warning does not leak selected text',
+  mismatchData.warnings.every((line) => !line.includes('one two') && !line.includes('<strong>')));
 
 await selectFixture();
 const id = await tabId();
@@ -249,5 +360,5 @@ check('fallback log does not leak selected content', fallbackLogs.every((line) =
 
 await ctx.close();
 server.close();
-console.log(failures === 0 ? '\nFLAS-6 E2E OK' : '\nFLAS-6 E2E FAILED (' + failures + ')');
+console.log(failures === 0 ? '\nFLAS-6 BROWSER VERIFICATION OK' : '\nFLAS-6 BROWSER VERIFICATION FAILED (' + failures + ')');
 process.exit(failures === 0 ? 0 : 1);

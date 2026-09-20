@@ -1701,15 +1701,9 @@ class FlashDoc {
             const range = sel.getRangeAt(0);
             const container = document.createElement('div');
             container.appendChild(range.cloneContents());
-            html = container.innerHTML
-              .replace(/<span[^>]*>\s*<\/span>/gi, '')
-              .replace(/<font[^>]*>/gi, '')
-              .replace(/<\/font>/gi, '')
-              .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
-              .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
-              .replace(/<!--[\s\S]*?-->/g, '')
-              .replace(/\n+/g, '\n')
-              .trim();
+            // Return raw selected markup. Shared normalization belongs exclusively
+            // to FlashDocSelection.createSelectionPayload().
+            html = container.innerHTML;
           } catch (_) {
             html = '';
           }
@@ -1765,16 +1759,127 @@ class FlashDoc {
     }
   }
 
+  buildCanonicalBlocks(content, html = '') {
+    let blocks;
+    if (html && html.trim()) {
+      const tokens = HtmlTokenizer.tokenize(html);
+      blocks = BlockBuilder.build(tokens);
+    }
+    if (!blocks || blocks.length === 0) {
+      blocks = PlainTextStructurer.structure(content);
+    }
+    if (!blocks || blocks.length === 0) {
+      blocks = [{
+        type: 'paragraph',
+        runs: [{ text: (content || '').trim(), bold: false, italic: false, underline: false, strikethrough: false, code: false }]
+      }];
+    }
+    return blocks;
+  }
+
+  buildSelectionTextSegments(html) {
+    if (!html || !html.trim()) return null;
+
+    try {
+      const blockBoundaryTags = new Set([
+        'p', 'div', 'section', 'article', 'header', 'footer', 'main', 'aside',
+        'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+        'ul', 'ol', 'li', 'blockquote', 'pre', 'tr', 'td', 'th', 'br', 'hr'
+      ]);
+      const segments = [];
+      let hasText = false;
+
+      const pushWhitespace = (required) => {
+        const last = segments[segments.length - 1];
+        if (last && last.type === 'whitespace') {
+          if (required) last.required = true;
+          return;
+        }
+        segments.push({ type: 'whitespace', required });
+      };
+
+      // Browser Selection.toString() may include leading/trailing whitespace
+      // around selected block elements; tolerate it without regex backtracking.
+      pushWhitespace(false);
+
+      for (const token of HtmlTokenizer.tokenize(html)) {
+        if (token.type === 'text') {
+          const chunks = String(token.content || '').split(/([ \t\r\n\f\v\u00a0]+)/);
+          for (const chunk of chunks) {
+            if (!chunk) continue;
+            if (/^[ \t\r\n\f\v\u00a0]+$/.test(chunk)) {
+              pushWhitespace(true);
+            } else {
+              segments.push({ type: 'text', value: chunk });
+              hasText = true;
+            }
+          }
+        } else if (blockBoundaryTags.has(token.tag)) {
+          pushWhitespace(false);
+        }
+      }
+
+      pushWhitespace(false);
+      if (segments[0]?.type === 'whitespace') segments[0].required = false;
+      const last = segments[segments.length - 1];
+      if (last?.type === 'whitespace') last.required = false;
+      return hasText ? segments : null;
+    } catch (error) {
+      console.warn('[FlashDoc] Selection HTML comparison failed; plain-text fallback will be used', {
+        errorType: error?.name || 'Error'
+      });
+      return null;
+    }
+  }
+
+  matchSelectionTextSegments(text, segments) {
+    if (!segments) return false;
+    const value = typeof text === 'string' ? text : '';
+    let offset = 0;
+    const isWhitespace = (char) => /[ \t\r\n\f\v\u00a0]/.test(char);
+
+    for (const segment of segments) {
+      if (segment.type === 'whitespace') {
+        const startOffset = offset;
+        while (offset < value.length && isWhitespace(value[offset])) offset++;
+        if (segment.required && offset === startOffset) return false;
+        continue;
+      }
+
+      if (!value.startsWith(segment.value, offset)) return false;
+      offset += segment.value.length;
+    }
+
+    return offset === value.length;
+  }
+
+  selectionHtmlMatchesText(selection) {
+    if (!FlashDocSelection.hasStructuredHtml(selection)) return true;
+    const segments = this.buildSelectionTextSegments(selection.html);
+    return this.matchSelectionTextSegments(selection.text, segments);
+  }
   async saveSelection(selectionInput, type, tab, options = {}) {
-    const selection = FlashDocSelection.withRuntimeContext(selectionInput, {
+    let selection = FlashDocSelection.withRuntimeContext(selectionInput, {
       sourceUrl: tab?.url || null
     });
-    if (!FlashDocSelection.hasStructuredHtml(selection)) {
+    const hadStructuredHtml = FlashDocSelection.hasStructuredHtml(selection);
+
+    if (hadStructuredHtml && !this.selectionHtmlMatchesText(selection)) {
+      console.warn('[FlashDoc] Structured selection fallback: HTML/text semantic mismatch; using plain text', {
+        hasSourceUrl: Boolean(selection.sourceUrl),
+        frameId: selection.frameId
+      });
+      selection = FlashDocSelection.createSelectionPayload({
+        ...selection,
+        html: ''
+      });
+    } else if (!hadStructuredHtml) {
       console.warn('[FlashDoc] Structured selection fallback: HTML unavailable; using plain text', {
         hasSourceUrl: Boolean(selection.sourceUrl),
         frameId: selection.frameId
       });
     }
+
     return this.handleSave(selection.text, type, tab, {
       ...options,
       html: selection.html,
@@ -2025,23 +2130,8 @@ class FlashDoc {
     const margin = 20;
     const maxWidth = pageWidth - (margin * 2);
 
-    // Parse HTML or structure plain text
-    let blocks;
-    if (html && html.trim()) {
-      const tokens = HtmlTokenizer.tokenize(html);
-      blocks = BlockBuilder.build(tokens);
-    }
-    if (!blocks || blocks.length === 0) {
-      // Use PlainTextStructurer for intelligent structure detection
-      blocks = PlainTextStructurer.structure(content);
-    }
-    if (!blocks || blocks.length === 0) {
-      // Absolute fallback: single paragraph with all content
-      blocks = [{
-        type: 'paragraph',
-        runs: [{ text: content.trim(), bold: false, italic: false, underline: false, strikethrough: false, code: false }]
-      }];
-    }
+    // PDF and DOCX share the same canonical block representation.
+    const blocks = this.buildCanonicalBlocks(content, html);
 
     const fontSizes = {
       h1: 20, h2: 16, h3: 14, h4: 12, h5: 11, h6: 10,
@@ -2259,25 +2349,8 @@ class FlashDoc {
   async createDocxBlob(content, html = '') {
     const { Document, Paragraph, TextRun, Packer, HeadingLevel, AlignmentType, BorderStyle } = docx;
 
-    // Parse HTML or structure plain text
-    let blocks;
-    if (html && html.trim()) {
-      const tokens = HtmlTokenizer.tokenize(html);
-      console.log('[DOCX] Tokens count:', tokens.length);
-      console.log('[DOCX] Tokens:', JSON.stringify(tokens.slice(0, 10), null, 2));
-      blocks = BlockBuilder.build(tokens);
-    }
-    if (!blocks || blocks.length === 0) {
-      // Use PlainTextStructurer for intelligent structure detection
-      blocks = PlainTextStructurer.structure(content);
-    }
-    if (!blocks || blocks.length === 0) {
-      // Absolute fallback: single paragraph
-      blocks = [{
-        type: 'paragraph',
-        runs: [{ text: content.trim(), bold: false, italic: false, underline: false, strikethrough: false, code: false }]
-      }];
-    }
+    // PDF and DOCX share the same canonical block representation.
+    const blocks = this.buildCanonicalBlocks(content, html);
 
     const headingLevels = {
       1: HeadingLevel.HEADING_1,

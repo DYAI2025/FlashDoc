@@ -75,16 +75,26 @@ Runs format detection sanity checks without browser runtime.
 ## Key Patterns
 
 ### Message Passing
-Content script sends save requests to service worker:
+Selection-based save paths use one canonical payload contract. Raw DOM markup is passed
+to `FlashDocSelection.createSelectionPayload()`, which owns the shared HTML normalization.
+The service worker revalidates HTML/text semantic parity before structured rendering.
+
 ```javascript
 chrome.runtime.sendMessage({
   action: 'saveContent',
-  content: selectedText,
-  html: selectedHtml,    // For formatting preservation
-  type: 'auto',          // or specific format
+  selection: {
+    text: selectedText,
+    html: selectedHtml,
+    sourceUrl: window.location.href,
+    frameId: null
+  },
+  type: 'auto',
   prefix: categoryName   // optional prefix for shortcuts
 });
 ```
+
+Legacy `content` / `html` message fields are accepted by the service worker only for
+backward compatibility; new selection entry points must use `selection`.
 
 ### Format Detection Priority
 Detection order in `detection-utils.js:detectContentType()`:

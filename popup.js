@@ -277,11 +277,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const range = sel.getRangeAt(0);
             const container = document.createElement('div');
             container.appendChild(range.cloneContents());
-            html = container.innerHTML
-              .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
-              .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
-              .replace(/<!--[\s\S]*?-->/g, '')
-              .trim();
+            // Return raw DOM markup. Shared selection normalization is applied
+            // by FlashDocSelection.createSelectionPayload().
+            html = container.innerHTML;
           } catch (_) {
             html = '';
           }
