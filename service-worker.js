@@ -1701,15 +1701,9 @@ class FlashDoc {
             const range = sel.getRangeAt(0);
             const container = document.createElement('div');
             container.appendChild(range.cloneContents());
-            html = container.innerHTML
-              .replace(/<span[^>]*>\s*<\/span>/gi, '')
-              .replace(/<font[^>]*>/gi, '')
-              .replace(/<\/font>/gi, '')
-              .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
-              .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
-              .replace(/<!--[\s\S]*?-->/g, '')
-              .replace(/\n+/g, '\n')
-              .trim();
+            // Return raw selected markup. Shared normalization belongs exclusively
+            // to FlashDocSelection.createSelectionPayload().
+            html = container.innerHTML;
           } catch (_) {
             html = '';
           }
@@ -1765,16 +1759,58 @@ class FlashDoc {
     }
   }
 
+  getComparableTextFromSelectionHtml(html) {
+    if (!html || !html.trim()) return '';
+
+    try {
+      const tokens = HtmlTokenizer.tokenize(html);
+      const blocks = BlockBuilder.build(tokens);
+      if (!blocks || blocks.length === 0) return '';
+
+      return blocks
+        .map((block) => (block.runs || []).map((run) => run.text || '').join(''))
+        .join(' ');
+    } catch (error) {
+      console.warn('[FlashDoc] Selection HTML comparison failed; plain-text fallback will be used', {
+        errorType: error?.name || 'Error'
+      });
+      return '';
+    }
+  }
+
+  selectionHtmlMatchesText(selection) {
+    if (!FlashDocSelection.hasStructuredHtml(selection)) return true;
+
+    const selectedText = FlashDocSelection.normalizeComparableText(selection.text);
+    const htmlText = FlashDocSelection.normalizeComparableText(
+      this.getComparableTextFromSelectionHtml(selection.html)
+    );
+
+    return selectedText.length > 0 && htmlText.length > 0 && selectedText === htmlText;
+  }
+
   async saveSelection(selectionInput, type, tab, options = {}) {
-    const selection = FlashDocSelection.withRuntimeContext(selectionInput, {
+    let selection = FlashDocSelection.withRuntimeContext(selectionInput, {
       sourceUrl: tab?.url || null
     });
-    if (!FlashDocSelection.hasStructuredHtml(selection)) {
+    const hadStructuredHtml = FlashDocSelection.hasStructuredHtml(selection);
+
+    if (hadStructuredHtml && !this.selectionHtmlMatchesText(selection)) {
+      console.warn('[FlashDoc] Structured selection fallback: HTML/text semantic mismatch; using plain text', {
+        hasSourceUrl: Boolean(selection.sourceUrl),
+        frameId: selection.frameId
+      });
+      selection = FlashDocSelection.createSelectionPayload({
+        ...selection,
+        html: ''
+      });
+    } else if (!hadStructuredHtml) {
       console.warn('[FlashDoc] Structured selection fallback: HTML unavailable; using plain text', {
         hasSourceUrl: Boolean(selection.sourceUrl),
         frameId: selection.frameId
       });
     }
+
     return this.handleSave(selection.text, type, tab, {
       ...options,
       html: selection.html,
