@@ -264,8 +264,8 @@ document.addEventListener('DOMContentLoaded', () => {
       return { selection: FlashDocSelection.createSelectionPayload(), success: false };
     }
     try {
-      const [result] = await chrome.scripting.executeScript({
-        target: { tabId },
+      const results = await chrome.scripting.executeScript({
+        target: { tabId, allFrames: true },
         func: () => {
           const sel = window.getSelection();
           if (!sel || sel.rangeCount === 0) {
@@ -289,6 +289,7 @@ document.addEventListener('DOMContentLoaded', () => {
           return { text, html, sourceUrl: window.location.href };
         }
       });
+      const result = results.find((entry) => entry?.result?.text?.trim()) || results[0];
       return {
         selection: FlashDocSelection.createSelectionPayload({
           text: result?.result?.text || '',
